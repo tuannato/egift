@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/wrap-art.mjs && tsc -p tsconfig.json --noEmit && vite build && node scripts/share-pages.mjs",
+    "build": "node scripts/wrap-art.mjs && tsc -p tsconfig.json --noEmit && vite build && node scripts/share-pages.mjs && node scripts/budget.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",

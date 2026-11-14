@@ -29,6 +29,11 @@
 /
   Cache-Control: no-store
 
+# One page per wrapper (scripts/share-pages.mjs writes /<wrapper>/index.html): a document too, never cached.
+# One rule for all of them, however many wrappers there are (a file of headers may hold 100 rules).
+/:wrapper/
+  Cache-Control: no-store
+
 # Hashed filenames, so the bytes at a URL never change.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
@@ -44,5 +49,12 @@
 /og/*
   ! Cross-Origin-Resource-Policy
   Cross-Origin-Resource-Policy: cross-origin
+  Cache-Control: public, max-age=86400
+
+# Wrapper art and the small stills: plain pictures under fixed names. A day in the browser's cache; a changed
+# picture is seen the next day at the latest.
+/wrappers/*
+  Cache-Control: public, max-age=86400
+/thumbs/*
   Cache-Control: public, max-age=86400
 

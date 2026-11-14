@@ -27,11 +27,11 @@ for (const id of ids) {
     execFileSync('node', ['scripts/shot.mjs', `/dev/card.html?id=${id}`, tmp, '1200', '630', '2500', 'calm'], { stdio: 'ignore' });
     execFileSync('sips', ['-z', '630', '1200', '-s', 'format', 'jpeg', '-s', 'formatOptions', '82', tmp, '--out', `public/og/${id}.jpg`], { stdio: 'ignore' });
     rmSync(tmp);
-    // The small still of the closed wrapper, for the shelf and the picker: public/thumbs/<id>.jpg, 480 wide.
+    // The small still of the closed wrapper, for the shelf and the picker: public/thumbs/<id>.jpg, 320 wide (a door or a case is never drawn wider than about 130 CSS pixels).
     const [w, hgt] = sizeOf(id);
     const t = `.shots/thumb-${id}.png`;
     execFileSync('node', ['scripts/shot.mjs', `/dev/card.html?id=${id}&thumb`, t, String(w * 2), String(hgt * 2), '2500', 'calm'], { stdio: 'ignore' });
-    execFileSync('sips', ['-z', String(Math.round((480 * hgt) / w)), '480', '-s', 'format', 'jpeg', '-s', 'formatOptions', '78', t, '--out', `public/thumbs/${id}.jpg`], { stdio: 'ignore' });
+    execFileSync('sips', ['-z', String(Math.round((320 * hgt) / w)), '320', '-s', 'format', 'jpeg', '-s', 'formatOptions', '72', t, '--out', `public/thumbs/${id}.jpg`], { stdio: 'ignore' });
     rmSync(t);
     console.log(id);
 }

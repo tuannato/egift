@@ -11,7 +11,7 @@
  *
  * Fails the build when a wrapper has no card or no thumbnail: draw it with `node scripts/og-cards.mjs <id>`.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const SITE = 'https://egift.cash';
 const registry = readFileSync('src/wrappers/index.ts', 'utf8');
@@ -23,7 +23,6 @@ const swap = (page, prop, value) => {
     return page.replace(re, `$1${value}$2`);
 };
 const missing = [];
-let headers = '\n# One page per wrapper (scripts/share-pages.mjs): the document is never cached, wherever it is served from.\n';
 for (const id of ids) {
     if (!/^[a-z0-9-]{1,24}$/.test(id)) throw new Error(`share-pages: bad wrapper id "${id}"`);
     if (!existsSync(`public/og/${id}.jpg`) || !existsSync(`public/thumbs/${id}.jpg`)) {
@@ -36,11 +35,16 @@ for (const id of ids) {
     page = swap(page, 'og:description', 'Open the link to see it. eCash, wrapped into a link.');
     mkdirSync(`dist/${id}`, { recursive: true });
     writeFileSync(`dist/${id}/index.html`, page);
-    headers += `/${id}/\n  Cache-Control: no-store\n`;
 }
 if (missing.length) {
     console.error(`share-pages: no share card or thumbnail for: ${missing.join(', ')}. Run: node scripts/og-cards.mjs ${missing.join(' ')}`);
     process.exit(1);
 }
-appendFileSync('dist/_headers', headers);
+// The signing library carries its wasm inside its own JavaScript; the bundler also writes the same bytes out as a
+// file that nothing asks for. It is removed unless something in the build names it.
+const assets = readdirSync('dist/assets');
+const text = assets.filter(f => /\.(js|css)$/.test(f)).map(f => readFileSync(`dist/assets/${f}`, 'utf8')).join('\n') + html;
+for (const f of assets.filter(f => f.endsWith('.wasm'))) {
+    if (!text.includes(f)) rmSync(`dist/assets/${f}`);
+}
 console.log(`share-pages: ${ids.length} wrapper pages`);
