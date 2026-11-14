@@ -4,6 +4,11 @@ import type { vi } from './vi';
 export const th: Record<keyof typeof vi, string> = {
     'app.name': "eGift",
     'app.lang.label': "ภาษา",
+    'app.home': "ไปหน้าแรก",
+    'app.leave.create': "ออกจากของขวัญที่กำลังสร้างแล้วไปหน้าแรกไหม",
+    'app.leave.created': "ไปหน้าแรกไหม ถ้ายังไม่ได้บันทึกลิงก์ ของขวัญนี้จะหายไป",
+    'app.leave.package': "ไปหน้าแรกไหม ถ้าจะเปิดของขวัญนี้อีกครั้งต้องใช้ลิงก์เดิมนี้",
+    'app.leave.stay': "อยู่ต่อ",
     'app.demo': "เดโม — ไม่ใช่เงินจริง",
     'app.inapp': "คุณกำลังอยู่ในเบราว์เซอร์ของแอปอื่น เพื่อความปลอดภัย โปรดคัดลอกลิงก์นี้แล้วเปิดใน Safari หรือ Chrome",
     'app.inapp.copy': "คัดลอกลิงก์",

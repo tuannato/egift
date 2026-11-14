@@ -4,6 +4,11 @@ import type { vi } from './vi';
 export const pt: Record<keyof typeof vi, string> = {
     'app.name': "eGift",
     'app.lang.label': "Idioma",
+    'app.home': "Ir para o início",
+    'app.leave.create': "Sair do presente que está criando e ir para o início?",
+    'app.leave.created': "Ir para o início? Se o link ainda não foi salvo, este presente será perdido.",
+    'app.leave.package': "Ir para o início? Para abrir este presente de novo será preciso este mesmo link.",
+    'app.leave.stay': "Ficar",
     'app.demo': "DEMO — sem dinheiro de verdade",
     'app.inapp': "Você está no navegador de outro aplicativo. Por segurança, copie este link e abra no Safari ou no Chrome.",
     'app.inapp.copy': "Copiar link",

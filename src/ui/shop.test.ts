@@ -397,6 +397,37 @@ describe('buying a wrapper', () => {
         expect(document.documentElement.dataset.wears).toBe('mecha');
     });
 
+    it('the mark goes home: at once from the shop, after a question from a gift', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const key = deriveKey(secret);
+        const url = encodeLink({ version: 1, secret, wrapper: 'snowbox' }, location.origin);
+        chain.fund(key.address, 8888n);
+        history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
+        app = boot(chain);
+        await flush(12);
+        const mark = app.root.querySelector('button.wordmark') as HTMLButtonElement;
+        const ask = app.root.querySelector('.leave') as HTMLElement;
+        expect(ask.hidden).toBe(true);
+        mark.click();
+        // A gift is on the page: nothing is left behind without a yes.
+        expect(ask.hidden).toBe(false);
+        expect(ask.textContent).toContain(t('app.leave.package'));
+        expect(app.root.querySelector('.screen-package')).not.toBeNull();
+        buttonByText(ask, t('app.leave.stay')).click();
+        expect(ask.hidden).toBe(true);
+        expect(app.root.querySelector('.screen-package')).not.toBeNull();
+        mark.click();
+        buttonByText(ask, t('app.home')).click();
+        await flush();
+        expect(app.root.querySelector('.screen-home')).not.toBeNull();
+        expect(location.hash).toBe('');
+        // From the shop the mark asks nothing.
+        (app.root.querySelector('button.wordmark') as HTMLButtonElement).click();
+        expect((app.root.querySelector('.leave') as HTMLElement).hidden).toBe(true);
+        expect(app.root.querySelector('.screen-home')).not.toBeNull();
+    });
+
     it('a-paid-wrapper-is-never-shown-before-its-stamp-is-read', async () => {
         setOfferForDev('mecha', offer);
         const chain = createDemoChain();

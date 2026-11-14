@@ -4,6 +4,11 @@ import type { vi } from './vi';
 export const zhHant: Record<keyof typeof vi, string> = {
     'app.name': "eGift",
     'app.lang.label': "語言",
+    'app.home': "回到首頁",
+    'app.leave.create': "離開正在製作的禮物並回到首頁？",
+    'app.leave.created': "回到首頁？如果還沒儲存連結，這份禮物將會遺失。",
+    'app.leave.package': "回到首頁？再次打開這份禮物需要這同一個連結。",
+    'app.leave.stay': "留下",
     'app.demo': "示範 —— 不是真錢",
     'app.inapp': "你正在另一個應用程式的內建瀏覽器裡。為了安全，請複製這個連結，用 Safari 或 Chrome 開啟。",
     'app.inapp.copy': "複製連結",

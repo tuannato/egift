@@ -920,3 +920,26 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 /* Cases with a price line and cases without stand on the same top line. */
 .cases .picks { align-items: flex-start; }
 .cases .pick--workshop { align-self: flex-start; }
+
+/* ---------- The mark is the way home ---------- */
+.brand { position: relative; pointer-events: auto; display: inline-flex; }
+button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin: 0; font: inherit; cursor: pointer; display: inline-flex; align-items: center; }
+:root:root:root button.wordmark:focus-visible { outline: 3px solid #14151a; outline-offset: 2px; }
+/* The question asked before leaving a gift: the same light face as the mark it hangs from. */
+.leave {
+    --ink: #14151a; --dim: #3b3b42; --mute: #6a6861; --line-strong: rgba(20, 21, 26, 0.3); --fill: rgba(20, 21, 26, 0.08); --fill-2: rgba(20, 21, 26, 0.16);
+    --accent: #14151a; --on-accent: #f4f1ea;
+    position: absolute; top: calc(100% + 10px); left: 0; z-index: 8; width: max-content; max-width: min(320px, calc(100vw - var(--edge) * 2));
+    display: grid; gap: 12px; padding: 14px; border-radius: 18px; color: #14151a; background: #f4f1ea;
+    box-shadow: 0 0 0 5px rgba(244, 241, 234, 0.18), 0 24px 60px -20px rgba(0, 0, 0, 0.85);
+}
+.leave-why { margin: 0; font: 500 14.5px / 1.4 var(--text); color: #14151a; }
+.leave-row { display: flex; gap: 8px; justify-content: flex-end; }
+:root:root:root .leave .btn { clip-path: none; border-radius: 999px; min-height: 40px; padding: 0 16px; font: 600 14px / 1 var(--text); letter-spacing: 0; text-transform: none; box-shadow: none; }
+:root:root:root .leave .btn-secondary { background: rgba(20, 21, 26, 0.08); color: #14151a; border-color: transparent; }
+:root:root:root .leave .btn-secondary:hover { background: rgba(20, 21, 26, 0.16); }
+:root:root:root .leave .btn-primary { background: #14151a; color: #f4f1ea; filter: none; }
+:root:root:root .leave .btn-primary:hover { background: #2a2c34; }
+.topbar { z-index: 7; }
+.leave { width: min(320px, calc(100vw - var(--edge) * 2)); box-sizing: border-box; }
+.leave-row .btn { flex: none; white-space: nowrap; width: auto; }

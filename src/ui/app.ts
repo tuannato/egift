@@ -79,6 +79,55 @@ export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () =>
     };
 
     /**
+     * The mark is the way home. From the shop it goes there at once; from a
+     * gift being made, a gift just made or a gift being opened it asks first,
+     * in a small panel under itself, and says what leaving means there.
+     */
+    function brand(): HTMLElement {
+        const ask = h('div', { class: 'leave', role: 'group', hidden: true });
+        const close = (): void => {
+            ask.hidden = true;
+            ask.replaceChildren();
+            document.removeEventListener('pointerdown', outside, true);
+            document.removeEventListener('keydown', onKey, true);
+        };
+        const outside = (e: Event): void => {
+            if (!wrap.contains(e.target as Node)) close();
+        };
+        const onKey = (e: KeyboardEvent): void => {
+            if (e.key !== 'Escape') return;
+            close();
+            mark.focus();
+        };
+        const mark = h(
+            'button',
+            {
+                type: 'button',
+                class: 'wordmark',
+                'aria-label': t('app.home'),
+                onclick: () => {
+                    // Not while a take or a move is in flight.
+                    if (isBusy()) return;
+                    if (!ask.hidden) return close();
+                    if (route.kind === 'home') return ctx.nav.toHome();
+                    const why = route.kind === 'create' ? t('app.leave.create') : route.kind === 'created' ? t('app.leave.created') : t('app.leave.package');
+                    const stay = h('button', { type: 'button', class: 'btn btn-secondary btn-small', onclick: () => (close(), mark.focus()) }, t('app.leave.stay'));
+                    const go = h('button', { type: 'button', class: 'btn btn-primary btn-small', onclick: () => (close(), ctx.nav.toHome()) }, t('app.home'));
+                    ask.replaceChildren(h('p', { class: 'leave-why' }, why), h('div', { class: 'leave-row' }, stay, go));
+                    ask.hidden = false;
+                    document.addEventListener('pointerdown', outside, true);
+                    document.addEventListener('keydown', onKey, true);
+                    stay.focus();
+                },
+            },
+            ribbon('bow'),
+            h('span', { class: 'wordmark-name', 'aria-hidden': 'true' }, t('app.name')),
+        );
+        const wrap = h('div', { class: 'brand' }, mark, ask);
+        return wrap;
+    }
+
+    /**
      * The language picker: a button showing the language in use, and a list of
      * every language the page speaks — English first, then by the two-letter
      * tag each is listed under. Each name is written in its own language.
@@ -245,7 +294,7 @@ export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () =>
                 h(
                     'header',
                     { class: 'topbar' },
-                    h('span', { class: 'wordmark' }, ribbon('bow'), h('span', { class: 'wordmark-name' }, t('app.name'))),
+                    brand(),
                     h('div', { class: 'topbar-tools' }, soundToggle(), langSwitch()),
                 ),
                 banner ? h('div', { class: 'banner-wrap' }, banner) : null,

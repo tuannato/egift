@@ -2,6 +2,11 @@
 export const vi = {
     'app.name': 'eGift',
     'app.lang.label': 'Ngôn ngữ',
+    'app.home': "Về trang chủ",
+    'app.leave.create': "Rời bước tạo quà và về trang chủ?",
+    'app.leave.created': "Về trang chủ? Nếu chưa lưu link thì món quà này sẽ mất.",
+    'app.leave.package': "Về trang chủ? Muốn mở lại món quà thì cần đúng link này.",
+    'app.leave.stay': "Ở lại",
     'app.demo': 'DEMO — không phải tiền thật',
     'app.inapp': 'Bạn đang ở trong trình duyệt của một ứng dụng khác. Để an toàn, hãy chép link này và mở bằng Safari hoặc Chrome.',
     'app.inapp.copy': 'Chép link',
