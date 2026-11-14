@@ -47,7 +47,16 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
     const reduced = opts.reducedMotion;
     const hasIdle = !reduced && (def.idle?.length ?? 0) > 0;
     const hasAfter = !reduced && (def.afterglow?.length ?? 0) > 0;
-    const hasDepth = !reduced && def.layers.some(l => (l.depth ?? 0) > 0);
+    // Parallax follows a mouse. On a touch screen it would follow the tilt of the hand, which never rests: every
+    // layer would be moved, and held ready to move, for as long as the page is open. A phone has no room for that.
+    const touch = (() => {
+        try {
+            return doc.defaultView?.matchMedia?.('(pointer: coarse)').matches === true;
+        } catch {
+            return false;
+        }
+    })();
+    const hasDepth = !reduced && !touch && def.layers.some(l => (l.depth ?? 0) > 0);
 
     const root = doc.createElement('div');
     root.className = 'stage';
@@ -98,11 +107,23 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
     const pool = new Map<string, HTMLImageElement[]>();
     let animating = false;
 
+    /**
+     * Which layers the browser is asked to keep ready to move. A layer kept
+     * ready costs memory for all of its area, so only those that move are:
+     * every layer while the opening plays; outside it, the few the endless
+     * loop sways (idle while closed, the afterglow once open) and, with a
+     * mouse, those that shift for parallax.
+     */
     function setWillChange(on: boolean): void {
         animating = on;
-        const v = on ? 'transform, opacity' : '';
-        for (const el of els.values()) el.style.setProperty('will-change', v);
-        for (const list of pool.values()) for (const el of list) el.style.setProperty('will-change', v);
+        const all = on && mode !== null;
+        let some: Set<string> | null = null;
+        if (on && !all) {
+            some = new Set((state === 'open' ? (def.afterglow ?? []) : (def.idle ?? [])).map(st => st.layer));
+            if (hasDepth) for (const l of def.layers) if ((l.depth ?? 0) > 0) some.add(l.id);
+        }
+        for (const [id, el] of els) el.style.setProperty('will-change', all || some?.has(id) ? 'transform, opacity' : '');
+        for (const list of pool.values()) for (const el of list) el.style.setProperty('will-change', all ? 'transform, opacity' : '');
     }
 
     let state: 'closed' | 'opening' | 'open' = 'closed';
@@ -160,7 +181,7 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
             let el = list[idx];
             if (!el) {
                 el = makeImg(id, 'stage-particle');
-                if (animating) el.style.setProperty('will-change', 'transform, opacity');
+                if (animating && mode !== null) el.style.setProperty('will-change', 'transform, opacity');
                 const src = els.get(id)!;
                 root.insertBefore(el, src.nextSibling);
                 list[idx] = el;
@@ -344,6 +365,7 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
                 paint(0);
             } else {
                 mode = 'play';
+                setWillChange(true); // the opening moves every layer
                 if (pos >= len) {
                     finish();
                     return p;
