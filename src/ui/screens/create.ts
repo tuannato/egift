@@ -326,7 +326,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     const cases: { def: WrapperDef; art: HTMLElement; card: StageCard | null }[] = [];
     const fillCase = (c: (typeof cases)[number]): void => {
         if (c.card || disposed) return;
-        c.card = stageCard(c.def, { still: true });
+        // A small picture of the wrapper, closed: 24 mounted scenes are more than a phone's browser will hold.
+        c.card = { el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: `/thumbs/${c.def.id}.jpg`, alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })), handle: null, overlay: h('div', null), destroy() {} };
         c.art.append(c.card.el);
     };
     const seen =

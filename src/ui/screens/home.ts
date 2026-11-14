@@ -11,7 +11,7 @@ import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
 import { getLang, t } from '../../i18n';
 import type { Key } from '../../i18n';
-import { stageCard, prefersReducedMotion, type StageCard } from '../stageCard';
+import { stageCard, type StageCard } from '../stageCard';
 import { makeCapsule } from '../capsule';
 import { applyTheme, themeTokens } from '../theme';
 import { setAmbient } from '../ambient';
@@ -81,13 +81,17 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     };
 
     // ---- The doors ----
-    // Where the browser can say what is in view, a door's scene is mounted only while the door is on (or near) the
-    // visible stretch of the shelf; elsewhere (an old browser, a test) every door is mounted at once, as before.
-    const lazy = typeof IntersectionObserver === 'function';
-    /** A door with no scene: its own colour, its tag, nothing running. */
-    const blank = (): StageCard => ({ el: h('div', { class: 'stage-card' }), handle: null, overlay: h('div', null), destroy() {} });
+    // A door at rest is a small picture of its wrapper, closed (public/thumbs, drawn by scripts/og-cards.mjs): one
+    // image, fetched when it nears the view. Only the door that is worn carries the live scene. A shelf of live
+    // scenes is more than a phone's browser will hold.
+    const still = (def: WrapperDef): StageCard => ({
+        el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: `/thumbs/${def.id}.jpg`, alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })),
+        handle: null,
+        overlay: h('div', null),
+        destroy() {},
+    });
     const doors: Door[] = WRAPPERS.map(def => {
-        const card = lazy ? blank() : stageCard(def);
+        const card = still(def);
         const art = h('div', { class: 'door-art' }, card.el);
         art.style.setProperty('--ar', String(def.size[0] / def.size[1]));
         const name = h('span', { class: 'door-name' });
@@ -98,13 +102,13 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             class: 'door-btn',
             'aria-pressed': 'false',
             'aria-label': t('home.door.try', { name: inLang(def.name, lang) }),
-            onclick: (e: MouseEvent) => wear(def.id, e),
+            onclick: () => wear(def.id),
         });
         const el = h('div', { class: 'door', 'data-id': def.id }, art, tag, btn);
         // A door carries its own theme, so its tag is a small piece of that world whatever the page wears.
         applyTheme(def, el);
         el.style.setProperty('--door-bg', def.backdrop);
-        return { def, el, art, btn, card, live: !lazy };
+        return { def, el, art, btn, card, live: false };
     });
     // The last door is not a wrapper: it stands for the ones that are not here yet.
     const soon = h(
@@ -156,54 +160,17 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         d.live = true;
         d.art.replaceChildren(d.card.el);
     }
-    /** Take a door's scene down: it keeps its colour and its tag. */
+    /** Take a door's scene down: back to its picture. */
     function rest(d: Door): void {
         if (!d.live) return;
         d.card.destroy();
-        d.card = blank();
+        d.card = still(d.def);
         d.live = false;
         d.art.replaceChildren(d.card.el);
     }
-    /** Doors that have come into view and wait for their scene: one is mounted a frame, so a far jump along the shelf never stalls the page. */
-    const waiting = new Set<Door>();
-    let draining = false;
-    function drain(): void {
-        const d = waiting.values().next().value as Door | undefined;
-        if (!d) {
-            draining = false;
-            return;
-        }
-        waiting.delete(d);
-        if (!d.live) remount(d);
-        requestAnimationFrame(drain);
-    }
-    function later(d: Door): void {
-        waiting.add(d);
-        if (draining) return;
-        draining = true;
-        requestAnimationFrame(drain);
-    }
-    const seen = lazy
-        ? new IntersectionObserver(
-              entries => {
-                  for (const e of entries) {
-                      const d = doors.find(x => x.el === e.target);
-                      if (!d) continue;
-                      if (e.isIntersecting) {
-                          if (!d.live) later(d);
-                      } else {
-                          waiting.delete(d);
-                          if (d.def.id !== worn) rest(d);
-                      }
-                  }
-              },
-              { root: doorsEl, rootMargin: '0px 240px' },
-          )
-        : null;
-    if (seen) for (const d of doors) seen.observe(d.el);
 
-    /** Put a wrapper on (or take it off: `null` shows the whole shelf). The page changes skin from where it was touched. */
-    function wear(id: string | null, ev?: MouseEvent): void {
+    /** Put a wrapper on (or take it off: `null` shows the whole shelf). */
+    function wear(id: string | null): void {
         if (id === worn) return;
         const apply = (): void => {
             if (previewing) {
@@ -218,35 +185,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             sync();
             cue.touch();
         };
-        const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<unknown> } };
-        const el = document.documentElement;
-        if (typeof doc.startViewTransition !== 'function' || prefersReducedMotion() || document.visibilityState !== 'visible') return apply();
-        // The new skin spreads from the finger.
-        const x = ev && (ev.clientX || ev.clientY) ? ev.clientX : window.innerWidth / 2;
-        const y = ev && (ev.clientX || ev.clientY) ? ev.clientY : window.innerHeight / 2;
-        el.style.setProperty('--vt-x', `${x}px`);
-        el.style.setProperty('--vt-y', `${y}px`);
-        el.dataset.vt = 'wear';
-        let done = false;
-        const once = (): void => {
-            if (done) return;
-            done = true;
-            apply();
-        };
-        try {
-            const vt = doc.startViewTransition(once);
-            const end = (): void => {
-                delete el.dataset.vt;
-            };
-            vt.finished.then(end, end);
-            // A skipped transition rejects these too: that is no error here.
-            const more = vt as { ready?: Promise<unknown>; updateCallbackDone?: Promise<unknown> };
-            for (const p of [more.ready, more.updateCallbackDone]) p?.catch(() => {});
-            setTimeout(once, 300);
-        } catch {
-            delete el.dataset.vt;
-            once();
-        }
+        // The skin changes at once. A transition over the whole page costs a snapshot of all of it, twice.
+        apply();
     }
 
     /** What the network said of each remembered gift, asked once while this page is up. */
@@ -577,6 +517,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             d.btn.setAttribute('aria-pressed', String(on));
             // The door that is worn is always mounted: its scene is what "see it open" plays.
             if (on && !d.live) remount(d);
+            else if (!on) rest(d);
         }
         applyTheme(def);
         setAmbient(def);
@@ -599,8 +540,6 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     sync();
     return () => {
         score.stop();
-        seen?.disconnect();
-        waiting.clear();
         for (const d of doors) d.card.destroy();
     };
 }

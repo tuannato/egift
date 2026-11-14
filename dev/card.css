@@ -12,3 +12,5 @@ html, body { margin: 0; background: #000; }
 .card-line { margin: 0; font: 700 64px / 1.04 'Inter', system-ui, sans-serif; letter-spacing: -0.03em; text-wrap: balance; }
 .card-name { margin: 0; font: 500 22px / 1.2 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(244, 241, 234, 0.72); }
 .card-rule { width: 72px; height: 4px; border-radius: 2px; background: var(--accent); }
+.thumb { width: 100vw; }
+.thumb .stage { width: 100%; }
