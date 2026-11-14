@@ -21,7 +21,7 @@
     position: relative; flex: 1 0 var(--door-min); min-width: 0; scroll-snap-align: start; overflow: hidden; isolation: isolate; padding: 0; border: 0;
     background: var(--door-bg, #0a0a0f); border-radius: 26px;
     /* A door's width changes in one step: 24 doors easing their widths re-lay the whole shelf every frame. */
-    transition: filter 420ms linear;
+    transition: none;
 }
 .door[data-corner="soft"] { border-radius: 6px; }
 .door[data-corner="cut"] { border-radius: 0; clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c)); }

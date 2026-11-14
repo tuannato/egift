@@ -7,7 +7,7 @@ import { parseEcashAddress } from './tx';
 /**
  * `sats` as a BIP21 amount: XEC, exactly two decimals, no grouping, no
  * exponent. `1000n` -> `"10.00"`. Cashtab reads BIP21 `amount` in XEC with a
- * `.` decimal mark; a wrong unit here once cost Stall a factor of 10^6.
+ * `.` decimal mark; a wrong unit here is a factor of 10^6.
  */
 export function bip21Amount(sats: bigint): string {
     if (typeof sats !== 'bigint' || sats <= 0n) throw new Error('The amount must be positive');

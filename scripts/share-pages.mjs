@@ -9,7 +9,7 @@
  * page is otherwise byte for byte the built index.html: assets are addressed
  * from the root, and the app reads the fragment only.
  *
- * Fails the build when a wrapper has no card: draw it with `node scripts/og-cards.mjs <id>`.
+ * Fails the build when a wrapper has no card or no thumbnail: draw it with `node scripts/og-cards.mjs <id>`.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 
@@ -26,7 +26,7 @@ const missing = [];
 let headers = '\n# One page per wrapper (scripts/share-pages.mjs): the document is never cached, wherever it is served from.\n';
 for (const id of ids) {
     if (!/^[a-z0-9-]{1,24}$/.test(id)) throw new Error(`share-pages: bad wrapper id "${id}"`);
-    if (!existsSync(`public/og/${id}.jpg`)) {
+    if (!existsSync(`public/og/${id}.jpg`) || !existsSync(`public/thumbs/${id}.jpg`)) {
         missing.push(id);
         continue;
     }
@@ -39,7 +39,7 @@ for (const id of ids) {
     headers += `/${id}/\n  Cache-Control: no-store\n`;
 }
 if (missing.length) {
-    console.error(`share-pages: no share card for: ${missing.join(', ')}. Run: node scripts/og-cards.mjs ${missing.join(' ')}`);
+    console.error(`share-pages: no share card or thumbnail for: ${missing.join(', ')}. Run: node scripts/og-cards.mjs ${missing.join(' ')}`);
     process.exit(1);
 }
 appendFileSync('dist/_headers', headers);

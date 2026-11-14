@@ -202,7 +202,10 @@ async function look(p: { chain: Pick<Chain, 'detail' | 'holders'>; coins: readon
     const licence = licenceOf(p.offer);
     const read = async (txid: string): Promise<TxDetail | null | undefined> => {
         try {
-            return await detail.call(p.chain, txid);
+            const tx = await detail.call(p.chain, txid);
+            // "No such transaction" about one that funds a coin just listed is a node a step behind, not a verdict.
+            if (tx === null) failed = true;
+            return tx;
         } catch {
             failed = true;
             return undefined;

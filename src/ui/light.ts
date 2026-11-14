@@ -32,7 +32,9 @@ export function startLight(): void {
         root.style.setProperty('--lx', x.toFixed(3));
         root.style.setProperty('--ly', y.toFixed(3));
     };
-    const set = (nx: number, ny: number): void => {
+    const set = (nx: number, ny: number, coarse = false): void => {
+        // A phone held in the hand trembles all the time: a change too small to see is not written.
+        if (coarse && Math.abs(clamp01(nx) - x) < 0.02 && Math.abs(clamp01(ny) - y) < 0.02) return;
         x = clamp01(nx);
         y = clamp01(ny);
         if (raf === 0 && typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(flush);
@@ -51,7 +53,7 @@ export function startLight(): void {
         e => {
             if (e.gamma === null || e.beta === null) return;
             const [lx, ly] = tiltToLight(e.gamma, e.beta);
-            set(lx, ly);
+            set(lx, ly, true);
         },
         { passive: true },
     );

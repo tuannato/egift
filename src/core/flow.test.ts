@@ -111,7 +111,7 @@ describe('takeHome', () => {
         expect(await takeHome({ chain: a.chain, key, to, marker: 'home' })).toMatchObject({ kind: 'done', sentSats: 10000n - 203n });
         expect(a.calls.broadcast).toBe(1);
 
-        // The critic's case: a chain with no lookup at all. The first call may
+        // The bare case: a chain with no lookup at all. The first call may
         // not say "done" yet, but neither call says "error then lost".
         const coin = { txid: 'ab'.repeat(32), outIdx: 0, sats: 100_000n, token: false, final: true };
         let spent = false;

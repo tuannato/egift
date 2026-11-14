@@ -39,7 +39,7 @@ was sent keeps naming the same address.
   app that draws a preview learn which wrapper a link uses. They never see
   the part after `#`.
 - A record you choose to keep in your browser holds the amount, the time and
-  part of the gift's address, never the link.
+  the gift's address (only part of it for a gift you received), never the link.
 
 None of this gives access to a gift.
 

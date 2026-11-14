@@ -1,6 +1,6 @@
 /**
  * An artist's wrapper SVG, read through an allow-list and written out again.
- * Ported from the owner's Stall project (scripts/svg-allow.mjs, MIT) with the
+ * Adapted from an earlier allow-list of the same kind (MIT) with the
  * smallest changes: the element list gained `line`, `polygon`, `polyline` and
  * the attribute list gained `points`, because ordinary flat illustration
  * needs them. Everything else, including the refusals, is the original.

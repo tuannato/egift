@@ -1,5 +1,5 @@
 /**
- * The price table that ships with the page (decision D-2026-11-14-03).
+ * The price table that ships with the page.
  * A price or the address that is paid is never changed by accident: this
  * file says what the owner decided, and a change here is a decision too.
  */

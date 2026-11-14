@@ -28,8 +28,9 @@
     --slow: 420ms;
     --mid: 240ms;
     --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-    transition: --amb-1 900ms linear, --amb-2 900ms linear, --amb-3 900ms linear;
 }
+/* The pools of light are drawn on wide screens only; so is the slow change of their colours. */
+@media (min-width: 960px) { :root { transition: --amb-1 900ms linear, --amb-2 900ms linear, --amb-3 900ms linear; } }
 html, body { background: var(--void); }
 body { overflow-x: hidden; }
 

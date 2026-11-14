@@ -828,7 +828,7 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 /* ---------- The islands at the top: one bright face on every wrapper, the same as the shelf arrows ---------- */
 /* They are the page's own controls, not part of a wrapper, so no wrapper's material repaints them. */
 :root:root:root :is(.wordmark, .topbar-tools) {
-    --ink: #14151a; --dim: #3b3b42; --mute: #6a6861; --fill: rgba(20, 21, 26, 0.1); --fill-2: rgba(20, 21, 26, 0.06); --accent: #14151a;
+    --ink: #14151a; --dim: #3b3b42; --mute: #6a6861; --fill: rgba(20, 21, 26, 0.08); --fill-2: rgba(20, 21, 26, 0.16); --accent: #14151a;
     color: #14151a; background: #f4f1ea; -webkit-backdrop-filter: none; backdrop-filter: none;
     border-radius: 999px; clip-path: none; outline: 0;
     box-shadow: 0 0 0 5px rgba(244, 241, 234, 0.18), 0 14px 30px -10px rgba(0, 0, 0, 0.85);
@@ -839,7 +839,7 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 :root:root:root .topbar-tools .sound svg { stroke-width: 1.9; }
 :root:root:root .topbar-tools .lang-caret { color: #14151a; }
 :root:root:root .lang-menu { background: #f4f1ea; box-shadow: 0 0 0 5px rgba(244, 241, 234, 0.18), 0 24px 60px -20px rgba(0, 0, 0, 0.85); }
-:root:root:root .wordmark:focus-visible, :root:root:root .topbar-tools :focus-visible { outline: 3px solid var(--th-accent, #f2c162); outline-offset: 3px; }
+:root:root:root .topbar-tools :focus-visible { outline: 3px solid #14151a; outline-offset: 2px; }
 
 /* ---------- The wrapper's price on the step where the gift is filled in ---------- */
 .pick-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -896,3 +896,27 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 .fold-box > .fold { border-top: 0; }
 .fold-box { padding-top: 0; }
 @media (prefers-reduced-motion: reduce) { .fold-sum::after { transition: none; } }
+
+/* ---------- After the audit of 15 November 2026 ---------- */
+/* The warning shown inside a chat app's own browser: the same light face as the islands, readable over any scene. */
+:root:root:root .banner {
+    --ink: #14151a; --dim: #3b3b42; --mute: #6a6861; --line-strong: rgba(20, 21, 26, 0.3); --fill: rgba(20, 21, 26, 0.08); --fill-2: rgba(20, 21, 26, 0.16);
+    color: #14151a; background: #f4f1ea; -webkit-backdrop-filter: none; backdrop-filter: none; clip-path: none; outline: 0;
+    box-shadow: 0 0 0 5px rgba(244, 241, 234, 0.18), 0 14px 30px -10px rgba(0, 0, 0, 0.85);
+}
+.banner-wrap { width: auto; box-sizing: border-box; }
+/* A light capsule is opaque: blurring what is behind it costs a great deal on a phone and shows nothing. */
+:root[data-tone="light"] .capsule.layout-body { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* Plate: the picker's cases stand on the plate itself, not in a well, so their words take the plate's ink. */
+:root[data-material="plate"] .pick.case { color: inherit; }
+:root[data-material="plate"] .pick.case :is(.case-name, .case-price) { color: inherit; opacity: 0.62; }
+:root[data-material="plate"] .pick.case[aria-checked="true"] :is(.case-name, .case-price) { opacity: 1; }
+/* Plate: a secondary button that cannot be pressed looks it. */
+:root[data-material="plate"] .btn-secondary:disabled { opacity: 0.45; }
+/* The desktop pan: an art shorter than the window stands in its middle; a taller one starts at the top and slides. */
+@media (min-width: 960px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .layout-plate > .plate { margin-top: max(0px, calc((100svh - 100% / var(--ar, 0.8)) / 2)); }
+}
+/* Cases with a price line and cases without stand on the same top line. */
+.cases .picks { align-items: flex-start; }
+.cases .pick--workshop { align-self: flex-start; }

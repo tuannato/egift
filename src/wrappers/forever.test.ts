@@ -29,7 +29,7 @@ describe('links are forever', () => {
         expect(WRAPPERS.length).toBeGreaterThanOrEqual(SHIPPED.length);
     });
 
-    // Set to `signal` by the owner on 2026-11-14, before the page went out (it was `lixi` while it was only on his machine).
+    // Set to `signal` on 2026-11-14, before the page went out.
     // From launch on this is a promise like the others.
     it('the wrapper a gift falls back to has not changed', () => {
         expect(DEFAULT_WRAPPER).toBe('signal');

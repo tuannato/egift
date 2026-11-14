@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { WsMsgClient } from 'chronik-client';
-import { CHRONIK_HOSTS, CHRONIK_OPERATORS, createChronikChain, mapBroadcastError } from './chronik';
+import { CHRONIK_HOSTS, CHRONIK_OPERATORS, createChronikChain, mapBroadcastError, nextHostFirst } from './chronik';
 import type { ChronikLike, ChronikTxLike, ChronikUtxoLike, ChronikWsConfigLike } from './chronik';
 import { toHex } from 'ecash-lib';
 import { deriveKey } from '../keys';
@@ -647,6 +647,12 @@ describe('a second opinion before anything is signed', () => {
         lonely[2]!.st.readError = Object.assign(new Error('down'), { code: 'ECONNREFUSED' });
         await expect(createChronikChain({ client: lonely[0]!.client, peers: lonely.map(o => o.client), agree: 2 }).readChecked!(key.address)).rejects.toMatchObject({ code: 'offline' });
     }, 10_000);
+
+    it('a host that stalls is put last: the next call starts with the next host', () => {
+        expect(nextHostFirst(['a', 'b', 'c'])).toEqual(['b', 'c', 'a']);
+        expect(nextHostFirst(['a'])).toEqual(['a']);
+        expect(nextHostFirst([])).toEqual([]);
+    });
 
     it('by default one trusted node is enough: what is signed from is what the connected node says', async () => {
         const one = operators(1);

@@ -37,9 +37,9 @@ export function wrapperById(id: string): WrapperDef | undefined {
  * The price table: what it costs to send a gift in a wrapper, and who is
  * paid. It ships with the page and nothing else is ever consulted — not the
  * link, not the chain. A wrapper that is not named here is free. How a price
- * is paid and checked: `src/core/stamp.ts` and README §11.
+ * is paid and checked: `src/core/stamp.ts`.
  *
- * Set by the project's owner on 14 November 2026 (decisions D-2026-11-14-03):
+ * Set on 14 November 2026:
  * four wrappers at 10,000 XEC, five at 5,000 XEC, paid to the project's own
  * address. 1 XEC is 100 sats.
  */

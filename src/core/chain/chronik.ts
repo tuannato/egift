@@ -17,11 +17,8 @@ export const CHRONIK_HOSTS: readonly string[] = [
 ];
 
 /**
- * The same hosts, grouped by who runs them. Before anything is signed the
- * package is read from several groups at once and their answers must agree
- * (`readChecked`): one node that lies or is broken — hiding that a coin
- * carries a token, say, so that the token would be burned — is then outvoted
- * or, failing that, nothing is signed.
+ * The same hosts, grouped by who runs them: what a second opinion is asked
+ * of, when `NODES_THAT_MUST_AGREE` is more than one.
  */
 export const CHRONIK_OPERATORS: readonly (readonly string[])[] = [
     ['https://chronik1.ecashlive.net'],
@@ -33,12 +30,22 @@ export const CHRONIK_OPERATORS: readonly (readonly string[])[] = [
 /** How many independently run nodes must give the same answer before a sweep is signed or sent: 1 = the node the page is talking to, with the others as its fail-over. */
 export const NODES_THAT_MUST_AGREE = 1;
 
+/** Told when a call to a node ran out of time. */
+const stalled = new Set<() => void>();
+/** The same hosts with the first one moved to the end. Pure. */
+export function nextHostFirst(hosts: readonly string[]): string[] {
+    return hosts.length < 2 ? [...hosts] : [...hosts.slice(1), hosts[0]!];
+}
+
 /** No call to a node waits longer than this: a node that accepts and never answers must not hang the page. */
 const CALL_TIMEOUT_MS = 10_000;
 function timed<T>(p: Promise<T>, ms: number = CALL_TIMEOUT_MS): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         // The `code` makes it read as "no node could be reached" (`isOffline`).
-        const t = setTimeout(() => reject(Object.assign(new Error('The node did not answer in time'), { code: 'ETIMEDOUT' })), ms);
+        const t = setTimeout(() => {
+            for (const fn of [...stalled]) fn();
+            reject(Object.assign(new Error('The node did not answer in time'), { code: 'ETIMEDOUT' }));
+        }, ms);
         p.then(
             v => {
                 clearTimeout(t);
@@ -170,10 +177,24 @@ function packageAddress(address: string): string {
 export function createChronikChain(opts: { client?: ChronikLike; peers?: readonly ChronikLike[]; agree?: number } = {}): Chain {
     const need = opts.agree ?? NODES_THAT_MUST_AGREE;
     let client: ChronikLike | undefined = opts.client;
+    // The library moves to the next host when one fails, not when one accepts a call and never answers. A call
+    // that ran out of time therefore puts the next host first for the calls after it (at most once in a while,
+    // so that several calls timing out together move on by one host, not by several).
+    let hosts = [...CHRONIK_HOSTS];
+    let movedAt = 0;
     const getClient = (): ChronikLike => {
-        if (client === undefined) client = new ChronikClient([...CHRONIK_HOSTS]);
+        if (client === undefined) client = new ChronikClient([...hosts]);
         return client;
     };
+    if (opts.client === undefined) {
+        stalled.add(() => {
+            const now = Date.now();
+            if (now - movedAt < 5_000) return;
+            movedAt = now;
+            hosts = nextHostFirst(hosts);
+            client = undefined;
+        });
+    }
     // One client per operator: inside a group it may fail over, never across groups.
     let peers: readonly ChronikLike[] | undefined = opts.peers ?? (opts.client === undefined ? undefined : [opts.client, opts.client]);
     const getPeers = (): readonly ChronikLike[] => {
@@ -448,7 +469,7 @@ export function createChronikChain(opts: { client?: ChronikLike; peers?: readonl
                 v => JSON.stringify(v, (_k, x: unknown) => (typeof x === 'bigint' ? `${x}n` : x)),
             );
         try {
-            if (need < 2) return await verdictOf(getClient(), rawTx);
+            if (need < 2) return await timed(verdictOf(getClient(), rawTx), 8_000);
             try {
                 return await ask();
             } catch {

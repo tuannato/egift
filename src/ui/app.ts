@@ -59,13 +59,14 @@ export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () =>
                 const st = history.state as { gift?: string; from?: string } | null;
                 // The create screen was one step into the shop: go back out of it, so no dead entry is left behind.
                 if (!hasFragment() && st?.gift === 'create' && st.from === 'shop') history.back();
-                else if (hasFragment() || st?.gift) history.replaceState(null, '', location.pathname + location.search);
+                // A gift's address carries its wrapper as the path; the shop's own address is the root.
+                else if (hasFragment() || st?.gift) history.replaceState(null, '', '/' + location.search);
                 route = { kind: 'home' };
                 render();
             },
             toCreate() {
                 // One step into the shop: Back comes out again. The address itself does not change.
-                if (hasFragment()) history.replaceState({ gift: 'create' }, '', location.pathname + location.search);
+                if (hasFragment()) history.replaceState({ gift: 'create' }, '', '/' + location.search);
                 else if ((history.state as { gift?: string } | null)?.gift !== 'create') history.pushState({ gift: 'create', from: 'shop' }, '', location.pathname + location.search);
                 route = { kind: 'create' };
                 render();
@@ -168,7 +169,7 @@ export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () =>
                     type: 'button',
                     class: 'btn btn-secondary btn-small',
                     onclick: () => {
-                        void copyText(onCreate ? location.origin + location.pathname : location.href).then(ok => {
+                        void copyText(onCreate ? location.origin + '/' : location.href).then(ok => {
                             note.textContent = ok ? t('link.copied') : t('link.copyfail');
                         });
                     },
@@ -204,7 +205,9 @@ export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () =>
     function render(): void {
         // A screen change cross-fades where the browser can, never with reduced motion and never on the first paint.
         const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-        if (!first && typeof doc.startViewTransition === 'function' && !prefersReducedMotion() && document.visibilityState === 'visible') {
+        // Not on a phone either: the fade takes a picture of the whole page, twice, and a phone has little room for it.
+        const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+        if (!first && !touch && typeof doc.startViewTransition === 'function' && !prefersReducedMotion() && document.visibilityState === 'visible') {
             // The page must change even if the browser never runs the transition's callback: paint at most once, whichever comes first.
             let painted = false;
             const once = () => {

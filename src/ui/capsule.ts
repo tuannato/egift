@@ -110,7 +110,7 @@ export function makeCapsule(children: (Node | null | undefined | false)[], kind?
         if (!target || target === el) return;
         setTimeout(() => {
             const top = target.offsetTop - 14;
-            if (typeof scroller.scrollTo === 'function') scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            if (typeof scroller.scrollTo === 'function') scroller.scrollTo({ top: Math.max(0, top), behavior: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
             else scroller.scrollTop = Math.max(0, top);
         }, 380);
     });

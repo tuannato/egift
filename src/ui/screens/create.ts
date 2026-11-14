@@ -483,6 +483,13 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                   previewBtn,
               )
             : null;
+    // The chosen case is brought into view once the strip is on the page (it was chosen before the strip existed).
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+            const on = tabs.find(tab => tab.getAttribute('aria-checked') === 'true');
+            if (!disposed && on && strip && typeof strip.scrollTo === 'function') strip.scrollTo({ left: on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2, behavior: 'auto' });
+        });
+    }
 
     const truths = h(
         'div',

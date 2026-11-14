@@ -33,11 +33,8 @@ export const WISH_MAX_BYTES = 180;
 export const RIDDLE_MAX_BYTES = 120;
 
 /**
- * Rounds of PBKDF2-SHA256 between a riddle's answer and the key. Measured
- * 2026-11-12 with the browser's own PBKDF2 on one core of an Apple A18 Pro:
- * about 45 ms a guess. Not measured on a phone. So ten thousand guesses (a
- * four-digit answer) take about eight minutes on one core: the lock stops
- * someone who happens to see the link, not someone who sets a machine to it.
+ * Rounds of PBKDF2-SHA256 between a riddle's answer and the key: slow enough
+ * that opening takes a moment, on purpose.
  */
 export const RIDDLE_ROUNDS = 600_000;
 
