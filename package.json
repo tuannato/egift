@@ -1,0 +1,46 @@
+{
+  "name": "gift",
+  "private": true,
+  "license": "MIT",
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a",
+  "engines": {
+    "node": "22.22.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/wrap-art.mjs && tsc -p tsconfig.json --noEmit && vite build && node scripts/share-pages.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "art:check": "node scripts/wrap-art.mjs"
+  },
+  "dependencies": {
+    "chronik-client": "file:vendor/chronik-client-4.3.1.tgz",
+    "ecash-lib": "file:vendor/ecash-lib-4.13.0.tgz",
+    "ecashaddrjs": "file:vendor/ecashaddrjs-2.0.0.tgz",
+    "@noble/hashes": "file:vendor/noble-hashes-2.3.0.tgz",
+    "qrcode-generator": "file:vendor/qrcode-generator-1.4.4.tgz"
+  },
+  "devDependencies": {
+    "happy-dom": "18.0.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "3.2.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "b58-ts": "file:vendor/b58-ts-0.1.0.tgz",
+      "chronik-client": "file:vendor/chronik-client-4.3.1.tgz",
+      "ecash-lib": "file:vendor/ecash-lib-4.13.0.tgz",
+      "ecashaddrjs": "file:vendor/ecashaddrjs-2.0.0.tgz",
+      "@noble/hashes": "file:vendor/noble-hashes-2.3.0.tgz",
+      "qrcode-generator": "file:vendor/qrcode-generator-1.4.4.tgz"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "protobufjs"
+    ]
+  }
+}

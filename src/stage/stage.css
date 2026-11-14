@@ -1,0 +1,32 @@
+/* The stage: a fixed-aspect box that clips its layers. Geometry is set inline per wrapper. */
+.stage {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    contain: layout paint style;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.stage-layer,
+.stage-particle {
+    position: absolute;
+    display: block;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.stage-particle {
+    display: none;
+}
+
+/* Blend modes of the layers stay inside the stage. */
+.stage {
+    isolation: isolate;
+}

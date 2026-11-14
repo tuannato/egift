@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="vi">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="referrer" content="no-referrer" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="theme-color" content="#0A0C11" />
+        <title>eGift</title>
+        <meta name="description" content="eCash, wrapped into a link. Pick a wrapper, put XEC inside, send the link." />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <!-- What a chat app shows for a shared link. This is the card of the site itself. A gift link carries its wrapper's id as its path, and the build writes one page per wrapper with that wrapper's card (scripts/share-pages.mjs). The part after # never reaches a server: no server knows which gift it is, only which wrapper. -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="eGift" />
+        <meta property="og:title" content="eGift — eCash, wrapped into a link" />
+        <meta property="og:description" content="Pick a wrapper, put XEC inside, send the link. Whoever opens it takes the money home." />
+        <meta property="og:url" content="https://egift.cash/" />
+        <meta property="og:image" content="https://egift.cash/og.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+    </head>
+    <body>
+        <div id="app"></div>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>

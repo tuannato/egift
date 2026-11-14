@@ -1,0 +1,32 @@
+/* The listening room: dev server only. Plain, large, thumb-sized. */
+.listen {
+    max-width: 720px; margin: 0 auto; padding: 28px max(16px, env(safe-area-inset-right)) 64px max(16px, env(safe-area-inset-left));
+    color: #f4f1ea; font: 400 16px / 1.5 var(--text, system-ui, sans-serif);
+}
+.listen-title { margin: 0 0 8px; font: 700 30px / 1.1 var(--display, system-ui, sans-serif); }
+.listen-lead { margin: 0 0 18px; color: #b9b3a6; }
+.listen h2 { margin: 0 0 6px; font-size: 19px; font-weight: 650; }
+.listen-sec { margin-top: 26px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.listen-sec > p { margin: 0 0 12px; color: #cfc9bb; }
+.listen-bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 0; background: #0b0c10; }
+.listen-status { margin: 0; flex: 1 1 200px; font-size: 14px; color: #f2c162; }
+.listen-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.listen-btn {
+    min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; cursor: pointer;
+    background: rgba(255, 255, 255, 0.1); color: inherit; font: 600 15px / 1 inherit; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+.listen-btn:hover { background: rgba(255, 255, 255, 0.17); }
+.listen-btn:focus-visible { outline: 2px solid #f2c162; outline-offset: 2px; }
+.listen-btn--main { background: #f4f1ea; color: #14151a; }
+.listen-btn--main:hover { background: #ffffff; }
+.listen-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.listen-row { display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.listen-name { margin: 0; font-size: 17px; font-weight: 650; }
+.listen-fb { display: flex; flex-wrap: wrap; gap: 8px; }
+.listen-mark, .listen-note, .listen-out {
+    min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.22);
+    background: #14151a; color: inherit; font: 400 15px / 1.4 inherit;
+}
+.listen-note { flex: 1 1 200px; min-width: 0; }
+.listen-out { width: 100%; box-sizing: border-box; margin-top: 12px; font-family: var(--mono, ui-monospace, monospace); font-size: 13px; }
+.listen-link { display: inline-flex; align-items: center; text-decoration: none; }

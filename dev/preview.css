@@ -1,0 +1,8 @@
+/* Dev-only page: a wrapper alone on the stage, frozen at a time, or a contact sheet. */
+html, body { margin: 0; background: #f7f6f2; font: 13px ui-monospace, Menlo, monospace; color: #17171a; }
+#root { padding: 16px; }
+.one { width: 358px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 0 0 1px #e3e1da, 0 18px 40px -22px rgba(0,0,0,.35); }
+.sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.cell { border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px #e3e1da; background: #fff; }
+.cap { padding: 6px 10px; }
+.err { white-space: pre-wrap; color: #b3261e; padding: 16px; }

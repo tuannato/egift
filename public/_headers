@@ -1,0 +1,48 @@
+# Cloudflare Pages response headers. Vite copies public/ into dist/.
+#
+# Not nginx: no quotes around values, no trailing semicolon, no "always".
+#
+# Pages MERGES every rule whose path matches, rather than letting the most
+# specific one win. Cache-Control therefore cannot live on /*: that glob also
+# matches /assets/*, and no-store merged into immutable wins, so the hashed
+# assets would silently lose their cache. Keep Cache-Control on its own paths.
+#
+# style-src 'self' forbids inline styles: the frame uses no style="" attribute
+# and no <style> element. Setting single properties from script
+# (el.style.setProperty) is CSSOM and is not blocked.
+# img-src names one outside host, icons.etokens.cash, for token icons only
+# (src/ui/tokens.ts says when one is asked for).
+# connect-src names the six chronik hosts, https:// for reads and wss:// for
+# the live feed, and nothing else. src/ui/csp.test.ts holds this line to that.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' https://icons.etokens.cash; font-src 'self'; object-src 'none'; frame-src 'none'; worker-src 'none'; media-src 'none'; manifest-src 'self'; connect-src 'self' https://chronik.e.cash https://chronik-native1.fabien.cash https://chronik-native2.fabien.cash https://chronik-native3.fabien.cash https://chronik.pay2stay.com https://chronik1.ecashlive.net wss://chronik.e.cash wss://chronik-native1.fabien.cash wss://chronik-native2.fabien.cash wss://chronik-native3.fabien.cash wss://chronik.pay2stay.com wss://chronik1.ecashlive.net; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=(), display-capture=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=63072000
+
+# The document. Never cached: only the document points at the current hashes.
+/
+  Cache-Control: no-store
+
+# Hashed filenames, so the bytes at a URL never change.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The share card: fetched by chat apps to draw a link's preview, some of them from their own pages.
+# It is a public picture, so it alone may be embedded elsewhere (`!` takes the inherited header off first).
+/og.png
+  ! Cross-Origin-Resource-Policy
+  Cross-Origin-Resource-Policy: cross-origin
+  Cache-Control: public, max-age=86400
+
+# Each wrapper's own share card (scripts/og-cards.mjs draws them; scripts/share-pages.mjs points a page at each).
+/og/*
+  ! Cross-Origin-Resource-Policy
+  Cross-Origin-Resource-Policy: cross-origin
+  Cache-Control: public, max-age=86400
+
