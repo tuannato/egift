@@ -7,7 +7,7 @@ Site: <https://egift.cash> · Licence: MIT · Status: **beta — use small amoun
 ## How it works
 
 - **The link is the gift.** A gift link carries a 16-byte secret after the `#`. The browser turns it into a key and an eCash address; the giver funds that address from their own wallet (Cashtab). Whoever holds the link can sweep the address to a wallet of theirs.
-- **No server, no account.** The site is static files. The part of a link after `#` never reaches any server. Your browser keeps the language you chose and, only by your own press, a short record of a gift; nothing else is stored anywhere.
+- **No server, no account.** The site is static files. The part of a link after `#` never reaches any server. Your browser keeps the language you chose and, only by your own press, your favourite wrappers and a short record of a gift; nothing else is stored anywhere.
 - **The chain is read through public Chronik nodes** listed in `src/core/chain/chronik.ts`. The site's Content-Security-Policy allows those hosts, one host for token icons, and nothing else.
 - **Wrappers** are data: layered SVG, a timeline, a theme and a short tune, checked by a validator. Some wrappers have a price; it is paid to the project inside the transaction that funds the gift, and a gift whose wrapper was not paid for opens in the default wrapper. The money in a gift is never held back.
 

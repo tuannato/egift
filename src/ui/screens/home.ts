@@ -6,7 +6,7 @@ import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
 import { formatXec } from '../../core';
 import type { PackageState } from '../../core';
 import type { WrapperDef } from '../../stage';
-import { h } from '../dom';
+import { h, svg } from '../dom';
 import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
 import { getLang, t } from '../../i18n';
@@ -17,6 +17,7 @@ import { applyTheme, themeTokens } from '../theme';
 import { setAmbient } from '../ambient';
 import { setUserText } from '../text';
 import { fold } from '../layout';
+import { isFav, loadFavs, toggleFav } from '../fav';
 import { ribbon } from '../ribbon';
 import { cue, score } from '../sound';
 import { DEFAULT_CREDIT } from '../plate';
@@ -80,6 +81,12 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         return offer.kind === 'free' ? t('home.price.free') : `${formatXec(offer.sats, lang)} XEC`;
     };
 
+    // ---- Favourites: a heart on the wrapper that is worn, and a filter that leaves only the hearts on the shelf ----
+    const heart = (): SVGElement =>
+        svg('svg', { viewBox: '0 0 24 24', width: 18, height: 18, class: 'heart', 'aria-hidden': 'true', focusable: 'false' }, svg('path', { d: 'M12 20.4s-7.6-4.7-7.6-10.1A4.3 4.3 0 0 1 12 7.5a4.3 4.3 0 0 1 7.6 2.8c0 5.4-7.6 10.1-7.6 10.1z' }));
+    /** Only favourites are on the shelf. Not kept anywhere: a fresh visit shows everything. */
+    let favOnly = false;
+
     // ---- The doors ----
     // A door at rest is a small picture of its wrapper, closed (public/thumbs, drawn by scripts/og-cards.mjs): one
     // image, fetched when it nears the view. Only the door that is worn carries the live scene. A shelf of live
@@ -96,7 +103,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         art.style.setProperty('--ar', String(def.size[0] / def.size[1]));
         const name = h('span', { class: 'door-name' });
         setUserText(name, inLang(def.name, lang));
-        const tag = h('div', { class: 'door-tag', 'aria-hidden': 'true' }, name, h('span', { class: 'door-price' }, price(def)));
+        const tag = h('div', { class: 'door-tag', 'aria-hidden': 'true' }, name, h('span', { class: 'door-price' }, price(def)), h('span', { class: 'door-heart' }, heart()));
         const btn = h('button', {
             type: 'button',
             class: 'door-btn',
@@ -246,6 +253,32 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         ctx.nav.toCreate();
     }
 
+    /** The heart of the wrapper that is worn. */
+    function favButton(def: WrapperDef): HTMLElement {
+        const on = isFav(def.id);
+        const b = h('button', { type: 'button', class: 'home-fav', 'aria-pressed': String(on), 'aria-label': t(on ? 'home.fav.remove' : 'home.fav.add') }, heart());
+        b.addEventListener('click', () => {
+            toggleFav(def.id);
+            cue.touch();
+            // The last heart taken off ends the filter: an empty shelf helps nobody.
+            if (loadFavs().length === 0) favOnly = false;
+            sync();
+        });
+        return b;
+    }
+    /** "Favourites (3)": pressed, the shelf shows only those. Not offered until there is one. */
+    function favFilter(): HTMLElement | null {
+        const count = loadFavs().filter(id => wrapperById(id) !== undefined).length;
+        if (count === 0) return null;
+        const b = h('button', { type: 'button', class: 'chip home-fav-only', 'aria-pressed': String(favOnly) }, heart(), h('span', null, t('home.fav.only', { n: String(count) })));
+        b.addEventListener('click', () => {
+            favOnly = !favOnly;
+            cue.touch();
+            sync();
+        });
+        return b;
+    }
+
     function shelf(): Node[] {
         const def = worn ? wrapperById(worn) : undefined;
         if (!def) {
@@ -254,6 +287,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 h('p', { class: 'lead' }, t('home.lead')),
                 h('p', { class: 'guide home-hint' }, ribbon('bow'), h('span', null, t('home.hint'))),
                 h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.go')),
+                ...[favFilter()].filter((x): x is HTMLElement => x !== null),
                 cards(),
             ];
         }
@@ -281,11 +315,12 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             play.textContent = previewing ? t('home.preview.reset') : t('home.preview.play');
         });
         return [
-            h('p', { class: 'label home-kicker' }, h('span', null, t('home.index', { n, total: WRAPPERS.length })), h('span', { class: 'home-price' }, price(def))),
+            h('p', { class: 'label home-kicker' }, h('span', null, t('home.index', { n, total: WRAPPERS.length })), h('span', { class: 'home-kicker-end' }, favButton(def), h('span', { class: 'home-price' }, price(def)))),
             name,
             def.blurb ? blurb : null,
             h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.use')),
             h('div', { class: 'home-row' }, play, h('button', { type: 'button', class: 'btn btn-quiet home-all', onclick: () => wear(null) }, t('home.all')), by),
+            favFilter(),
             cards(),
         ].filter((x): x is HTMLElement => x !== null);
     }
@@ -511,9 +546,15 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     function sync(): void {
         const def = worn ? wrapperById(worn) : undefined;
         doorsEl.dataset.worn = worn ? 'yes' : 'no';
+        const favs = new Set(loadFavs());
+        doorsEl.dataset.favOnly = favOnly ? 'yes' : 'no';
         for (const d of doors) {
             const on = d.def.id === worn;
             d.el.dataset.state = worn === null ? 'even' : on ? 'open' : 'spine';
+            const fav = favs.has(d.def.id);
+            d.el.dataset.fav = fav ? 'yes' : 'no';
+            // Under the filter only the hearts stay on the shelf, and the wrapper that is worn whatever it is.
+            d.el.hidden = favOnly && !fav && !on;
             d.btn.setAttribute('aria-pressed', String(on));
             // The door that is worn is always mounted: its scene is what "see it open" plays.
             if (on && !d.live) remount(d);

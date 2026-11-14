@@ -34,11 +34,19 @@ describe('source hygiene', () => {
         expect(/location|\.hash\b|secret\b|\.sk\b|decodeFragment|encodeLink|\.link\b/.test(s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).toBe(false);
     });
 
+    it('the file that keeps favourite wrappers writes one named key, wrapper ids only, and never looks at a gift', () => {
+        const f = sources.find(x => x.endsWith('ui/fav.ts'))!;
+        const s = readFileSync(f, 'utf8');
+        expect(s).toContain("const FAV_KEY = 'gift.fav';");
+        expect(s.match(/localStorage\.\w+\(([^,)]+)/g)?.every(c => c.endsWith('(FAV_KEY'))).toBe(true);
+        expect(/location|\.hash\b|secret\b|\.sk\b|decodeFragment|encodeLink|\.link\b|address|sats/.test(s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).toBe(false);
+    });
+
     it('no source file writes to storage except the language and the kept gifts, and none uses style attributes', () => {
         for (const f of sources) {
             const s = readFileSync(f, 'utf8');
             expect(/sessionStorage|indexedDB|document\.cookie/.test(s), f).toBe(false);
-            if (!f.endsWith('i18n/index.ts') && !f.endsWith('ui/kept.ts')) expect(/localStorage/.test(s), f).toBe(false);
+            if (!f.endsWith('i18n/index.ts') && !f.endsWith('ui/kept.ts') && !f.endsWith('ui/fav.ts')) expect(/localStorage/.test(s), f).toBe(false);
             expect(/cssText|\bstyle:\s*['"`]|setAttribute\(\s*['"]style/.test(s), f).toBe(false);
             expect(/console\./.test(s), f).toBe(false);
         }

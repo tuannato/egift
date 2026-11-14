@@ -397,6 +397,29 @@ describe('buying a wrapper', () => {
         expect(document.documentElement.dataset.wears).toBe('mecha');
     });
 
+    it('a heart keeps a wrapper as a favourite in this browser, and the filter leaves only the hearts on the shelf', () => {
+        app = boot(undefined, { stay: true });
+        expect(app.root.querySelector('.home-fav-only')).toBeNull();
+        (door(app, 'snowbox').querySelector('.door-btn') as HTMLButtonElement).click();
+        const fav = (): HTMLButtonElement => app!.root.querySelector('.home-fav') as HTMLButtonElement;
+        expect(fav().getAttribute('aria-pressed')).toBe('false');
+        fav().click();
+        expect(fav().getAttribute('aria-pressed')).toBe('true');
+        // Wrapper ids, and nothing else.
+        expect(localStorage.getItem('gift.fav')).toBe('["snowbox"]');
+        expect(door(app, 'snowbox').dataset.fav).toBe('yes');
+        const only = app.root.querySelector('.home-fav-only') as HTMLButtonElement;
+        expect(only.textContent).toBe(t('home.fav.only', { n: '1' }));
+        only.click();
+        expect(door(app, 'snowbox').hidden).toBe(false);
+        expect(door(app, 'lixi').hidden).toBe(true);
+        // The last heart taken off ends the filter and empties the key.
+        fav().click();
+        expect(localStorage.getItem('gift.fav')).toBeNull();
+        expect(door(app, 'lixi').hidden).toBe(false);
+        expect(app.root.querySelector('.home-fav-only')).toBeNull();
+    });
+
     it('the mark goes home: at once from the shop, after a question from a gift', async () => {
         const chain = createDemoChain();
         const secret = newSecret();

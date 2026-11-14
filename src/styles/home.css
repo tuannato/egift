@@ -190,3 +190,26 @@
     }
 }
 @keyframes shelf-nudge { 0%, 78%, 100% { translate: 0 0; } 86% { translate: 7px 0; } 93% { translate: 0 0; } }
+
+/* ---------- Favourites ---------- */
+.heart { display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.home-kicker-end { display: inline-flex; align-items: center; gap: 8px; }
+/* The heart of the wrapper that is worn: a press fills it. */
+.home-fav {
+    appearance: none; -webkit-appearance: none; width: 40px; height: 40px; margin: -8px 0; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+    display: inline-grid; place-items: center; background: transparent; color: var(--dim); transition: color 160ms linear, transform 180ms var(--spring);
+}
+.home-fav:hover { color: var(--ink); }
+.home-fav:active { transform: scale(0.9); }
+.home-fav[aria-pressed="true"] { color: #d6344a; }
+.home-fav[aria-pressed="true"] .heart { fill: currentColor; }
+.home-fav:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The filter: one chip; pressed, the shelf keeps only the hearts. */
+.home-fav-only { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; width: max-content; }
+.home-fav-only .heart { width: 16px; height: 16px; color: #d6344a; fill: currentColor; }
+.home-fav-only[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+/* A favourite door carries a small heart on its tag. */
+.door-heart { display: none; color: #ff6b7d; }
+.door-heart .heart { width: 12px; height: 12px; fill: currentColor; stroke: none; }
+.door[data-fav="yes"] .door-heart { display: block; }
+.door[hidden] { display: none; }

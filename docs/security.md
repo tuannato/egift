@@ -14,8 +14,8 @@ eGift is beta software: use small amounts.
 - The site is static. The fragment never reaches a server. No key exists
   before "Create" is pressed, and no key, link, secret or wallet address is
   written to storage, a request, a title or a log. Browser storage holds the
-  chosen language and, only by the person's own press, short records of gifts
-  kept or sent (never a link).
+  chosen language and, only by the person's own press, a list of favourite
+  wrappers and short records of gifts kept or sent (never a link).
 - The chain is read through the public Chronik nodes listed in
   `src/core/chain/chronik.ts`; the Content-Security-Policy allows those hosts
   and one host for token icons, nothing else.
