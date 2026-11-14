@@ -367,6 +367,36 @@ describe('buying a wrapper', () => {
         expect(main(app).textContent).not.toContain('500');
     });
 
+    it('a-slow-chain-is-not-a-verdict: the page looks again, and the paid wrapper is put on while the gift is still closed', async () => {
+        setOfferForDev('mecha', offer);
+        const chain = createDemoChain();
+        const { key, frag } = mechaLink();
+        chain.fund(key.address, 8888n, stamped(key.pkh));
+        // The node cannot say what is behind the coin, for now.
+        const real = chain.detail!.bind(chain);
+        let down = true;
+        chain.detail = async id => {
+            if (down) throw new Error('no answer');
+            return real(id);
+        };
+        history.replaceState(null, '', '/' + frag);
+        app = boot(chain);
+        await flush(12);
+        // Not known yet: the default wrapper stands in, and the gift is there to open.
+        expect(document.documentElement.dataset.wears).toBe('signal');
+        expect(main(app).querySelector('.slide')).not.toBeNull();
+        // The node answers again; the page's next quiet look (two seconds on) finds the payment.
+        down = false;
+        await new Promise(r => setTimeout(r, 2300));
+        await flush(12);
+        expect(document.documentElement.dataset.wears).toBe('mecha');
+        expect(main(app).querySelector('.slide')).not.toBeNull();
+        // Seen paid once, it stays dressed when the screen is drawn again (a language change).
+        app.stop();
+        app = boot(chain);
+        expect(document.documentElement.dataset.wears).toBe('mecha');
+    });
+
     it('a-paid-wrapper-is-never-shown-before-its-stamp-is-read', async () => {
         setOfferForDev('mecha', offer);
         const chain = createDemoChain();

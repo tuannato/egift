@@ -228,10 +228,16 @@ function freeWrapper(link: PackageLink): WrapperDef | undefined {
  * in. Either way the gift opens: the money never waits on a wrapper, and this
  * screen never offers to pay for one.
  */
+/** Gifts this page has already seen paid for (by address): a language change, or the gift being taken, does not undress them. Memory only. */
+const ENTITLED = new Set<string>();
+/** After the first answer, how long to wait before each further look when the chain could not say. */
+const ENTITLE_RETRIES_MS = [2000, 6000, 15000];
+
 function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: PackageKey): Dispose {
     const wanted = wrapperById(link.wrapper);
     const offer = wanted ? offerOf(wanted) : ({ kind: 'free' } as const);
     if (!wanted || offer.kind === 'free') return openPackage(root, ctx, link, key, wanted ?? wrapperById(DEFAULT_WRAPPER));
+    if (ENTITLED.has(key.address)) return openPackage(root, ctx, link, key, wanted);
     const fallback = wrapperById(DEFAULT_WRAPPER);
     const card = stageCard(fallback);
     root.append(
@@ -243,26 +249,53 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
     );
     let gone = false;
     let inner: Dispose = () => card.destroy();
-    void (async () => {
-        let paid = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    /** `paid`, `unpaid` (a verdict: stop asking), or `unknown` (the chain could not say in time). */
+    const ask = async (budgetMs: number): Promise<'paid' | 'unpaid' | 'unknown'> => {
         try {
             const s = await ctx.chain.read(key.address);
-            if (s.kind === 'funded') {
-                // Four seconds at most: the gift never waits long on a wrapper.
-                const e = await entitlement({ chain: ctx.chain, coins: s.coins, wrapper: wanted.id, pkh: key.pkh, offer, budgetMs: 4000 });
-                paid = e === 'paid' || e === 'owned';
-            }
+            // An empty or taken package has no coins to read a payment from: nothing more to learn.
+            if (s.kind !== 'funded') return 'unpaid';
+            const e = await entitlement({ chain: ctx.chain, coins: s.coins, wrapper: wanted.id, pkh: key.pkh, offer, budgetMs });
+            return e === 'paid' || e === 'owned' ? 'paid' : e === 'unpaid' ? 'unpaid' : 'unknown';
         } catch {
-            /* the chain could not be asked: the default wrapper, and the gift's own screen says what is wrong */
+            return 'unknown';
         }
-        if (gone) return;
+    };
+    const show = (def: WrapperDef | undefined): void => {
         inner();
         destroyCapsules();
         clear(root);
-        inner = openPackage(root, ctx, link, key, paid ? wanted : fallback);
+        inner = openPackage(root, ctx, link, key, def);
+    };
+    /** The gift is still closed and nothing has been pressed: changing its wrapper now interrupts nobody. */
+    const untouched = (): boolean => root.querySelector('.slide:not(.is-done)') !== null;
+    const again = (n: number): void => {
+        const wait = ENTITLE_RETRIES_MS[n];
+        if (gone || wait === undefined) return;
+        timer = setTimeout(() => {
+            void ask(12000).then(v => {
+                if (gone) return;
+                if (v === 'paid') {
+                    ENTITLED.add(key.address);
+                    // Shown at once while the gift is still closed; otherwise from the next time this screen is drawn.
+                    if (untouched()) show(wanted);
+                } else if (v === 'unknown') again(n + 1);
+            });
+        }, wait);
+    };
+    void (async () => {
+        // Four seconds at most before something is shown: the gift never waits long on a wrapper.
+        const v = await ask(4000);
+        if (gone) return;
+        if (v === 'paid') ENTITLED.add(key.address);
+        show(v === 'paid' ? wanted : fallback);
+        // A slow network is not a verdict: the page looks again a few times, quietly.
+        if (v === 'unknown') again(0);
     })();
     return () => {
         gone = true;
+        if (timer !== undefined) clearTimeout(timer);
         inner();
     };
 }
