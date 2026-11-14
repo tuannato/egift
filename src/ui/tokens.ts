@@ -9,7 +9,7 @@
  * - a token amount is never dressed as an XEC amount, and a ticker that
  *   looks like XEC is called out.
  */
-import { formatAtoms } from '../core';
+import { formatAtoms } from '../core/money';
 import type { GiftToken, TokenMeta } from '../core';
 import { h } from './dom';
 import { getLang, t } from '../i18n';

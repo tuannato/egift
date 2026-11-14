@@ -1,4 +1,4 @@
-import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, decodeFragment, deriveKey, encodeLink, entitlement, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
+import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, deriveKey, encodeLink, entitlement, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
 import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from '../../core';
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
@@ -74,14 +74,6 @@ function fmtTime(sec: number): string {
 }
 
 /** Parse a fragment the way the router does. Exposed for the router. */
-export function linkFromHash(hash: string): PackageLink | null {
-    try {
-        return decodeFragment(hash);
-    } catch {
-        return null;
-    }
-}
-
 function invalidPage(root: HTMLElement, ctx: Ctx): Dispose {
     // An empty plate: no wrapper, nothing to open.
     const card = stageCard(undefined);

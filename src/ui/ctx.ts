@@ -4,6 +4,8 @@ import type { Chain, DemoChain } from '../core';
 export interface DemoCtx {
     readonly chain: DemoChain;
     readonly params: URLSearchParams;
+    /** Where the demo's address asks to start (`src/ui/demo.ts`), worked out before the app starts. */
+    readonly first?: 'created' | 'create' | null;
 }
 
 export interface Ctx {

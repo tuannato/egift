@@ -1,4 +1,3 @@
-import { numberMarks } from './money';
 import { toHex } from 'ecash-lib';
 import { isMovableToken } from './tokenTx';
 import type { Chain, Coin, TokenKind } from './types';
@@ -111,17 +110,4 @@ export async function giftTokens(p: { chain: Pick<Chain, 'detail' | 'everSpent'>
     return [...out.filter(t => t.origin === 'giver'), ...out.filter(t => t.origin === 'other')];
 }
 
-/**
- * A token amount as text: atoms with the token's decimals and the language's
- * own separators. The caller never shows it in the style of an XEC amount.
- */
-export function formatAtoms(atoms: bigint, decimals: number, lang: string): string {
-    const d = Number.isInteger(decimals) && decimals >= 0 && decimals <= 9 ? decimals : 0;
-    const neg = atoms < 0n;
-    const digits = (neg ? -atoms : atoms).toString().padStart(d + 1, '0');
-    const whole = digits.slice(0, digits.length - d);
-    const frac = d === 0 ? '' : digits.slice(-d).replace(/0+$/, '');
-    const [group, point] = numberMarks(lang);
-    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, group);
-    return (neg ? '-' : '') + grouped + (frac === '' ? '' : point + frac);
-}
+export { formatAtoms } from './money';

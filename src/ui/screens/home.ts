@@ -3,7 +3,7 @@ import { downloadKeepsake, forgetSent, keptRef, keptTokenText, keptWhen, loadKep
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
-import { formatXec } from '../../core';
+import { formatXec } from '../../core/money';
 import type { PackageState } from '../../core';
 import type { WrapperDef } from '../../stage';
 import { h, svg } from '../dom';
@@ -21,7 +21,7 @@ import { isFav, loadFavs, toggleFav } from '../fav';
 import { ribbon } from '../ribbon';
 import { cue, score } from '../sound';
 import { DEFAULT_CREDIT } from '../plate';
-import { chooseWrapper, chosenWrapper } from './create';
+import { chooseWrapper, chosenWrapper } from '../draft';
 
 type View = 'shelf' | 'how' | 'about' | 'workshop' | 'market' | 'kept' | 'sent';
 

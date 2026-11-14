@@ -1,4 +1,5 @@
-import { decodeCashAddress } from 'ecashaddrjs';
+import { parseEcashAddress } from './address';
+export { parseEcashAddress };
 import {
     ALL_BIP143,
     OP_RETURN,
@@ -6,7 +7,6 @@ import {
     Script,
     TxBuilder,
     calcTxFee,
-    fromHex,
     pushBytesOp,
     shaRmd160,
     strToBytes,
@@ -18,28 +18,6 @@ import type { Coin, PackageKey, Sweep, SweepMarker } from './types';
 
 const TXID_RE = /^[0-9a-f]{64}$/;
 
-/** A decoded mainnet `ecash:` P2PKH or P2SH address, or null. */
-export function parseEcashAddress(address: string): { type: 'p2pkh' | 'p2sh'; hash: Uint8Array; address: string } | null {
-    if (typeof address !== 'string') return null;
-    const s = address.trim();
-    if (s.length === 0 || s.length > 120) return null;
-    // A prefixless address is read as `ecash:` only, so the checksum pins the
-    // network: an `etoken:` or testnet address never passes as a destination.
-    // Cashaddr is single-case; a mixed-case string is not an address.
-    if (s !== s.toLowerCase() && s !== s.toUpperCase()) return null;
-    const lower = s.toLowerCase();
-    const full = lower.includes(':') ? lower : `ecash:${lower}`;
-    try {
-        const decoded = decodeCashAddress(full);
-        if (decoded.prefix !== 'ecash') return null;
-        if (decoded.type !== 'p2pkh' && decoded.type !== 'p2sh') return null;
-        const hash = fromHex(decoded.hash);
-        if (hash.length !== 20) return null;
-        return { type: decoded.type, hash, address: full };
-    } catch {
-        return null;
-    }
-}
 
 /** True for a valid `ecash:` P2PKH or P2SH address (prefix optional). False for `etoken:` and anything else. */
 export function isValidDestination(address: string): boolean {

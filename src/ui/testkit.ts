@@ -9,6 +9,7 @@ import { resetBusy } from './busy';
 import { resetFolds } from './layout';
 import type { DemoChain } from '../core';
 import { startApp } from './app';
+import * as ALL from './screens/all';
 import { clearMade } from './session';
 import { initLang, setLang } from '../i18n';
 import type { Lang } from '../i18n';
@@ -66,7 +67,7 @@ export function boot(chain: DemoChain = createDemoChain(), opts: { stay?: boolea
     const root = document.createElement('div');
     root.id = 'app';
     document.body.append(root);
-    const stop = startApp(root, chain);
+    const stop = startApp(root, chain, undefined, ALL);
     if (!opts.stay) (root.querySelector('.screen-home .home-go') as HTMLButtonElement | null)?.click();
     return { root, chain, stop };
 }

@@ -1,5 +1,5 @@
 import { OP_RETURN, Script, pushBytesOp, strToBytes, toHex } from 'ecash-lib';
-import { DUST_SATS, FLOOR_SATS } from './limits';
+import { FLOOR_SATS } from './limits';
 import { parseEcashAddress } from './tx';
 import type { Chain, Coin, TxDetail } from './types';
 
@@ -79,10 +79,8 @@ function scriptHexOf(address: string): string | null {
     return parsed.type === 'p2pkh' ? `76a914${h}88ac` : `a914${h}87`;
 }
 
-/** True when the offer is one the page can honour: a real address and a price a wallet will send. */
-export function isValidOffer(offer: WrapperOffer): boolean {
-    return scriptHexOf(offer.payTo) !== null && typeof offer.sats === 'bigint' && offer.sats >= DUST_SATS;
-}
+import { isValidOffer } from './offer';
+export { isValidOffer };
 
 /**
  * Is this transaction a stamp of `wrapper` for the package `pkh` under

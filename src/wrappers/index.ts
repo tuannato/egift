@@ -1,5 +1,6 @@
 import type { WrapperDef } from '../stage/format';
-import { DEFAULT_WRAPPER, isValidOffer } from '../core';
+import { DEFAULT_WRAPPER } from '../core/limits';
+import { isValidOffer } from '../core/offer';
 import type { WrapperOffer } from '../core';
 import { lixi } from './lixi';
 import { mecha } from './mecha';

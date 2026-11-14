@@ -14,16 +14,8 @@ import { figureWidth } from '../amount';
 import { holdButton } from '../hold';
 import { track } from '../busy';
 
-/** What the person has typed, kept so a language switch does not empty the form. Never the secret. */
-const draft = { amount: '', wish: '', wrapper: '', riddleOn: false, question: '', answer: '', tokenOnly: false, coverFee: false, withToken: false };
-
-/** The wrapper the shop handed over (or the last one picked here). */
-export function chooseWrapper(id: string): void {
-    if (WRAPPERS.some(w => w.id === id)) draft.wrapper = id;
-}
-export function chosenWrapper(): string {
-    return draft.wrapper && WRAPPERS.some(w => w.id === draft.wrapper) ? draft.wrapper : (WRAPPERS.some(w => w.id === DEFAULT_WRAPPER) ? DEFAULT_WRAPPER : (WRAPPERS[0]?.id ?? DEFAULT_WRAPPER));
-}
+import { draft, chooseWrapper, chosenWrapper } from '../draft';
+export { chooseWrapper, chosenWrapper };
 
 /**
  * The giver's own choice to be asked before creating, for this visit. Kept in

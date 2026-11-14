@@ -9,11 +9,8 @@ import { ribbon } from './ribbon';
 import { getMade } from './session';
 import { prefersReducedMotion } from './stageCard';
 import { isBusy, onBusyChange } from './busy';
-import { mountCreate } from './screens/create';
 import { mountHome } from './screens/home';
-import { mountCreated } from './screens/created';
-import { mountPackage, linkFromHash } from './screens/package';
-import { prepareDemo } from './demo';
+import { decodeFragment } from '../core/link';
 import { ambientLayer } from './ambient';
 import { destroyCapsules } from './capsule';
 import { startLight } from './light';
@@ -43,10 +40,26 @@ async function copyText(text: string): Promise<boolean> {
     }
 }
 
-export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () => void {
+/** The screens beyond the shop. Given whole (tests), or as a way to fetch them: then a screen is shown once they have arrived. */
+export interface Screens {
+    mountCreate(root: HTMLElement, ctx: Ctx): Dispose;
+    mountCreated(root: HTMLElement, ctx: Ctx): Dispose;
+    mountPackage(root: HTMLElement, ctx: Ctx, link: PackageLink | null): Dispose;
+}
+export type ScreenSource = Screens | (() => Promise<Screens>);
+
+function linkFromHash(hash: string): PackageLink | null {
+    try {
+        return decodeFragment(hash);
+    } catch {
+        return null;
+    }
+}
+
+export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefined, screens: ScreenSource): () => void {
     let route: Route = chooseRoute();
     if (import.meta.env.DEV && demo) {
-        const first = prepareDemo(demo.chain, demo.params);
+        const first = demo.first ?? null;
         route = first === 'created' ? { kind: 'created' } : first === 'create' ? { kind: 'create' } : chooseRoute();
     }
     let dispose: Dispose = () => {};
@@ -315,14 +328,50 @@ export function startApp(root: HTMLElement, chain: Chain, demo?: DemoCtx): () =>
         root.dataset.screen = r.kind;
         // A screen with a wrapper on stage dresses the page itself (`plate`); the others start from the neutral glass.
         applyTheme(undefined);
-        if (r.kind === 'created') dispose = mountCreated(main, ctx);
-        else if (r.kind === 'package') dispose = mountPackage(main, ctx, r.link);
-        else if (r.kind === 'create') dispose = mountCreate(main, ctx);
-        else dispose = mountHome(main, ctx);
         // There is no page to end with a footer: its three lines close the capsule instead.
-        const foot = root.querySelector('.footer');
-        const inner = main.querySelector('.cap-inner');
-        if (foot && inner) inner.append(foot);
+        const tuck = (): void => {
+            const foot = root.querySelector('.footer');
+            const inner = main.querySelector('.cap-inner');
+            if (foot && inner) inner.append(foot);
+        };
+        const show = (s: Screens): Dispose => (r.kind === 'created' ? s.mountCreated(main, ctx) : r.kind === 'package' ? s.mountPackage(main, ctx, r.link) : s.mountCreate(main, ctx));
+        if (r.kind === 'home') dispose = mountHome(main, ctx);
+        else if (typeof screens !== 'function') dispose = show(screens);
+        else {
+            // The screens are on their way: a line says so, and a failed fetch can be tried again.
+            let gone = false;
+            let inner: Dispose = () => {};
+            const fetchThem = (): void => {
+                clear(main);
+                main.append(h('section', { class: 'screen screen-wait' }, h('p', { class: 'loading' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), h('span', null, t('pkg.loading')))));
+                screens().then(
+                    s => {
+                        if (gone) return;
+                        clear(main);
+                        inner = show(s);
+                        tuck();
+                    },
+                    () => {
+                        if (gone) return;
+                        clear(main);
+                        main.append(
+                            h(
+                                'section',
+                                { class: 'screen screen-wait' },
+                                h('p', { class: 'warning' }, t('pkg.neterr')),
+                                h('button', { type: 'button', class: 'btn btn-secondary', onclick: fetchThem }, t('common.retry')),
+                            ),
+                        );
+                    },
+                );
+            };
+            fetchThem();
+            dispose = () => {
+                gone = true;
+                inner();
+            };
+        }
+        tuck();
     }
 
     const onHash = () => {

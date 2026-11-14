@@ -17,7 +17,7 @@
  * With `i18n/index.ts` (the language), this is the only file that touches
  * storage.
  */
-import { formatAtoms, formatXec } from '../core';
+import { formatAtoms, formatXec } from '../core/money';
 import { localeOf, t } from '../i18n';
 import type { Lang } from '../i18n';
 import { cleanUserText } from './text';
