@@ -105,7 +105,7 @@ describe('the giver dresses the wrapper', () => {
         expect(app.root.querySelector('.showroom .plate')).toBe(stage);
         // The face: three chips showing a figure, the wrapper's own chosen; its own writes nothing.
         const fc = faceChips(app);
-        expect(fc.map(b => b.textContent)).toEqual(['20', '20', '20']);
+        expect(fc.map(b => b.textContent)).toEqual(['20', '20', '20', '20', '20', '20']);
         expect(checked(fc)).toEqual([0]);
         fc[1]!.click();
         expect(page().dataset.face).toBe('tech');

@@ -5,13 +5,14 @@
  * rewrite it. So a recipe is never free text. It is a short string from a
  * closed grammar, each part an index into a list that ships with the page:
  *
- *   1  (c<a-z0-9>)?  (fg|ft|fm)?  (sq)?    fixed order, at least one part
+ *   1  (c<a-z0-9>)?  (f<g|t|m|s|p|b>)?  (sq)?    fixed order, at least one part
  *
  *   c<x>     an accent from the one list every wrapper shares (`a` the first,
  *            `z` the 26th, then `0`..`9`): the colour of the main button and
  *            of the capsule's small accents, never of the art. A letter that
  *            names no accent yet means the wrapper's own.
- *   fg ft fm the face of headings and figures: grotesk, tech, mono
+ *   f<x>     the face of headings and figures: g grotesk, t tech, m mono,
+ *            s serif, p poster (condensed), b slab
  *   sq       quiet: the hand's small sounds only, no opening tune
  *
  * Reading is total: a string that is not exactly of this grammar means "no
@@ -23,7 +24,7 @@
  * added after the old ones; a new first digit starts a new grammar.
  */
 
-export type RecipeFace = 'grotesk' | 'tech' | 'mono';
+export type RecipeFace = 'grotesk' | 'tech' | 'mono' | 'serif' | 'poster' | 'slab';
 
 export interface Recipe {
     /** Which shared accent, counted from 0. Absent: the wrapper's own. */
@@ -34,11 +35,11 @@ export interface Recipe {
     readonly quiet?: true;
 }
 
-const GRAMMAR = /^1(c[a-z0-9])?(f[gtm])?(sq)?$/;
+const GRAMMAR = /^1(c[a-z0-9])?(f[gtmspb])?(sq)?$/;
 /** The 36 places of the shared accent list, in order. */
 const PLACES = 'abcdefghijklmnopqrstuvwxyz0123456789';
-const FACES: Record<string, RecipeFace> = { g: 'grotesk', t: 'tech', m: 'mono' };
-const FACE_CODE: Record<RecipeFace, string> = { grotesk: 'g', tech: 't', mono: 'm' };
+const FACES: Record<string, RecipeFace> = { g: 'grotesk', t: 'tech', m: 'mono', s: 'serif', p: 'poster', b: 'slab' };
+const FACE_CODE: Record<RecipeFace, string> = { grotesk: 'g', tech: 't', mono: 'm', serif: 's', poster: 'p', slab: 'b' };
 
 /** The look a recipe string asks for, or `null` when the string is not a recipe (or asks for nothing). Never throws. */
 export function parseRecipe(text: string | undefined | null): Recipe | null {

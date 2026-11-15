@@ -46,7 +46,7 @@ export function resetCreate(): void {
 const QUICK = [8_800n, 88_800n, 888_800n, 8_888_800n] as const;
 
 /** The faces a giver may set the headings and figures in, in the order the chips stand. */
-const FACES: readonly RecipeFace[] = ['grotesk', 'tech', 'mono'];
+const FACES: readonly RecipeFace[] = ['grotesk', 'tech', 'mono', 'serif', 'poster', 'slab'];
 /** Two colours a glance cannot tell apart (distance in sRGB, of 442): a shared accent this near the wrapper's own is not offered twice. */
 const NEAR = 40;
 function near(a: string, b: string): boolean {

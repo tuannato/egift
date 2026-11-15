@@ -78,7 +78,7 @@ export type Material = 'glass' | 'lacquer' | 'plate' | 'wire';
 /** The frame's geometry: full rounds, small soft corners, or corners cut at 45 degrees. */
 export type Corner = 'round' | 'soft' | 'cut';
 /** The face headings and figures are set in. Running text is always the same readable face. */
-export type Face = 'grotesk' | 'tech' | 'mono';
+export type Face = 'grotesk' | 'tech' | 'mono' | 'serif' | 'poster' | 'slab';
 /** The family of sounds the capsule makes under the hand. */
 export type Voice = 'glass' | 'chime' | 'servo' | 'pulse';
 
@@ -162,7 +162,7 @@ export interface ThemeDef {
 export const THEME_CHOICES = {
     material: ['glass', 'lacquer', 'plate', 'wire'],
     corner: ['round', 'soft', 'cut'],
-    face: ['grotesk', 'tech', 'mono'],
+    face: ['grotesk', 'tech', 'mono', 'serif', 'poster', 'slab'],
     voice: ['glass', 'chime', 'servo', 'pulse'],
 } as const;
 

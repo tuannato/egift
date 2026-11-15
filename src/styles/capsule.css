@@ -354,6 +354,11 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 /* ---------- Face: what headings and figures are set in ---------- */
 :root[data-face="tech"] { --display: 'Tektur', var(--text); --d-weight: 700; --d-track: 0.01em; --d-case: uppercase; --fig-weight: 800; --fig-track: -0.015em; }
 :root[data-face="mono"] { --display: var(--mono); --d-weight: 500; --d-track: -0.045em; --d-case: none; --fig-weight: 300; --fig-track: -0.075em; }
+:root[data-face="serif"] { --display: 'Playfair Display', Georgia, 'Times New Roman', serif; --d-weight: 700; --d-track: -0.01em; --d-case: none; --fig-weight: 700; --fig-track: -0.02em; }
+/* Playfair's default figures are old-style; an amount wants lining ones. On every element, since a `font` shorthand resets the feature. */
+:root[data-face="serif"] * { font-feature-settings: 'lnum' 1; }
+:root[data-face="poster"] { --display: 'Barlow Condensed', var(--text); --d-weight: 600; --d-track: 0.005em; --d-case: none; --fig-weight: 600; --fig-track: 0; }
+:root[data-face="slab"] { --display: 'Roboto Slab', Georgia, serif; --d-weight: 700; --d-track: -0.015em; --d-case: none; --fig-weight: 700; --fig-track: -0.045em; }
 :root[data-face="tech"] .btn-primary { letter-spacing: 0.05em; font-size: 15px; }
 :root[data-face="tech"] .wordmark-name { text-transform: uppercase; letter-spacing: 0.06em; font-size: 14px; }
 :root[data-face="mono"] .btn-primary { letter-spacing: -0.02em; font-weight: 600; }
@@ -981,12 +986,16 @@ button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin:
 .swatch[aria-checked="true"] .swatch-dot { transform: scale(0.8125); }
 :is(.swatch, .face-chip, .look, .look-x):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .faces { gap: 8px; }
-.face-chip { flex: none; min-width: 68px; min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--r-chip); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); color: var(--dim); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.face-chip { flex: 1 1 0; min-width: 44px; max-width: 76px; min-height: 44px; padding: 0 4px; border: 0; border-radius: var(--r-chip); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); color: var(--dim); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .face-chip[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
 /* "20" in each face, as the amount will be set. */
 .face-fig { font: 700 20px / 1 var(--text); letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
 .face-fig[data-face="tech"] { font-family: 'Tektur', var(--text); font-weight: 800; letter-spacing: -0.015em; }
 .face-fig[data-face="mono"] { font-family: var(--mono); font-weight: 300; letter-spacing: -0.075em; }
+.face-fig[data-face="serif"] { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; letter-spacing: -0.02em; font-feature-settings: 'lnum' 1; }
+.face-fig[data-face="poster"] { font-family: 'Barlow Condensed', var(--text); font-weight: 600; letter-spacing: 0; font-size: 23px; }
+.face-fig[data-face="slab"] { font-family: 'Roboto Slab', Georgia, serif; font-weight: 700; letter-spacing: -0.03em; }
+.look .face-fig[data-face="poster"] { font-size: 17px; }
 .check--quiet { align-items: center; padding: 4px 0; font-size: 14px; }
 .dress-saved { display: grid; gap: 10px; justify-items: start; }
 .dress-save { width: auto; min-height: 40px; }

@@ -5,8 +5,8 @@ import { formatRecipe, parseRecipe } from './recipe';
 describe('the recipe: a closed grammar, read totally, written one way', () => {
     it('reads every look the grammar allows, and writes it back the same', () => {
         const all: string[] = [];
-        for (const c of ['', 'ca', 'cz', 'c0', 'c9']) for (const f of ['', 'fg', 'ft', 'fm']) for (const s of ['', 'sq']) if (c + f + s !== '') all.push('1' + c + f + s);
-        expect(all).toHaveLength(39);
+        for (const c of ['', 'ca', 'cz', 'c0', 'c9']) for (const f of ['', 'fg', 'ft', 'fm', 'fs', 'fp', 'fb']) for (const s of ['', 'sq']) if (c + f + s !== '') all.push('1' + c + f + s);
+        expect(all).toHaveLength(69);
         for (const text of all) {
             const r = parseRecipe(text);
             expect(r, text).not.toBeNull();
@@ -14,6 +14,8 @@ describe('the recipe: a closed grammar, read totally, written one way', () => {
         }
         expect(parseRecipe('1cbftsq')).toEqual({ accent: 1, face: 'tech', quiet: true });
         expect(parseRecipe('1ca')).toEqual({ accent: 0 });
+        // The faces, by their letters: these never change meaning.
+        expect(['g', 't', 'm', 's', 'p', 'b'].map(x => parseRecipe('1f' + x)!.face)).toEqual(['grotesk', 'tech', 'mono', 'serif', 'poster', 'slab']);
         expect(parseRecipe('1c9')).toEqual({ accent: 35 });
         expect(parseRecipe('1sq')).toEqual({ quiet: true });
     });

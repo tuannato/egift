@@ -6,7 +6,7 @@ import { themeTokens } from '../ui/theme';
 import { WRAPPERS, wrapperById } from './index';
 import { ACCENTS, accentFor, dressed, toneOf } from './looks';
 
-const FACES: readonly Face[] = ['grotesk', 'tech', 'mono'];
+const FACES: readonly Face[] = ['grotesk', 'tech', 'mono', 'serif', 'poster', 'slab'];
 
 describe('dressing a wrapper', () => {
     it('every wrapper stays valid in every shared accent (in the shade its tone selects) and every face', () => {
