@@ -11,6 +11,8 @@ export interface Made {
     readonly link: string;
     readonly sats: bigint;
     readonly wrapper: string;
+    /** How the giver dressed the wrapper: the recipe that is in the link. Absent for the wrapper as it is. */
+    readonly recipe?: string;
     /** The giver's words, as typed: for the giver's own record of the gift. */
     readonly wish?: string;
     /** The question of the riddle lock, when the gift has one. The answer is not kept. */

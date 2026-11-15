@@ -12,7 +12,7 @@
  * warning, an error and a success for itself.
  */
 import type { ThemeDef, WrapperDef } from '../stage';
-import { READABLE_FLOOR, SIGNALS, contrast, luminance, mix, readableOn } from '../stage';
+import { READABLE_FLOOR, SIGNALS, contrast, mix, readableOn, surfaceTone } from '../stage';
 import { setSound, setVoice } from './sound';
 
 /** The look when no wrapper is on stage. */
@@ -72,7 +72,7 @@ export function themeTokens(def: Pick<WrapperDef, 'theme'> | undefined): ThemeTo
         danger: signal('danger', th.surface),
         warn: signal('warn', th.surface),
         ok: signal('ok', th.surface),
-        tone: luminance(th.surface) > 0.35 ? 'light' : 'dark',
+        tone: surfaceTone(th.surface),
     };
 }
 

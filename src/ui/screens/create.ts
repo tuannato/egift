@@ -1,7 +1,9 @@
 import { applyTheme } from '../theme';
 import type { WrapperDef } from '../../stage';
-import { CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatXec, newSecret, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
+import type { Recipe, RecipeFace } from '../../core';
+import { CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatRecipe, formatXec, newSecret, parseRecipe, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
+import { ACCENTS, accentFor, dressed } from '../../wrappers/looks';
 import { plate } from '../plate';
 import { stageCard, prefersReducedMotion, type StageCard } from '../stageCard';
 import { h } from '../dom';
@@ -9,7 +11,9 @@ import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
 import { getLang, t } from '../../i18n';
 import { setMade } from '../session';
-import { layout, label } from '../layout';
+import { layout, label, fold } from '../layout';
+import { loadLooks, removeLook, saveLook } from '../looks';
+import { cue, score } from '../sound';
 import { figureWidth } from '../amount';
 import { holdButton } from '../hold';
 import { track } from '../busy';
@@ -32,6 +36,7 @@ export function resetCreate(): void {
     draft.withToken = false;
     draft.wish = '';
     draft.wrapper = '';
+    draft.recipe = '';
     draft.riddleOn = false;
     draft.question = '';
     draft.answer = '';
@@ -39,6 +44,15 @@ export function resetCreate(): void {
 
 /** Amounts people like to give, in sats: 88, 888, 8,888 and 88,888 XEC. */
 const QUICK = [8_800n, 88_800n, 888_800n, 8_888_800n] as const;
+
+/** The faces a giver may set the headings and figures in, in the order the chips stand. */
+const FACES: readonly RecipeFace[] = ['grotesk', 'tech', 'mono'];
+/** Two colours a glance cannot tell apart (distance in sRGB, of 442): a shared accent this near the wrapper's own is not offered twice. */
+const NEAR = 40;
+function near(a: string, b: string): boolean {
+    const ch = (c: string, i: number): number => parseInt(c.slice(1 + i * 2, 3 + i * 2), 16);
+    return Math.hypot(ch(a, 0) - ch(b, 0), ch(a, 1) - ch(b, 1), ch(a, 2) - ch(b, 2)) < NEAR;
+}
 
 /**
  * Screen A, a showroom: the stage is the picker (swipe it, or use the names
@@ -51,7 +65,10 @@ const nameOf = (def: { readonly name: Readonly<Record<'vi' | 'en', string>> } | 
 
 export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     const lang = getLang();
-    if (!draft.wrapper || !WRAPPERS.some(w => w.id === draft.wrapper)) draft.wrapper = WRAPPERS.some(w => w.id === DEFAULT_WRAPPER) ? DEFAULT_WRAPPER : (WRAPPERS[0]?.id ?? DEFAULT_WRAPPER);
+    if (!draft.wrapper || !WRAPPERS.some(w => w.id === draft.wrapper)) {
+        draft.wrapper = WRAPPERS.some(w => w.id === DEFAULT_WRAPPER) ? DEFAULT_WRAPPER : (WRAPPERS[0]?.id ?? DEFAULT_WRAPPER);
+        draft.recipe = '';
+    }
 
     // ---- Amount: the giant figure is the input ----
     const amount = h('input', {
@@ -337,10 +354,172 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
               )
             : null;
 
+    // ---- The look: an accent, a face, quiet. Three closed choices, written into the link as a recipe ----
+    const base = (): WrapperDef | undefined => wrapperById(draft.wrapper);
+    /** The chosen wrapper as the giver has dressed it. */
+    const worn = (): WrapperDef | undefined => {
+        const b = base();
+        return b && dressed(b, draft.recipe);
+    };
+    /** A look as the chosen wrapper can wear it, in its one spelling: its own face, an accent the list lacks, a tune it does not have are not written. */
+    const fit = (r: Recipe | null): string => {
+        const b = base();
+        const th = b?.theme;
+        if (!r || !b) return '';
+        return (
+            formatRecipe({
+                ...(th && r.accent !== undefined && accentFor(th, r.accent) ? { accent: r.accent } : {}),
+                ...(th && r.face !== undefined && r.face !== th.face ? { face: r.face } : {}),
+                ...(r.quiet && b.sound?.score ? { quiet: true as const } : {}),
+            }) ?? ''
+        );
+    };
+    draft.recipe = fit(parseRecipe(draft.recipe));
+    const look = (): Recipe => parseRecipe(draft.recipe) ?? {};
+    function setLook(next: Recipe): void {
+        draft.recipe = fit(next);
+        // The frame is dressed again where it stands. The stage is left alone: it shows the art, which a look never
+        // touches. (Quiet changes the sound the frame wears, and with it a tune that was playing ends.)
+        const def = worn();
+        if (def) applyTheme(def);
+        syncDress();
+    }
+    /** A round sample of a colour. */
+    const dot = (colour: string): HTMLElement => {
+        const d = h('span', { class: 'swatch-dot', 'aria-hidden': 'true' });
+        d.style.setProperty('--sw', colour);
+        return d;
+    };
+    /** The figure "20" set in a face: what the face looks like, without a word. */
+    const figure = (face: string): HTMLElement => h('span', { class: 'face-fig', 'data-face': face, 'aria-hidden': 'true' }, '20');
+    /** One of a row of radios: the arrow keys move the choice along the ones in view. */
+    const radio = (row: HTMLElement, cls: string, name: string, pick: () => void, child: HTMLElement): HTMLButtonElement =>
+        h(
+            'button',
+            {
+                type: 'button',
+                class: cls,
+                role: 'radio',
+                'aria-label': name,
+                'aria-checked': 'false',
+                onclick: pick,
+                onkeydown: (e: KeyboardEvent) => {
+                    const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+                    if (!d) return;
+                    e.preventDefault();
+                    const all = [...row.querySelectorAll<HTMLButtonElement>('[role="radio"]')].filter(b => !b.hidden);
+                    const to = all[(all.indexOf(e.currentTarget as HTMLButtonElement) + d + all.length) % all.length];
+                    to?.focus();
+                    to?.click();
+                },
+            },
+            child,
+        );
+    const swatchRow = h('div', { class: 'dress-row swatches', role: 'radiogroup', 'aria-labelledby': 'f-dress-label' });
+    const faceRow = h('div', { class: 'dress-row faces', role: 'radiogroup', 'aria-labelledby': 'f-dress-label' });
+    /** The wrapper's own accent first (`accent` undefined), then the shared ones in the shade this wrapper's tone selects. */
+    let swatches: { el: HTMLButtonElement; accent: number | undefined; near: boolean }[] = [];
+    const faces = FACES.map((face, i) => ({ face, el: radio(faceRow, 'face-chip', t('create.dress.face', { n: i + 1 }), () => setLook({ ...look(), face }), figure(face)) }));
+    faceRow.append(...faces.map(f => f.el));
+    const quietBox = h('input', { id: 'f-quiet', class: 'check-box', type: 'checkbox' });
+    const quietRow = h('label', { class: 'check check--quiet', for: 'f-quiet' }, quietBox, h('span', null, t('create.dress.quiet')));
+    quietBox.addEventListener('change', () => setLook({ ...look(), quiet: quietBox.checked ? true : undefined }));
+    // Looks the person saved, by their own press, to wear again on any wrapper (`ui/looks.ts`).
+    const saveBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-small dress-save' }, t('create.dress.save'));
+    const savedRow = h('div', { class: 'dress-row looks' });
+    let saved: { el: HTMLButtonElement; recipe: string }[] = [];
+    saveBtn.addEventListener('click', () => {
+        if (draft.recipe !== '' && saveLook(draft.recipe)) buildSaved();
+    });
+    function buildSaved(): void {
+        const th = base()?.theme;
+        saved = loadLooks().map((recipe, i) => {
+            const r = parseRecipe(recipe)!;
+            // Shown as this wrapper would wear it: the shade of its tone, its own accent and face where the look names none.
+            const shade = th && r.accent !== undefined ? accentFor(th, r.accent) : undefined;
+            const el = h(
+                'button',
+                { type: 'button', class: 'look', 'aria-label': t('create.dress.saved', { n: i + 1 }), 'aria-pressed': 'false', onclick: () => setLook(r) },
+                dot(shade?.accent ?? th?.accent ?? ''),
+                figure(r.face ?? th?.face ?? 'grotesk'),
+                r.quiet ? h('span', { class: 'look-mute', 'aria-hidden': 'true' }, '♪') : null,
+            );
+            return { el, recipe };
+        });
+        savedRow.replaceChildren(
+            ...saved.map((s, i) =>
+                h(
+                    'span',
+                    { class: 'look-item' },
+                    s.el,
+                    h(
+                        'button',
+                        {
+                            type: 'button',
+                            class: 'look-x',
+                            'aria-label': t('create.dress.remove', { n: i + 1 }),
+                            onclick: () => {
+                                removeLook(s.recipe);
+                                buildSaved();
+                                (saved[Math.min(i, saved.length - 1)]?.el ?? saveBtn).focus();
+                            },
+                        },
+                        h('span', { 'aria-hidden': 'true' }, '×'),
+                    ),
+                ),
+            ),
+        );
+        savedRow.hidden = saved.length === 0;
+        syncDress();
+    }
+    /** The swatches of the chosen wrapper. Built when the wrapper changes; a choice only moves the marks. */
+    function buildDress(): void {
+        const th = base()?.theme;
+        swatches = [];
+        if (th) {
+            swatches.push({ accent: undefined, near: false, el: radio(swatchRow, 'swatch', t('create.dress.own'), () => setLook({ ...look(), accent: undefined }), dot(th.accent)) });
+            ACCENTS.forEach((_, i) => {
+                const shade = accentFor(th, i)!;
+                swatches.push({ accent: i, near: near(shade.accent, th.accent), el: radio(swatchRow, 'swatch', t('create.dress.colour', { n: i + 1 }), () => setLook({ ...look(), accent: i }), dot(shade.accent)) });
+            });
+        }
+        swatchRow.replaceChildren(...swatches.map(s => s.el));
+        buildSaved();
+    }
+    function syncDress(): void {
+        const b = base();
+        const r = look();
+        const mark = (el: HTMLButtonElement, on: boolean): void => {
+            el.setAttribute('aria-checked', String(on));
+            el.tabIndex = on ? 0 : -1;
+        };
+        for (const s of swatches) {
+            mark(s.el, s.accent === r.accent);
+            // Nearly the wrapper's own colour: not offered beside it (a look that already names it still shows it).
+            s.el.hidden = s.near && s.accent !== r.accent;
+        }
+        const face = r.face ?? b?.theme?.face;
+        for (const f of faces) mark(f.el, f.face === face);
+        quietBox.checked = r.quiet === true;
+        // A wrapper with no tune has none to leave out.
+        quietRow.hidden = !b?.sound?.score;
+        for (const s of saved) {
+            const on = draft.recipe !== '' && fit(parseRecipe(s.recipe)) === draft.recipe;
+            s.el.setAttribute('aria-pressed', String(on));
+            s.el.parentElement?.classList.toggle('is-on', on);
+        }
+        saveBtn.disabled = draft.recipe === '' || saved.some(s => s.recipe === draft.recipe);
+    }
+    // Closed until asked for. `&dress=1` (the dev demo) opens it for stills.
+    const dress = fold(h('span', { id: 'f-dress-label' }, t('create.dress.title')), { id: 'create.dress', open: import.meta.env.DEV && ctx.demo?.params.get('dress') === '1' }, swatchRow, faceRow, quietRow, h('div', { class: 'dress-saved' }, saveBtn, savedRow));
+    dress.classList.add('dress');
+
     let strip: HTMLElement | null = null;
     function mountShow(dir: -1 | 0 | 1 = 0): void {
+        // A preview's tune ends with its stage.
+        if (previewing) score.stop();
         show?.destroy();
-        const def = wrapperById(draft.wrapper);
+        const def = worn();
         show = stageCard(def);
         const fig = plate(show, def);
         if (dir !== 0 && !prefersReducedMotion()) fig.classList.add(dir > 0 ? 'car-in-next' : 'car-in-prev');
@@ -352,6 +531,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     function select(id: string, dir: -1 | 0 | 1 = 0, focus = false): void {
         const changed = draft.wrapper !== id;
         draft.wrapper = id;
+        // A look was chosen on one wrapper, seen on it: the next one starts as its maker left it.
+        if (changed) draft.recipe = '';
         tabs.forEach(tab => {
             const on = tab.dataset.id === id;
             tab.setAttribute('aria-checked', String(on));
@@ -361,7 +542,10 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             if (on && strip && typeof strip.scrollTo === 'function') strip.scrollTo({ left: tab.offsetLeft - (strip.clientWidth - tab.offsetWidth) / 2, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         });
         if (changed || !show) mountShow(changed ? dir : 0);
-        if (changed) validate();
+        if (changed) {
+            buildDress();
+            validate();
+        }
     }
     function step(d: -1 | 1, focus = false): void {
         if (WRAPPERS.length < 2) return;
@@ -378,6 +562,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         }
         previewing = true;
         previewBtn.textContent = t('create.preview.reset');
+        // As the gift will sound: the wrapper's tune, or only the small opening sound when the giver chose quiet.
+        cue.open();
         void show.handle.open().catch(() => {});
     });
 
@@ -418,6 +604,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         tabs.push(tab);
     }
     select(draft.wrapper);
+    buildDress();
 
     // Swipe the stage to change wrapper. Vertical scrolling stays the page's.
     let downX = 0;
@@ -473,6 +660,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                   )),
                   priceNote,
                   previewBtn,
+                  dress,
               )
             : null;
     // The chosen case is brought into view once the strip is on the page (it was chosen before the strip existed).
@@ -509,8 +697,10 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 if (disposed) return;
             }
             const key = deriveKey(root);
-            const link = encodeLink({ version: 1, secret, wrapper, wish: text === '' ? undefined : text, riddle }, location.origin);
-            setMade({ secret, key, link, sats, wrapper, riddle, ...(text !== '' ? { wish: text } : {}), ...(tokenOnly ? { tokenOnly: true } : {}), ...(covered > 0n ? { feeCovered: covered } : {}), ...(draft.withToken && !tokenOnly ? { withToken: true } : {}), saved: false });
+            // The look goes into the link in its one spelling, or not at all.
+            const recipe = formatRecipe(parseRecipe(draft.recipe));
+            const link = encodeLink({ version: 1, secret, wrapper, recipe, wish: text === '' ? undefined : text, riddle }, location.origin);
+            setMade({ secret, key, link, sats, wrapper, riddle, ...(recipe !== undefined ? { recipe } : {}), ...(text !== '' ? { wish: text } : {}), ...(tokenOnly ? { tokenOnly: true } : {}), ...(covered > 0n ? { feeCovered: covered } : {}), ...(draft.withToken && !tokenOnly ? { withToken: true } : {}), saved: false });
         } catch {
             working = false;
             if (disposed) return;
@@ -605,6 +795,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         disposed = true;
         seen?.disconnect();
         for (const c of cases) c.card?.destroy();
+        // The tune of a preview does not follow the giver to the next screen.
+        if (previewing) score.stop();
         show?.destroy();
     };
 }

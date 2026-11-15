@@ -2,6 +2,7 @@ import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, deriveKey, 
 import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from '../../core';
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
+import { dressed } from '../../wrappers/looks';
 import type { WrapperDef } from '../../stage';
 import { stageCard, prefersReducedMotion } from '../stageCard';
 import { clear, h, svg } from '../dom';
@@ -241,7 +242,8 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
  * coins have been read and one of them is its stamp; until then, and whenever
  * there is no stamp or the chain cannot be asked, the default wrapper stands
  * in. Either way the gift opens: the money never waits on a wrapper, and this
- * screen never offers to pay for one.
+ * screen never offers to pay for one. The wrapper the link names wears the
+ * look the giver chose for it (`wrappers/looks.ts`); a stand-in never does.
  */
 /** Gifts this page has already seen paid for (by address): a language change, or the gift being taken, does not undress them. Memory only. */
 const ENTITLED = new Set<string>();
@@ -251,8 +253,12 @@ const ENTITLE_RETRIES_MS = [2000, 6000, 15000];
 function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: PackageKey): Dispose {
     const wanted = wrapperById(link.wrapper);
     const offer = wanted ? offerOf(wanted) : ({ kind: 'free' } as const);
-    if (!wanted || offer.kind === 'free') return openPackage(root, ctx, link, key, wanted ?? wrapperById(DEFAULT_WRAPPER));
-    if (ENTITLED.has(key.address)) return openPackage(root, ctx, link, key, wanted);
+    // The look the giver chose (the link's recipe) dresses the wrapper the link names, and only that one: the
+    // default wrapper standing in for it, below, is shown as it is. The recipe is not signed; what it cannot
+    // mean changes nothing.
+    const worn = wanted ? dressed(wanted, link.recipe) : undefined;
+    if (!wanted || offer.kind === 'free') return openPackage(root, ctx, link, key, worn ?? wrapperById(DEFAULT_WRAPPER));
+    if (ENTITLED.has(key.address)) return openPackage(root, ctx, link, key, worn);
     const fallback = wrapperById(DEFAULT_WRAPPER);
     const card = stageCard(fallback);
     root.append(
@@ -301,7 +307,7 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
                 if (v === 'paid') {
                     ENTITLED.add(key.address);
                     // Shown at once while the gift is still closed; otherwise from the next time this screen is drawn.
-                    if (untouched()) show(wanted);
+                    if (untouched()) show(worn);
                 } else if (v === 'unknown') again(n + 1);
             });
         }, wait);
@@ -311,7 +317,7 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
         const v = await ask(4000);
         if (gone) return;
         if (v === 'paid') ENTITLED.add(key.address);
-        show(v === 'paid' ? wanted : fallback);
+        show(v === 'paid' ? worn : fallback);
         // A slow network is not a verdict: the page looks again a few times, quietly.
         if (v === 'unknown') again(0);
     })();

@@ -3,6 +3,7 @@ import type { FundLinks, GiftToken, PackageState, TokenMeta } from '../../core';
 import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
 import { isSentRemembered, rememberSent } from '../kept';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
+import { dressed } from '../../wrappers/looks';
 import { DEFAULT_CREDIT } from '../plate';
 import { stageCard } from '../stageCard';
 import { clear, h, openOut } from '../dom';
@@ -25,7 +26,9 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         return () => {};
     }
     const lang = getLang();
-    const def = wrapperById(made.wrapper) ?? wrapperById(DEFAULT_WRAPPER);
+    // The giver sees the gift as it will open: in the look they chose for this wrapper.
+    const chosen = wrapperById(made.wrapper);
+    const def = chosen ? dressed(chosen, made.recipe) : wrapperById(DEFAULT_WRAPPER);
     const card = stageCard(def);
     const amountText = formatXec(made.sats, lang);
     // A wrapper with a price is paid for inside the transaction that funds the gift (a stamp, `core/stamp.ts`).

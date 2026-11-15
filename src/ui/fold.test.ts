@@ -104,10 +104,15 @@ describe('the fold itself', () => {
 });
 
 describe('no screen folds what must be read', () => {
-    it('the create screen has no fold and no lead paragraph', async () => {
+    it('the create screen folds one thing only, the dressing of the wrapper (a choice, closed, with nothing to be read in it), and has no lead paragraph', async () => {
         app = boot();
         expect(main(app).querySelector('.screen-create')).not.toBeNull();
-        expect(main(app).querySelector('details')).toBeNull();
+        const all = folds(main(app));
+        expect(all).toHaveLength(1);
+        expect(main(app).querySelectorAll('details')).toHaveLength(1);
+        expect(all[0]!.querySelector('summary')!.textContent).toBe(t('create.dress.title'));
+        expect(all[0]!.open).toBe(false);
+        expect(all[0]!.querySelector('.warning, .note, p')).toBeNull();
         expect(main(app).querySelector('.layout-head .lead')).toBeNull();
         expect(main(app).textContent).toContain(t('create.truth.1'));
         expect(foldedSafety()).toEqual([]);

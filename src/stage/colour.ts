@@ -12,6 +12,11 @@ export function luminance(hex: string): number {
     return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255);
 }
 
+/** Whether a surface is a light or a dark one: the one rule the frame and a shared accent's two shades both go by. */
+export function surfaceTone(surface: string): 'light' | 'dark' {
+    return luminance(surface) > 0.35 ? 'light' : 'dark';
+}
+
 /** WCAG contrast ratio of two colours, 1 to 21. */
 export function contrast(a: string, b: string): number {
     const la = luminance(a);

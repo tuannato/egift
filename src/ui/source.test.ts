@@ -42,11 +42,22 @@ describe('source hygiene', () => {
         expect(/location|\.hash\b|secret\b|\.sk\b|decodeFragment|encodeLink|\.link\b|address|sats/.test(s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).toBe(false);
     });
 
-    it('no source file writes to storage except the language and the kept gifts, and none uses style attributes', () => {
+    it('the file that keeps saved looks writes one named key, recipes only, and never looks at a gift or a wrapper', () => {
+        const f = sources.find(x => x.endsWith('ui/looks.ts'))!;
+        const s = readFileSync(f, 'utf8');
+        expect(s).toContain("const LOOKS_KEY = 'gift.looks';");
+        expect(s.match(/localStorage\.\w+\(([^,)]+)/g)?.every(c => c.endsWith('(LOOKS_KEY'))).toBe(true);
+        expect(s.match(/localStorage\.setItem\(/g)?.length).toBe(1);
+        // Whatever goes in or comes out has been through the recipe's own reader and writer.
+        expect(s).toContain('canon(x) === x');
+        expect(/location|\.hash\b|secret\b|\.sk\b|decodeFragment|encodeLink|\.link\b|address|sats|wrapper/i.test(s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).toBe(false);
+    });
+
+    it('no source file writes to storage except the language, the kept gifts, the favourites and the saved looks, and none uses style attributes', () => {
         for (const f of sources) {
             const s = readFileSync(f, 'utf8');
             expect(/sessionStorage|indexedDB|document\.cookie/.test(s), f).toBe(false);
-            if (!f.endsWith('i18n/index.ts') && !f.endsWith('ui/kept.ts') && !f.endsWith('ui/fav.ts')) expect(/localStorage/.test(s), f).toBe(false);
+            if (!f.endsWith('i18n/index.ts') && !f.endsWith('ui/kept.ts') && !f.endsWith('ui/fav.ts') && !f.endsWith('ui/looks.ts')) expect(/localStorage/.test(s), f).toBe(false);
             expect(/cssText|\bstyle:\s*['"`]|setAttribute\(\s*['"]style/.test(s), f).toBe(false);
             expect(/console\./.test(s), f).toBe(false);
         }

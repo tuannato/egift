@@ -966,3 +966,38 @@ button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin:
 @media (min-width: 960px) { .look-btn { display: none; } }
 @media (prefers-reduced-motion: reduce) { .look-btn { transition: none; } }
 .capsule.is-low .cap-clasp, .capsule.is-low::before { display: none; }
+
+/* ---------- Dress the wrapper: an accent, a face, quiet (the create step) ---------- */
+/* It sits inside the themed capsule and is built from the capsule's own variables only, so it reads on every material.
+   A swatch's colour is the one thing set from script (`--sw`). */
+.dress .fold-body { gap: 12px; }
+.dress-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+/* The button is 40px for the finger; the colour in it is 32px, and steps in to make room for the ring when chosen. */
+/* Eight to a row at any width, so the fifteen never leave one alone on a line; on a very narrow phone they shrink together. */
+.swatches { display: grid; grid-template-columns: repeat(8, minmax(0, 40px)); justify-content: space-between; gap: 6px 0; max-width: 440px; }
+.swatch { width: 100%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 999px; background: transparent; display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.swatch-dot { display: block; width: 80%; aspect-ratio: 1; border-radius: 999px; background: var(--sw); box-shadow: inset 0 0 0 1px var(--line); transition: transform 160ms var(--spring); }
+.swatch[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
+.swatch[aria-checked="true"] .swatch-dot { transform: scale(0.8125); }
+:is(.swatch, .face-chip, .look, .look-x):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.faces { gap: 8px; }
+.face-chip { flex: none; min-width: 68px; min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--r-chip); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); color: var(--dim); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.face-chip[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+/* "20" in each face, as the amount will be set. */
+.face-fig { font: 700 20px / 1 var(--text); letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+.face-fig[data-face="tech"] { font-family: 'Tektur', var(--text); font-weight: 800; letter-spacing: -0.015em; }
+.face-fig[data-face="mono"] { font-family: var(--mono); font-weight: 300; letter-spacing: -0.075em; }
+.check--quiet { align-items: center; padding: 4px 0; font-size: 14px; }
+.dress-saved { display: grid; gap: 10px; justify-items: start; }
+.dress-save { width: auto; min-height: 40px; }
+.looks { gap: 8px; }
+.look-item { display: inline-flex; align-items: stretch; border-radius: var(--r-chip); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+.look-item.is-on { box-shadow: inset 0 0 0 2px var(--ink); }
+.look, .look-x { border: 0; background: transparent; cursor: pointer; border-radius: var(--r-chip); -webkit-tap-highlight-color: transparent; }
+.look { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px 0 10px; color: var(--ink); }
+.look .swatch-dot { width: 20px; }
+.look .face-fig { font-size: 15px; }
+.look-mute { font: 500 13px / 1 var(--text); color: var(--mute); text-decoration: line-through; }
+.look-x { width: 36px; padding: 0; color: var(--mute); font: 400 18px / 1 var(--text); }
+.look-x:hover { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .swatch-dot { transition: none; } }

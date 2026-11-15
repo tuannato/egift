@@ -6,6 +6,7 @@ import { DEFAULT_WRAPPER, deriveKey, encodeLink, parseXec, riddleRoot, stampOpRe
 import type { DemoChain } from '../core';
 import { clearMade, setMade } from './session';
 import { chooseWrapper } from './screens/create';
+import { draft } from './draft';
 import { setOfferForDev } from '../wrappers';
 
 /** Read the demo query. Returns what the router should show first. */
@@ -14,6 +15,9 @@ export function prepareDemo(chain: DemoChain, params: URLSearchParams): 'created
     const lang = params.get('lang') === 'vi' ? 'vi' : 'en';
     const wrapper = params.get('wrapper') ?? DEFAULT_WRAPPER;
     const sats = parseXec(params.get('amount') ?? '88.88') ?? 8888n;
+    // `&recipe=1cdft`: the look the giver chose, as it rides in the link (`core/recipe.ts`). Anything a link could carry is passed on.
+    const asked = params.get('recipe') ?? '';
+    const recipe = /^[A-Za-z0-9_-]{1,64}$/.test(asked) ? asked : undefined;
     // `&price=5`: put a price (in XEC) on the wrapper, paid to a made-up maker. `&stamped=1`: the demo funding pays it.
     const maker = deriveKey(new Uint8Array(16).fill(0x33));
     const price = parseXec(params.get('price') ?? '');
@@ -32,9 +36,9 @@ export function prepareDemo(chain: DemoChain, params: URLSearchParams): 'created
 
     if (params.get('screen') === 'created') {
         const key = deriveKey(DEMO_SECRET);
-        const link = encodeLink({ version: 1, secret: DEMO_SECRET, wrapper }, location.origin);
+        const link = encodeLink({ version: 1, secret: DEMO_SECRET, wrapper, recipe }, location.origin);
         clearMade();
-        setMade({ secret: DEMO_SECRET, key, link, sats, wrapper, saved: params.get('saved') === '1' });
+        setMade({ secret: DEMO_SECRET, key, link, sats, wrapper, ...(recipe !== undefined ? { recipe } : {}), saved: params.get('saved') === '1' });
         if (params.get('funded') === '1') chain.fund(key.address, sats, stampTx(key.pkh));
         // `&token=alp|nft`: the giver's token is already in the package (the token step and the holding bar show it).
         const kind = params.get('token');
@@ -60,7 +64,7 @@ export function prepareDemo(chain: DemoChain, params: URLSearchParams): 'created
         const wish = params.has('wish') ? (params.get('wish') ?? '') : sample;
         // `&riddle=1`: a locked gift. The question is in the link; the answer is "mèo".
         const riddle = params.get('riddle') === '1' ? (lang === 'vi' ? 'Con gì kêu meo meo?' : 'What says meow?') : undefined;
-        const link = encodeLink({ version: 1, secret: DEMO_SECRET, wrapper, wish: wish === '' ? undefined : wish, riddle }, location.origin);
+        const link = encodeLink({ version: 1, secret: DEMO_SECRET, wrapper, recipe, wish: wish === '' ? undefined : wish, riddle }, location.origin);
         const fund = (address: string, pkh: Uint8Array = key.pkh): void => {
             if (state === 'funded' || state === 'taken') chain.fund(address, sats, stampTx(pkh));
             // `&token=alp|slp|nft`: the giver's token rides along. `&spam=1`: a stranger's token too.
@@ -89,6 +93,8 @@ export function prepareDemo(chain: DemoChain, params: URLSearchParams): 'created
     }
     if (params.get('screen') === 'create') {
         chooseWrapper(wrapper);
+        // The create step keeps of it what this wrapper can wear, in its one spelling.
+        draft.recipe = recipe ?? '';
         return 'create';
     }
     return 'home';
