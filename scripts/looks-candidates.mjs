@@ -366,6 +366,6 @@ it('writes the candidate colourways', () => {
 `,
     );
     writeFileSync(join(dir, 'vitest.config.mjs'), `import { defineConfig } from 'vitest/config';\nexport default defineConfig({ root: ${JSON.stringify(root)}, test: { environment: 'node', include: ['*.test.ts'], dir: ${JSON.stringify(dir)} } });\n`);
-    const r = spawnSync(join(root, 'node_modules/.bin/vitest'), ['run', '--config', join(dir, 'vitest.config.mjs'), '--root', root], { cwd: root, stdio: 'inherit' });
+    const r = spawnSync(join(root, 'node_modules/.bin/vitest'), ['run', '--config', join(dir, 'vitest.config.mjs'), '--root', root, 'gen.test.ts'], { cwd: root, stdio: 'inherit' });
     process.exit(r.status ?? 1);
 }
