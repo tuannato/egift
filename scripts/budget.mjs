@@ -9,7 +9,7 @@
  *   - each wrapper's pictures: its small still, its share card, its art
  *   - the number of files the host is given
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
@@ -38,6 +38,11 @@ const rules = readFileSync('dist/_headers', 'utf8').split('\n').filter(l => /^\/
 const files = walk('dist');
 const lines = [`shop code, gzipped: ${check('shop code (gzip)', entry, LIMITS.entryGzip)}`, `_headers rules: ${check('_headers rules', rules, LIMITS.headerRules, 'n')}`, `files: ${check('files in dist', files.length, LIMITS.files, 'n')}`];
 for (const id of readdirSync('dist/wrappers')) {
+    // A wrapper that is not on the shelf (the lock of a riddle gift) has art and nothing else.
+    if (!existsSync(`dist/thumbs/${id}.jpg`)) {
+        check(`art of ${id}`, walk(`dist/wrappers/${id}`).reduce((s, f) => s + statSync(f).size, 0), LIMITS.art);
+        continue;
+    }
     const art = walk(`dist/wrappers/${id}`).reduce((s, f) => s + statSync(f).size, 0);
     check(`art of ${id}`, art, LIMITS.art);
     check(`thumbnail of ${id}`, statSync(`dist/thumbs/${id}.jpg`).size, LIMITS.thumb);

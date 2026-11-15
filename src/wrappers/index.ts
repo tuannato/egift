@@ -28,6 +28,15 @@ import { paperbag } from './paperbag';
 import { archmoon } from './archmoon';
 
 /** The built-in wrappers, in the order the picker shows them. */
+import { lock } from './lock';
+
+/**
+ * The wrapper of a locked gift, before its riddle is answered: whatever the
+ * giver chose is shown only after the right answer. It is not on the shelf,
+ * cannot be picked or named by a link, and has no price.
+ */
+export const LOCK_WRAPPER: WrapperDef = lock;
+
 export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon];
 
 export function wrapperById(id: string): WrapperDef | undefined {

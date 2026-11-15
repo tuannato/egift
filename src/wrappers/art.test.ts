@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { WRAPPERS } from './index';
+import { WRAPPERS as SHELF, LOCK_WRAPPER } from './index';
+
+// The art of every wrapper that ships: the shelf, and the hidden lock of a riddle gift.
+const WRAPPERS = [...SHELF, LOCK_WRAPPER];
 import { wrapperProblems } from '../stage/validate';
 // @ts-expect-error plain JS module without types
 import { sanitizeSvg } from '../../scripts/svg-allow.mjs';

@@ -1,7 +1,7 @@
 import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, deriveKey, encodeLink, entitlement, isStamp, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
 import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from '../../core';
 import { otherTokens, tokenCard } from '../tokens';
-import { offerOf, wrapperById, inLang } from '../../wrappers';
+import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
 import type { WrapperDef } from '../../stage';
 import { stageCard } from '../stageCard';
 import { clear, h } from '../dom';
@@ -107,8 +107,9 @@ function invalidPage(root: HTMLElement, ctx: Ctx): Dispose {
  *   the two cannot be told apart, and the screen says so).
  */
 function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: (key: PackageKey) => void): Dispose {
-    // Before an answer nothing can be read from the chain, so a paid wrapper cannot have been checked: the free one stands in.
-    const def = freeWrapper(link);
+    // Before an answer nothing can be read from the chain: not what the gift holds, not whether its wrapper was paid
+    // for. Every locked gift therefore wears the same wrapper, a lock; the giver's own comes after the answer.
+    const def = LOCK_WRAPPER;
     const card = stageCard(def);
     let disposed = false;
     let working = false;
@@ -149,6 +150,14 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         submit.textContent = t('pkg.riddle.submit');
         if (outcome === 'right' && key) {
             unlocked.set(secretId(link.secret), key);
+            // The lock turns and opens (a second and a half at most), then the gift's own wrapper takes the stage.
+            cue.open();
+            try {
+                await Promise.race([card.handle?.open() ?? Promise.resolve(), new Promise(res => setTimeout(res, 2200))]);
+            } catch {
+                /* the gift is shown whether or not the lock could be played */
+            }
+            if (disposed) return;
             onUnlocked(key);
             return;
         }
@@ -224,12 +233,6 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         disposed = true;
         card.destroy();
     };
-}
-
-/** The wrapper a link names when it is free to show; otherwise the default one. */
-function freeWrapper(link: PackageLink): WrapperDef | undefined {
-    const wanted = wrapperById(link.wrapper);
-    return wanted && offerOf(wanted).kind === 'free' ? wanted : wrapperById(DEFAULT_WRAPPER);
 }
 
 /**
