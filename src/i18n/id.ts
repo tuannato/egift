@@ -106,6 +106,8 @@ export const id: Record<keyof typeof vi, string> = {
     'create.dress.own': "Warna asli bungkus",
     'create.dress.colour': "Warna {n}",
     'create.dress.face': "Huruf {n}",
+    'create.dress.art.own': "Warna asli gambar",
+    'create.dress.art': "Warna gambar {n}",
     'create.dress.quiet': "Tanpa lagu pembuka",
     'create.dress.save': "Simpan gaya ini",
     'create.dress.saved': "Gaya tersimpan {n}",

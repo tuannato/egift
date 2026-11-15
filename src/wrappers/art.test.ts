@@ -10,6 +10,8 @@ import { wrapperProblems } from '../stage/validate';
 import { sanitizeSvg } from '../../scripts/svg-allow.mjs';
 // @ts-expect-error plain JS module without types
 import { svgFiles } from '../../scripts/wrap-art.mjs';
+import { colourwaysOf, dressed } from './looks';
+import { formatRecipe } from '../core/recipe';
 
 const PUBLIC = join(process.cwd(), 'public', 'wrappers');
 
@@ -34,6 +36,10 @@ describe('wrapper art', () => {
                 expect(existsSync(p), p).toBe(true);
                 named.add(p);
             }
+            // The pictures of its colourways are named by the wrapper as each colourway dresses it.
+            colourwaysOf(w.id).forEach((_, art) => {
+                for (const l of dressed(w, formatRecipe({ art })).layers) named.add(join(PUBLIC, w.id, l.art));
+            });
         }
         for (const f of svgFiles(PUBLIC) as string[]) expect(named.has(f), `${f} is not named by any wrapper`).toBe(true);
     });

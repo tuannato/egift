@@ -984,8 +984,17 @@ button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin:
 .swatch-dot { display: block; width: 80%; aspect-ratio: 1; border-radius: 999px; background: var(--sw); box-shadow: inset 0 0 0 1px var(--line); transition: transform 160ms var(--spring); }
 .swatch[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
 .swatch[aria-checked="true"] .swatch-dot { transform: scale(0.8125); }
-:is(.swatch, .face-chip, .look, .look-x):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+:is(.swatch, .face-chip, .art-chip, .look, .look-x):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .faces { gap: 8px; }
+.arts { gap: 8px; }
+.art-chip { flex: none; width: 56px; height: 44px; padding: 5px; border: 0; border-radius: var(--r-chip); background: none; box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.art-chip[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
+.art-tile { display: block; width: 100%; height: 100%; border-radius: calc(var(--r-chip) - 4px); background: var(--sw); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+/* The look, seen as it is chosen: an amount in the face, the main button in the accent. A picture, not controls. */
+.dress-sample { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border-radius: var(--r-chip); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.dress-sample-fig { font: var(--fig-weight) 30px / 1.1 var(--display); letter-spacing: var(--fig-track); font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.dress-sample-unit { font: 500 11px / 1 var(--mono); letter-spacing: 0.12em; color: var(--dim); }
+.dress-sample-btn { margin-left: auto; align-self: center; padding: 11px 14px; border-radius: var(--r-chip); background: var(--accent); color: var(--on-accent); font: var(--d-weight) 13px / 1 var(--display); letter-spacing: var(--d-track); text-transform: var(--d-case); white-space: nowrap; }
 .face-chip { flex: 1 1 0; min-width: 44px; max-width: 76px; min-height: 44px; padding: 0 4px; border: 0; border-radius: var(--r-chip); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); color: var(--dim); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .face-chip[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
 /* "20" in each face, as the amount will be set. */

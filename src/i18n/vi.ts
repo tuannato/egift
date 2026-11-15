@@ -104,6 +104,8 @@ export const vi = {
     'create.dress.own': 'Màu gốc của vỏ',
     'create.dress.colour': 'Màu {n}',
     'create.dress.face': 'Kiểu chữ {n}',
+    'create.dress.art.own': 'Màu gốc của hình',
+    'create.dress.art': 'Màu hình {n}',
     'create.dress.quiet': 'Không nhạc mở quà',
     'create.dress.save': 'Lưu kiểu này',
     'create.dress.saved': 'Kiểu đã lưu {n}',

@@ -106,6 +106,8 @@ export const de: Record<keyof typeof vi, string> = {
     'create.dress.own': "Die eigene Farbe der Hülle",
     'create.dress.colour': "Farbe {n}",
     'create.dress.face': "Schrift {n}",
+    'create.dress.art.own': "Eigene Farben des Bildes",
+    'create.dress.art': "Bildfarben {n}",
     'create.dress.quiet': "Keine Melodie beim Öffnen",
     'create.dress.save': "Diesen Look speichern",
     'create.dress.saved': "Gespeicherter Look {n}",

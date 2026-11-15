@@ -132,6 +132,61 @@ describe('the giver dresses the wrapper', () => {
         expect(localStorage.length).toBe(0);
     });
 
+    it('a wrapper with colourways offers them; one puts up a new stage in other colours, rides in the link, and is not part of a saved look', async () => {
+        app = boot();
+        const arts = (a: Booted) => [...dress(a).querySelectorAll('.art-chip')] as HTMLButtonElement[];
+        // Most wrappers have none, and show no such row.
+        pick(app, 'lixi');
+        expect(arts(app)).toHaveLength(0);
+        expect((dress(app).querySelector('.arts') as HTMLElement).hidden).toBe(true);
+        // The sample of the look is a picture: nothing in it can be pressed or is read out.
+        const sample = dress(app).querySelector('.dress-sample') as HTMLElement;
+        expect(sample.getAttribute('aria-hidden')).toBe('true');
+        expect(sample.querySelector('button, a, input')).toBeNull();
+        pick(app, 'snowbox');
+        const chips = arts(app);
+        expect(chips).toHaveLength(3);
+        expect(chips.map(c => c.getAttribute('aria-label'))).toEqual([t('create.dress.art.own'), t('create.dress.art', { n: 1 }), t('create.dress.art', { n: 2 })]);
+        expect(checked(chips)).toEqual([0]);
+        const stage = app.root.querySelector('.showroom .plate');
+        chips[2]!.click();
+        expect(checked(arts(app))).toEqual([2]);
+        // The art is other pictures: a new stage, and the page wears the colourway's ground.
+        expect(app.root.querySelector('.showroom .plate')).not.toBe(stage);
+        expect(token('--th-ground')).toBe('#1D0F22');
+        expect(token('--th-accent')).toBe(snowbox.theme!.accent);
+        // The first swatch is still "the wrapper's own", and the shared ones are as before.
+        expect(swatches(app)).toHaveLength(1 + ACCENTS.length);
+        swatches(app)[4]!.click();
+        expect(token('--th-accent')).toBe('#0074C2');
+        expect(checked(arts(app))).toEqual([2]);
+        // Saved without the colourway: a saved look is for every wrapper, a colourway for one.
+        saveBtn(app).click();
+        expect(loadLooks()).toEqual(['1cd']);
+        expect(savedLooks(app)[0]!.getAttribute('aria-pressed')).toBe('true');
+        // Wearing a saved look keeps the colourway chosen.
+        swatches(app)[0]!.click();
+        savedLooks(app)[0]!.click();
+        expect(checked(arts(app))).toEqual([2]);
+        expect(checked(swatches(app))).toEqual([4]);
+        await createGift(app.root, '20', 'hi');
+        expect(getMade()!.link.endsWith('.snowbox.1cdab.aGk')).toBe(true);
+    });
+
+    it('a colourway that changes the wrapper\'s own accent changes the page accent and the first swatch with it', () => {
+        app = boot();
+        pick(app, 'fold');
+        const fold = wrapperById('fold')!;
+        expect(token('--th-accent')).toBe(fold.theme!.accent);
+        ([...dress(app).querySelectorAll('.art-chip')] as HTMLButtonElement[])[1]!.click();
+        expect(token('--th-accent')).toBe('#5E8CE2');
+        expect((swatches(app)[0]!.firstElementChild as HTMLElement).style.getPropertyValue('--sw')).toBe('#5E8CE2');
+        expect(checked(swatches(app))).toEqual([0]);
+        // A look that names a colourway is not a saved look, whoever wrote it into storage.
+        localStorage.setItem('gift.looks', JSON.stringify(['1aa', '1cd', '1cdab']));
+        expect(loadLooks()).toEqual(['1cd']);
+    });
+
     it('an undressed wrapper writes no recipe; going back to the own colour and face takes it out again', async () => {
         app = boot();
         pick(app, 'lixi');

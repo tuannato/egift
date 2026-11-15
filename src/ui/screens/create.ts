@@ -3,7 +3,7 @@ import type { WrapperDef } from '../../stage';
 import type { Recipe, RecipeFace } from '../../core';
 import { CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatRecipe, formatXec, newSecret, parseRecipe, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
-import { ACCENTS, accentFor, dressed } from '../../wrappers/looks';
+import { ACCENTS, COLOURWAYS, accentFor, colourwaysOf, dressed } from '../../wrappers/looks';
 import { plate } from '../plate';
 import { stageCard, prefersReducedMotion, type StageCard } from '../stageCard';
 import { h } from '../dom';
@@ -371,19 +371,29 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 ...(th && r.accent !== undefined && accentFor(th, r.accent) ? { accent: r.accent } : {}),
                 ...(th && r.face !== undefined && r.face !== th.face ? { face: r.face } : {}),
                 ...(r.quiet && b.sound?.score ? { quiet: true as const } : {}),
+                ...(r.art !== undefined && colourwaysOf(b.id)[r.art] ? { art: r.art } : {}),
             }) ?? ''
         );
     };
     draft.recipe = fit(parseRecipe(draft.recipe));
     const look = (): Recipe => parseRecipe(draft.recipe) ?? {};
     function setLook(next: Recipe): void {
+        const before = look().art;
         draft.recipe = fit(next);
-        // The frame is dressed again where it stands. The stage is left alone: it shows the art, which a look never
-        // touches. (Quiet changes the sound the frame wears, and with it a tune that was playing ends.)
+        // The frame is dressed again where it stands. The stage is left alone unless the art itself changes colourway:
+        // then its pictures are other files, and the swatches start from another colour of the wrapper's own.
+        // (Quiet changes the sound the frame wears, and with it a tune that was playing ends.)
+        if (look().art !== before) {
+            mountShow();
+            buildDress();
+            return;
+        }
         const def = worn();
         if (def) applyTheme(def);
         syncDress();
     }
+    /** A look without its colourway: what is saved, since a colourway belongs to one wrapper and a saved look to all. */
+    const plainOf = (recipe: string): string => formatRecipe({ ...(parseRecipe(recipe) ?? {}), art: undefined }) ?? '';
     /** A round sample of a colour. */
     const dot = (colour: string): HTMLElement => {
         const d = h('span', { class: 'swatch-dot', 'aria-hidden': 'true' });
@@ -417,6 +427,24 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         );
     const swatchRow = h('div', { class: 'dress-row swatches', role: 'radiogroup', 'aria-labelledby': 'f-dress-label' });
     const faceRow = h('div', { class: 'dress-row faces', role: 'radiogroup', 'aria-labelledby': 'f-dress-label' });
+    // The colourways of the art: only a few wrappers have any (`wrappers/looks.ts`).
+    const artRow = h('div', { class: 'dress-row arts', role: 'radiogroup', 'aria-labelledby': 'f-dress-label' });
+    let arts: { el: HTMLButtonElement; art: number | undefined }[] = [];
+    /** A square sample of a colourway: the art's own colour that stands for it. */
+    const tile = (colour: string): HTMLElement => {
+        const d = h('span', { class: 'art-tile', 'aria-hidden': 'true' });
+        d.style.setProperty('--sw', colour);
+        return d;
+    };
+    // What the look does to the gift's card, shown as it is chosen: an amount in the face, the main button in the accent.
+    // A picture of them, not the things: it cannot be pressed and says nothing to a screen reader.
+    const sample = h(
+        'div',
+        { class: 'dress-sample', 'aria-hidden': 'true' },
+        h('span', { class: 'dress-sample-fig' }, formatXec(123456n, lang)),
+        h('span', { class: 'dress-sample-unit' }, 'XEC'),
+        h('span', { class: 'dress-sample-btn' }, t('pkg.take')),
+    );
     /** The wrapper's own accent first (`accent` undefined), then the shared ones in the shade this wrapper's tone selects. */
     let swatches: { el: HTMLButtonElement; accent: number | undefined; near: boolean }[] = [];
     const faces = FACES.map((face, i) => ({ face, el: radio(faceRow, 'face-chip', t('create.dress.face', { n: i + 1 }), () => setLook({ ...look(), face }), figure(face)) }));
@@ -429,17 +457,23 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     const savedRow = h('div', { class: 'dress-row looks' });
     let saved: { el: HTMLButtonElement; recipe: string }[] = [];
     saveBtn.addEventListener('click', () => {
-        if (draft.recipe !== '' && saveLook(draft.recipe)) buildSaved();
+        const plain = plainOf(draft.recipe);
+        if (plain !== '' && saveLook(plain)) buildSaved();
     });
+    /** The theme the looks start from: the wrapper's, in the colourway chosen (its own accent is that colourway's). */
+    const ownTheme = (): WrapperDef['theme'] => {
+        const b = base();
+        return (b && look().art !== undefined ? dressed(b, formatRecipe({ art: look().art })) : b)?.theme;
+    };
     function buildSaved(): void {
-        const th = base()?.theme;
+        const th = ownTheme();
         saved = loadLooks().map((recipe, i) => {
             const r = parseRecipe(recipe)!;
             // Shown as this wrapper would wear it: the shade of its tone, its own accent and face where the look names none.
             const shade = th && r.accent !== undefined ? accentFor(th, r.accent) : undefined;
             const el = h(
                 'button',
-                { type: 'button', class: 'look', 'aria-label': t('create.dress.saved', { n: i + 1 }), 'aria-pressed': 'false', onclick: () => setLook(r) },
+                { type: 'button', class: 'look', 'aria-label': t('create.dress.saved', { n: i + 1 }), 'aria-pressed': 'false', onclick: () => setLook({ ...r, art: look().art }) },
                 dot(shade?.accent ?? th?.accent ?? ''),
                 figure(r.face ?? th?.face ?? 'grotesk'),
                 r.quiet ? h('span', { class: 'look-mute', 'aria-hidden': 'true' }, '♪') : null,
@@ -474,7 +508,17 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     }
     /** The swatches of the chosen wrapper. Built when the wrapper changes; a choice only moves the marks. */
     function buildDress(): void {
-        const th = base()?.theme;
+        const b = base();
+        const th = ownTheme();
+        const ways = b ? colourwaysOf(b.id) : [];
+        arts = ways.length
+            ? [
+                  { art: undefined, el: radio(artRow, 'art-chip', t('create.dress.art.own'), () => setLook({ ...look(), art: undefined }), tile(COLOURWAYS[b!.id]!.own)) },
+                  ...ways.map((w, i) => ({ art: i, el: radio(artRow, 'art-chip', t('create.dress.art', { n: i + 1 }), () => setLook({ ...look(), art: i }), tile(w.chip)) })),
+              ]
+            : [];
+        artRow.replaceChildren(...arts.map(a => a.el));
+        artRow.hidden = arts.length === 0;
         swatches = [];
         if (th) {
             swatches.push({ accent: undefined, near: false, el: radio(swatchRow, 'swatch', t('create.dress.own'), () => setLook({ ...look(), accent: undefined }), dot(th.accent)) });
@@ -498,20 +542,21 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             // Nearly the wrapper's own colour: not offered beside it (a look that already names it still shows it).
             s.el.hidden = s.near && s.accent !== r.accent;
         }
+        for (const a of arts) mark(a.el, a.art === r.art);
         const face = r.face ?? b?.theme?.face;
         for (const f of faces) mark(f.el, f.face === face);
         quietBox.checked = r.quiet === true;
         // A wrapper with no tune has none to leave out.
         quietRow.hidden = !b?.sound?.score;
         for (const s of saved) {
-            const on = draft.recipe !== '' && fit(parseRecipe(s.recipe)) === draft.recipe;
+            const on = plainOf(draft.recipe) !== '' && plainOf(fit(parseRecipe(s.recipe))) === plainOf(draft.recipe);
             s.el.setAttribute('aria-pressed', String(on));
             s.el.parentElement?.classList.toggle('is-on', on);
         }
-        saveBtn.disabled = draft.recipe === '' || saved.some(s => s.recipe === draft.recipe);
+        saveBtn.disabled = plainOf(draft.recipe) === '' || saved.some(s => s.recipe === plainOf(draft.recipe));
     }
     // Closed until asked for. `&dress=1` (the dev demo) opens it for stills.
-    const dress = fold(h('span', { id: 'f-dress-label' }, t('create.dress.title')), { id: 'create.dress', open: import.meta.env.DEV && ctx.demo?.params.get('dress') === '1' }, swatchRow, faceRow, quietRow, h('div', { class: 'dress-saved' }, saveBtn, savedRow));
+    const dress = fold(h('span', { id: 'f-dress-label' }, t('create.dress.title')), { id: 'create.dress', open: import.meta.env.DEV && ctx.demo?.params.get('dress') === '1' }, sample, artRow, swatchRow, faceRow, quietRow, h('div', { class: 'dress-saved' }, saveBtn, savedRow));
     dress.classList.add('dress');
 
     let strip: HTMLElement | null = null;

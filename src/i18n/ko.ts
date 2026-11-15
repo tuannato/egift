@@ -106,6 +106,8 @@ export const ko: Record<keyof typeof vi, string> = {
     'create.dress.own': "포장 본래의 색",
     'create.dress.colour': "색 {n}",
     'create.dress.face': "글씨체 {n}",
+    'create.dress.art.own': "그림의 원래 색",
+    'create.dress.art': "그림 색 {n}",
     'create.dress.quiet': "열 때 음악 없음",
     'create.dress.save': "이 모양 저장",
     'create.dress.saved': "저장한 모양 {n}",

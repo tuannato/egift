@@ -106,6 +106,8 @@ export const ru: Record<keyof typeof vi, string> = {
     'create.dress.own': "Собственный цвет обёртки",
     'create.dress.colour': "Цвет {n}",
     'create.dress.face': "Шрифт {n}",
+    'create.dress.art.own': "Исходные цвета рисунка",
+    'create.dress.art': "Цвета рисунка {n}",
     'create.dress.quiet': "Без мелодии при открытии",
     'create.dress.save': "Сохранить этот вид",
     'create.dress.saved': "Сохранённый вид {n}",

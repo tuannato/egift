@@ -1,7 +1,9 @@
 /**
- * Dressing a wrapper (workshop, tier 1): the giver's three closed choices —
- * an accent, a face, quiet — applied to a wrapper's data. The art is never
- * touched. The choices arrive as a recipe (`core/recipe.ts`), which nobody
+ * Dressing a wrapper (workshop, tier 1): the giver's closed choices — an
+ * accent, a face, quiet, and for a few wrappers a colourway of the art —
+ * applied to a wrapper's data. A colourway is a set of pictures drawn at
+ * build time (`scripts/colourways.mjs`): nothing is recoloured on the phone.
+ * The choices arrive as a recipe (`core/recipe.ts`), which nobody
  * signs: whatever cannot be applied leaves the wrapper as its maker made it.
  *
  * Pure: no DOM, no storage.
@@ -9,6 +11,54 @@
 import type { SoundDef, ThemeDef, WrapperDef } from '../stage/format';
 import { surfaceTone } from '../stage/colour';
 import { parseRecipe } from '../core/recipe';
+import { COLOURWAYS, type Colourway } from './colourways.gen';
+
+export { COLOURWAYS, type Colourway };
+
+/** The colourways of a wrapper's art, in the order their places went out in links; none for most wrappers. */
+export function colourwaysOf(id: string): readonly Colourway[] {
+    // Not `Object.hasOwn`: older phones' browsers lack it, and reading a link must never throw.
+    return Object.prototype.hasOwnProperty.call(COLOURWAYS, id) ? COLOURWAYS[id]!.ways : [];
+}
+
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+/** `x` with every colour the map names replaced. */
+function recoloured<T>(x: T, way: Colourway): T {
+    if (typeof x === 'string') return (HEX6.test(x) ? (way.map[x.toUpperCase()] ?? x) : x) as T;
+    if (Array.isArray(x)) return x.map(v => recoloured(v, way)) as T;
+    if (x !== null && typeof x === 'object') return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, recoloured(v, way)])) as T;
+    return x;
+}
+
+const drawn = new WeakMap<WrapperDef, Map<string, WrapperDef>>();
+/**
+ * A wrapper in one colourway of its art: its colours through the map, and
+ * each layer whose picture has a twin pointed at the twin. Words, the opening
+ * and the sound are the wrapper's own objects (the page tells "the sound
+ * changed" by identity). Made once per wrapper and colourway.
+ */
+function inColourway(def: WrapperDef, way: Colourway): WrapperDef {
+    let ways = drawn.get(def);
+    if (!ways) drawn.set(def, (ways = new Map()));
+    let out = ways.get(way.id);
+    if (!out) {
+        const { id, name, blurb, sound, open, idle, afterglow, layers, ...rest } = def;
+        const twins = new Set(way.files);
+        out = {
+            ...recoloured(rest, way),
+            id,
+            name,
+            ...(blurb !== undefined ? { blurb } : {}),
+            ...(sound !== undefined ? { sound } : {}),
+            open,
+            ...(idle !== undefined ? { idle } : {}),
+            ...(afterglow !== undefined ? { afterglow } : {}),
+            layers: layers.map(l => (twins.has(l.art) ? { ...recoloured(l, way), art: `cw-${way.id}-${l.art}` } : recoloured(l, way))),
+        } as WrapperDef;
+        ways.set(way.id, out);
+    }
+    return out;
+}
 
 /**
  * The accents every wrapper shares. Forever: a place in this list has gone
@@ -52,8 +102,9 @@ const worn = new WeakMap<WrapperDef, Map<string, WrapperDef>>();
 const hushed = new WeakMap<SoundDef, SoundDef>();
 
 /**
- * The wrapper as the recipe dresses it: the same wrapper (same id, same art)
- * with its accent and what is written on it, its face, or its tune replaced.
+ * The wrapper as the recipe dresses it: the same wrapper (same id) with its
+ * accent and what is written on it, its face, its tune, or the colourway of
+ * its art replaced.
  * With nothing to apply — no recipe, a string that is not one, an accent the
  * list does not have, the wrapper's own face — it is `def` itself.
  *
@@ -64,15 +115,19 @@ const hushed = new WeakMap<SoundDef, SoundDef>();
 export function dressed(def: WrapperDef, recipe: string | undefined | null): WrapperDef {
     const r = parseRecipe(recipe);
     if (!r) return def;
-    const th = def.theme;
+    // A colourway this wrapper does not have: the whole look is set aside, as for an accent the list lacks.
+    const way = r.art !== undefined ? colourwaysOf(def.id)[r.art] : undefined;
+    if (r.art !== undefined && !way) return def;
+    const base = way ? inColourway(def, way) : def;
+    const th = base.theme;
     const shade = th && r.accent !== undefined ? accentFor(th, r.accent) : undefined;
     // An accent this page does not have (a place in the list not filled yet): the whole look is set aside, not half of it.
     if (r.accent !== undefined && !shade) return def;
     const face = th && r.face !== undefined && r.face !== th.face ? r.face : undefined;
     const quiet = r.quiet === true && def.sound?.score !== undefined;
-    if (!shade && !face && !quiet) return def;
+    if (!way && !shade && !face && !quiet) return def;
     // What is really applied, not how it was spelled: two recipes that dress alike are one look.
-    const key = `${shade ? r.accent : ''}.${face ?? ''}.${quiet ? 'q' : ''}`;
+    const key = `${shade ? r.accent : ''}.${face ?? ''}.${quiet ? 'q' : ''}.${way ? way.id : ''}`;
     let looks = worn.get(def);
     if (!looks) worn.set(def, (looks = new Map()));
     let out = looks.get(key);
@@ -86,7 +141,7 @@ export function dressed(def: WrapperDef, recipe: string | undefined | null): Wra
                 hushed.set(def.sound!, (sound = rest));
             }
         }
-        out = { ...def, ...(th && (shade || face) ? { theme: { ...th, ...shade, ...(face ? { face } : {}) } } : {}), ...(sound ? { sound } : {}) };
+        out = !shade && !face && !quiet ? base : { ...base, ...(th && (shade || face) ? { theme: { ...th, ...shade, ...(face ? { face } : {}) } } : {}), ...(sound ? { sound } : {}) };
         looks.set(key, out);
     }
     return out;

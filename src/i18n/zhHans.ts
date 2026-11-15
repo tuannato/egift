@@ -106,6 +106,8 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'create.dress.own': "封套本来的颜色",
     'create.dress.colour': "颜色 {n}",
     'create.dress.face': "字体 {n}",
+    'create.dress.art.own': "图案原色",
+    'create.dress.art': "图案配色 {n}",
     'create.dress.quiet': "打开时不播放音乐",
     'create.dress.save': "保存这个样式",
     'create.dress.saved': "已保存的样式 {n}",

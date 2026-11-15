@@ -106,6 +106,8 @@ export const ja: Record<keyof typeof vi, string> = {
     'create.dress.own': "ラッピング本来の色",
     'create.dress.colour': "色 {n}",
     'create.dress.face': "書体 {n}",
+    'create.dress.art.own': "絵の元の色",
+    'create.dress.art': "絵の色 {n}",
     'create.dress.quiet': "開くときの音楽なし",
     'create.dress.save': "この見た目を保存",
     'create.dress.saved': "保存した見た目 {n}",

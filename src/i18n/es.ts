@@ -106,6 +106,8 @@ export const es: Record<keyof typeof vi, string> = {
     'create.dress.own': "El color propio del envoltorio",
     'create.dress.colour': "Color {n}",
     'create.dress.face': "Letra {n}",
+    'create.dress.art.own': "Colores originales de la imagen",
+    'create.dress.art': "Colores de la imagen {n}",
     'create.dress.quiet': "Sin melodía al abrir",
     'create.dress.save': "Guardar este estilo",
     'create.dress.saved': "Estilo guardado {n}",

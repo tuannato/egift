@@ -42,28 +42,33 @@ function toBase64(bytes: Uint8Array): string {
     return btoa(bin);
 }
 
-const cache = new Map<string, Promise<KeepsakeLook | null>>();
+/** The pictures and their places, per set of art: a wrapper in ten accents is read off one stage, once. */
+const cache = new Map<string, Promise<Omit<KeepsakeLook, 'colours' | 'backdrop'> | null>>();
+const artKey = (def: WrapperDef): string => `${def.id}|${def.layers.map(l => l.art).join(',')}`;
 
-/** The still look of a built-in wrapper, or null when it cannot be had (offline, an old browser). Asked once per wrapper. */
+/** The still look of a built-in wrapper, or null when it cannot be had (offline, an old browser). The art is asked for once per wrapper and colourway; the colours are the dressed wrapper's own. */
 export function keepsakeLook(def: WrapperDef | undefined): Promise<KeepsakeLook | null> {
     if (!def) return Promise.resolve(null);
-    const seen = cache.get(def.id);
-    if (seen) return seen;
+    const tk = themeTokens(def);
+    const colours = { ground: tk.ground, surface: tk.surface, ink: tk.ink, accent: tk.accent, dim: tk.dim };
+    if (!Object.values(colours).every(c => HEX.test(c))) return Promise.resolve(null);
+    const backdrop = typeof def.backdrop === 'string' && HEX.test(def.backdrop) ? def.backdrop : colours.ground;
+    const key = artKey(def);
+    const dress = (art: Omit<KeepsakeLook, 'colours' | 'backdrop'> | null): KeepsakeLook | null => (art ? { ...art, colours, backdrop } : null);
+    const seen = cache.get(key);
+    if (seen) return seen.then(dress);
     const made = draw(def)
         .catch(() => null)
         .then(look => {
             // A look that could not be had (offline just then) is asked for again next time.
-            if (look === null) cache.delete(def.id);
+            if (look === null) cache.delete(key);
             return look;
         });
-    cache.set(def.id, made);
-    return made;
+    cache.set(key, made);
+    return made.then(dress);
 }
 
-async function draw(def: WrapperDef): Promise<KeepsakeLook | null> {
-    const tk = themeTokens(def);
-    const colours = { ground: tk.ground, surface: tk.surface, ink: tk.ink, accent: tk.accent, dim: tk.dim };
-    if (!Object.values(colours).every(c => HEX.test(c))) return null;
+async function draw(def: WrapperDef): Promise<Omit<KeepsakeLook, 'colours' | 'backdrop'> | null> {
     // Read everything off the stage at once and take it down again: nothing of it lives through the fetching.
     const card = stageCard(def, { still: true });
     let seen: { src: string; css: string }[];
@@ -103,6 +108,5 @@ async function draw(def: WrapperDef): Promise<KeepsakeLook | null> {
     };
     const layers: ArtLayer[] = [];
     for (const l of seen) layers.push({ src: await picture(l.src), css: l.css });
-    const backdrop = typeof def.backdrop === 'string' && HEX.test(def.backdrop) ? def.backdrop : colours.ground;
-    return { ratio: def.size[0] / def.size[1], layers, colours, backdrop };
+    return { ratio: def.size[0] / def.size[1], layers };
 }

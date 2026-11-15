@@ -5,8 +5,8 @@ import { formatRecipe, parseRecipe } from './recipe';
 describe('the recipe: a closed grammar, read totally, written one way', () => {
     it('reads every look the grammar allows, and writes it back the same', () => {
         const all: string[] = [];
-        for (const c of ['', 'ca', 'cz', 'c0', 'c9']) for (const f of ['', 'fg', 'ft', 'fm', 'fs', 'fp', 'fb']) for (const s of ['', 'sq']) if (c + f + s !== '') all.push('1' + c + f + s);
-        expect(all).toHaveLength(69);
+        for (const c of ['', 'ca', 'cz', 'c0', 'c9']) for (const f of ['', 'fg', 'ft', 'fm', 'fs', 'fp', 'fb']) for (const s of ['', 'sq']) for (const a of ['', 'aa', 'az']) if (c + f + s + a !== '') all.push('1' + c + f + s + a);
+        expect(all).toHaveLength(209);
         for (const text of all) {
             const r = parseRecipe(text);
             expect(r, text).not.toBeNull();
@@ -18,10 +18,13 @@ describe('the recipe: a closed grammar, read totally, written one way', () => {
         expect(['g', 't', 'm', 's', 'p', 'b'].map(x => parseRecipe('1f' + x)!.face)).toEqual(['grotesk', 'tech', 'mono', 'serif', 'poster', 'slab']);
         expect(parseRecipe('1c9')).toEqual({ accent: 35 });
         expect(parseRecipe('1sq')).toEqual({ quiet: true });
+        // A colourway of the art comes last: `a` and its place in the wrapper's own list.
+        expect(parseRecipe('1ab')).toEqual({ art: 1 });
+        expect(parseRecipe('1cbftsqaa')).toEqual({ accent: 1, face: 'tech', quiet: true, art: 0 });
     });
 
     it('anything else is no recipe at all: never an error, never half a look', () => {
-        for (const bad of ['', '1', '2ca', 'ca', '1c', '1cab', '1cacb', '1fgca', '1sqca', '1fx', '1ca ', ' 1ca', '1cA', '1Ca', '1c-', '1cafgsqx', '1sqsq', 'x'.repeat(64), '1ca\n', '１ca']) {
+        for (const bad of ['', '1', '2ca', 'ca', '1c', '1cab', '1cacb', '1fgca', '1sqca', '1fx', '1ca ', ' 1ca', '1cA', '1Ca', '1c-', '1cafgsqx', '1sqsq', '1a', '1a0', '1aasq', '1aaca', '1aaab', '1aA', 'x'.repeat(64), '1ca\n', '１ca']) {
             expect(parseRecipe(bad), JSON.stringify(bad)).toBeNull();
         }
         expect(parseRecipe(undefined)).toBeNull();
@@ -35,6 +38,8 @@ describe('the recipe: a closed grammar, read totally, written one way', () => {
         expect(formatRecipe({ accent: 36 })).toBeUndefined();
         expect(formatRecipe({ accent: -1 })).toBeUndefined();
         expect(formatRecipe({ accent: 1.5 })).toBeUndefined();
+        expect(formatRecipe({ art: 26 })).toBeUndefined();
+        expect(formatRecipe({ art: -1 })).toBeUndefined();
     });
 
     it('rides in the link, and a link whose recipe is not of the grammar still opens the same gift', () => {

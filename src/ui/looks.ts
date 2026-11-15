@@ -10,9 +10,13 @@ const LOOKS_KEY = 'gift.looks';
 /** More than this is not a short list. */
 const MAX = 24;
 
-/** The one spelling of a look, or nothing when the text is not a look. */
+/**
+ * The one spelling of a look, or nothing when the text is not a look. A saved look belongs to no wrapper, so it
+ * never carries a colourway of one wrapper's art: a text that names one is not a saved look.
+ */
 function canon(text: unknown): string | undefined {
-    return typeof text === 'string' ? formatRecipe(parseRecipe(text)) : undefined;
+    const r = typeof text === 'string' ? parseRecipe(text) : null;
+    return r && r.art === undefined ? formatRecipe(r) : undefined;
 }
 
 /** What is stored, less whatever is not a look in its one spelling. Reading never writes. */

@@ -106,6 +106,8 @@ export const th: Record<keyof typeof vi, string> = {
     'create.dress.own': "สีเดิมของห่อ",
     'create.dress.colour': "สี {n}",
     'create.dress.face': "แบบอักษร {n}",
+    'create.dress.art.own': "สีเดิมของภาพ",
+    'create.dress.art': "สีของภาพ {n}",
     'create.dress.quiet': "ไม่มีเพลงตอนเปิด",
     'create.dress.save': "บันทึกแบบนี้",
     'create.dress.saved': "แบบที่บันทึกไว้ {n}",
