@@ -21,7 +21,7 @@ import { cue, score } from '../sound';
 import { track } from '../busy';
 import { destroyCapsules } from '../capsule';
 import { followStep, slideToOpen } from '../slide';
-import { downloadKeepsake, isKept, keep, keepableWish, keptId } from '../kept';
+import { downloadKeepsake, dressOf, isKept, keep, keepableWish, keptId } from '../kept';
 import type { Kept, KeptToken } from '../kept';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
@@ -603,6 +603,8 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
                             ref,
                             at: before?.at ?? Date.now(),
                             wrapper: link.wrapper ?? '',
+                            // The look is kept only when it was worn: the wrapper shown was the one the link names.
+                            ...(def?.id === link.wrapper && dressOf(link.recipe) !== undefined ? { dress: dressOf(link.recipe)! } : {}),
                             ...(wish !== undefined ? { wish } : {}),
                             sats: String(BigInt(before?.sats ?? '0') + sats),
                             ...(fee !== undefined ? { fee } : {}),
@@ -677,7 +679,8 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
         const rec = mem.receipt;
         if (!rec || mem.whole !== true) return null;
         const said = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
-        const kdef = wrapperById(rec.wrapper);
+        const kplain = wrapperById(rec.wrapper);
+        const kdef = kplain ? dressed(kplain, rec.dress) : undefined;
         const name = nameOf(kdef);
         // The wrapper's still picture, made ready before any press: the download itself must not wait.
         let look: KeepsakeLook | null = null;

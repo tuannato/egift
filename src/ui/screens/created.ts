@@ -1,7 +1,7 @@
 import { DEFAULT_WRAPPER, DUST_SATS, takeFeeEstimate, entitlement, formatAtoms, giftTokens, licenceOf, formatXec, fundLinks, stampedFundLinks, tokenFundLinks } from '../../core';
 import type { FundLinks, GiftToken, PackageState, TokenMeta } from '../../core';
 import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
-import { isSentRemembered, rememberSent } from '../kept';
+import { dressOf, isSentRemembered, rememberSent } from '../kept';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
 import { dressed } from '../../wrappers/looks';
 import { DEFAULT_CREDIT } from '../plate';
@@ -540,6 +540,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                     address: made.key.address,
                     at: Date.now(),
                     wrapper: made.wrapper,
+                    ...(dressOf(made.recipe) !== undefined ? { dress: dressOf(made.recipe)! } : {}),
                     sats: String(made.sats),
                     ...(made.wish ? { wish: made.wish } : {}),
                     ...(made.tokenOnly === true ? { tokenOnly: true } : {}),

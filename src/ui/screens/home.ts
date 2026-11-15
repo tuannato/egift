@@ -1,5 +1,6 @@
 import { rich } from '../ecash';
 import { downloadKeepsake, forgetSent, keptRef, keptTokenText, keptWhen, loadKept, loadSent, removeKept } from '../kept';
+import { dressed } from '../../wrappers/looks';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
@@ -409,7 +410,9 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     function kept(): Node[] {
         const list = loadKept();
         const cards = list.map(k => {
-            const def = wrapperById(k.wrapper);
+            const plain = wrapperById(k.wrapper);
+            // The record wears what the gift wore.
+            const def = plain ? dressed(plain, k.dress) : undefined;
             const name = nameOf(def);
             const card = h('li', { class: 'kept-card' });
             // The wrapper's still picture, made ready before any press: the download itself must not wait.

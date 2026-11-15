@@ -382,4 +382,10 @@ describe('the gift opens dressed', () => {
         expect(page().dataset.face).toBe('tech');
         expect(getSound()!.score).toBeUndefined();
     }, 30000);
+    it('a kept record carries the look only in its one spelling, and nothing else by that name', async () => {
+        const { dressOf } = await import('./kept');
+        expect(dressOf('1cdftsq')).toBe('1cdftsq');
+        expect(dressOf('1sq')).toBe('1sq');
+        for (const bad of ['', '1', 'cd', '1sqcd', '1cd ', '<b>', 42, null, undefined, { a: 1 }]) expect(dressOf(bad), String(bad)).toBeUndefined();
+    });
 });

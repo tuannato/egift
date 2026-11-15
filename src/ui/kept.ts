@@ -18,6 +18,7 @@
  * storage.
  */
 import { formatAtoms, formatXec } from '../core/money';
+import { formatRecipe, parseRecipe } from '../core/recipe';
 import { localeOf, t } from '../i18n';
 import type { Lang } from '../i18n';
 import { cleanUserText } from './text';
@@ -58,6 +59,8 @@ export interface Kept {
     /** The network fee, in sats, as digits. */
     readonly fee?: string;
     readonly token?: KeptToken;
+    /** How the giver dressed the wrapper (a recipe in its one spelling), so the record wears what the gift wore. */
+    readonly dress?: string;
 }
 
 const DIGITS = /^\d{1,30}$/;
@@ -85,6 +88,13 @@ export function keepableWish(wish: string | undefined): string | undefined {
 const TOKEN_ID = /^[0-9a-f]{64}$/;
 const cut = (s: string, max: number): string => [...s].slice(0, max).join('');
 
+/** A recipe as it may be kept: only in its one spelling; anything else is dropped. */
+export function dressOf(x: unknown): string | undefined {
+    if (typeof x !== 'string') return undefined;
+    const canon = formatRecipe(parseRecipe(x));
+    return canon === x ? canon : undefined;
+}
+
 /** One record read back from storage, or null for anything that is not one. Storage is not trusted. */
 function clean(x: unknown): Kept | null {
     if (typeof x !== 'object' || x === null) return null;
@@ -101,6 +111,8 @@ function clean(x: unknown): Kept | null {
     const wish = typeof r.wish === 'string' ? keepableWish(r.wish) : undefined;
     if (wish !== undefined) out.wish = wish;
     if (typeof r.fee === 'string' && DIGITS.test(r.fee)) out.fee = r.fee;
+    const dress = dressOf(r.dress);
+    if (dress !== undefined) out.dress = dress;
     const tk = r.token as Record<string, unknown> | undefined;
     if (typeof tk === 'object' && tk !== null && typeof tk.atoms === 'string' && DIGITS.test(tk.atoms)) {
         // Named or not at all: an id, decimals and the token's own words go together, for the giver's token only.
@@ -166,6 +178,8 @@ export interface Sent {
     /** What the giver meant to fund, in sats, as digits. */
     readonly sats: string;
     readonly tokenOnly?: boolean;
+    /** How the giver dressed the wrapper (a recipe in its one spelling). */
+    readonly dress?: string;
 }
 
 function cleanSent(x: unknown): Sent | null {
@@ -182,6 +196,7 @@ function cleanSent(x: unknown): Sent | null {
         sats: r.sats,
         ...(wish !== undefined ? { wish } : {}),
         ...(r.tokenOnly === true ? { tokenOnly: true } : {}),
+        ...(dressOf(r.dress) !== undefined ? { dress: dressOf(r.dress)! } : {}),
     };
 }
 
