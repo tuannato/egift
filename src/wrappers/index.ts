@@ -57,7 +57,7 @@ export function wrapperById(id: string): WrapperDef | undefined {
  *
  * Set on 14 November 2026:
  * four wrappers at 10,000 XEC, five at 5,000 XEC, paid to the project's own
- * address. 1 XEC is 100 sats.
+ * address. 1 XEC is 100 sats. On 16 November 2026 a fifth at 10,000 XEC (orbit).
  */
 const PROJECT_ADDRESS = 'ecash:qr38yephwnwfv5pp0r6w7hxcp25607keg5uratxner';
 const XEC = 100n;
@@ -66,6 +66,7 @@ const PRICES: Readonly<Record<string, bigint>> = {
     rangoli: 10_000n * XEC,
     lace: 10_000n * XEC,
     dopaper: 10_000n * XEC,
+    orbit: 10_000n * XEC,
     basket: 5_000n * XEC,
     paperbag: 5_000n * XEC,
     diploma: 5_000n * XEC,
