@@ -218,3 +218,52 @@ describe('encodeLink / decodeFragment', () => {
         expect(decodedOk).toBeLessThan(5000);
     });
 });
+
+describe('the spot of a riddle link', () => {
+    const origin = 'https://egift.cash';
+    const spot = Uint8Array.from({ length: 20 }, (_, i) => 200 - i * 3);
+    const base = { version: 1 as const, secret: Uint8Array.from({ length: 16 }, (_, i) => i * 7), wrapper: 'lixi' };
+
+    it('rides last, only with a riddle, and comes back byte for byte', () => {
+        const url = encodeLink({ ...base, wish: 'hi', riddle: 'Which cafe?', spot }, origin);
+        const f = url.slice(url.indexOf('#') + 1).split('.');
+        expect(f[1]).toBe('28');
+        expect(f).toHaveLength(7);
+        expect(f[6]).toHaveLength(27);
+        const back = decodeFragment(url.slice(url.indexOf('#')))!;
+        expect(back.spot).toEqual(spot);
+        expect(back.riddle).toBe('Which cafe?');
+        expect(encodeLink(back, origin)).toBe(url);
+        // With everything: flags 31.
+        const all = encodeLink({ ...base, item: { tokenId: 'ab'.repeat(32), maxSats: 5000n }, recipe: '1cd', wish: 'hi', riddle: 'q', spot }, origin);
+        expect(all.split('#')[1]!.split('.')[1]).toBe('31');
+        expect(decodeFragment('#' + all.split('#')[1]!)!.spot).toEqual(spot);
+    });
+
+    it('a riddle link written before there was a spot still reads the same, and has none', () => {
+        const old = decodeFragment('#1.8.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ');
+        expect(old).not.toBeNull();
+        expect(old!.riddle).toBe('q');
+        expect(old!.spot).toBeUndefined();
+    });
+
+    it('is refused without a riddle, at the wrong length, or in a spelling that is not the one', () => {
+        expect(() => encodeLink({ ...base, spot }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', spot: new Uint8Array(19) }, origin)).toThrow();
+        const url = encodeLink({ ...base, riddle: 'q', spot }, origin);
+        const p = url.slice(url.indexOf('#') + 1).split('.');
+        const with_ = (i: number, v: string): string => '#' + p.map((x, j) => (j === i ? v : x)).join('.');
+        for (const bad of [
+            with_(1, '16'), // a spot and no riddle: the count of fields is off
+            '#' + [p[0], '16', p[2], p[3], p[5]].join('.'), // a spot, no riddle, the right count
+            with_(1, '32'),
+            with_(1, '024'),
+            with_(5, p[5]!.slice(0, 26)),
+            with_(5, p[5]! + 'A'),
+            with_(5, p[5]!.replace(/.$/, '=')),
+            '#' + p.slice(0, 5).join('.'), // the flag says spot, the field is missing
+        ]) {
+            expect(decodeFragment(bad), bad).toBeNull();
+        }
+    });
+});

@@ -40,3 +40,9 @@ export function deriveKey(secret: Uint8Array, index = 0): PackageKey {
     }
     throw new Error('Key derivation failed');
 }
+
+/** The eCash address of a 20-byte public key hash. */
+export function addressOfPkh(pkh: Uint8Array): string {
+    if (!(pkh instanceof Uint8Array) || pkh.length !== 20) throw new Error('A public key hash is 20 bytes');
+    return Address.p2pkh(pkh).toString();
+}

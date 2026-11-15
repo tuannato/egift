@@ -86,6 +86,11 @@ export function prepareDemo(chain: DemoChain, params: URLSearchParams): 'created
         if (riddle !== undefined) void riddleRoot(DEMO_SECRET, lang === 'vi' ? 'mèo' : 'cat').then(root => {
                 const k = deriveKey(root);
                 fund(k.address, k.pkh);
+                // As a locked gift is written by default, the link names its address; `&spot=0` leaves it out.
+                if (params.get('spot') === '0') return;
+                const named = encodeLink({ version: 1, secret: DEMO_SECRET, wrapper, recipe, wish: wish === '' ? undefined : wish, riddle, spot: k.pkh }, location.origin);
+                history.replaceState(null, '', location.pathname + location.search + named.slice(named.indexOf('#')));
+                window.dispatchEvent(new HashChangeEvent('hashchange'));
             });
         else fund(key.address);
         history.replaceState(null, '', location.pathname + location.search + link.slice(link.indexOf('#')));

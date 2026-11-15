@@ -38,6 +38,7 @@ export function resetCreate(): void {
     draft.wrapper = '';
     draft.recipe = '';
     draft.riddleOn = false;
+    draft.riddleHide = false;
     draft.question = '';
     draft.answer = '';
 }
@@ -169,12 +170,19 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         if (a === '') return false;
         return [...a].length <= 3 || (/^\d+$/.test(a) && a.length <= 8);
     };
+    // The link of a locked gift names the gift's address, so that the page can say "still here" or "already taken"
+    // before anyone answers. The giver may leave that out: then nothing is known until the right answer.
+    const hideBox = h('input', { id: 'f-riddle-hide', class: 'check-box', type: 'checkbox' });
+    hideBox.checked = draft.riddleHide;
+    hideBox.addEventListener('change', () => (draft.riddleHide = hideBox.checked));
+    const hideRow = h('label', { class: 'check check--riddle', for: 'f-riddle-hide' }, hideBox, h('span', null, h('span', null, t('create.riddle.hide')), h('span', { class: 'check-why' }, ' ' + t('create.riddle.hide.why'))));
     const riddleFields = h(
         'div',
         { class: 'riddle-fields' },
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-q' }, t('create.riddle.q.label')), question, riddleMsg),
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-a' }, t('create.riddle.a.label')), answer, h('p', { id: 'f-riddle-hint', class: 'field-msg' }, t('create.riddle.a.hint')), answerWeak),
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-a2' }, t('create.riddle.a2.label')), answer2, answer2Msg),
+        hideRow,
         // Two honest limits, said before the gift exists.
         h('p', { class: 'warning' }, t('create.riddle.limit')),
         h('p', { class: 'warning danger' }, t('create.riddle.forget')),
@@ -291,7 +299,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         answer2Msg.textContent = mismatch ? t('create.riddle.a2.diff') : '';
         answerWeak.hidden = !(draft.riddleOn && isWeakAnswer(answer.value));
         answer2Msg.classList.toggle('field-msg--bad', mismatch);
-        for (const f of [question, answer, answer2, riddleBox]) f.disabled = working;
+        for (const f of [question, answer, answer2, riddleBox, hideBox]) f.disabled = working;
         riddleMsg.textContent = draft.riddleOn && qOver ? t('create.riddle.over') : '';
         riddleMsg.classList.toggle('field-msg--bad', draft.riddleOn && qOver);
         submit.disabled = working || sats === null || !wishOk || !riddleOk;
@@ -744,7 +752,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             const key = deriveKey(root);
             // The look goes into the link in its one spelling, or not at all.
             const recipe = formatRecipe(parseRecipe(draft.recipe));
-            const link = encodeLink({ version: 1, secret, wrapper, recipe, wish: text === '' ? undefined : text, riddle }, location.origin);
+            const link = encodeLink({ version: 1, secret, wrapper, recipe, wish: text === '' ? undefined : text, riddle, ...(riddle !== undefined && !draft.riddleHide ? { spot: key.pkh } : {}) }, location.origin);
             setMade({ secret, key, link, sats, wrapper, riddle, ...(recipe !== undefined ? { recipe } : {}), ...(text !== '' ? { wish: text } : {}), ...(tokenOnly ? { tokenOnly: true } : {}), ...(covered > 0n ? { feeCovered: covered } : {}), ...(draft.withToken && !tokenOnly ? { withToken: true } : {}), saved: false });
         } catch {
             working = false;
@@ -760,6 +768,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     draft.withToken = false;
         draft.wish = '';
         draft.riddleOn = false;
+        draft.riddleHide = false;
         draft.question = '';
         draft.answer = '';
         ctx.nav.toCreated();

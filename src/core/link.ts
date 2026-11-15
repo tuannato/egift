@@ -4,16 +4,19 @@ import { RIDDLE_MAX_BYTES, WISH_MAX_BYTES } from './limits';
 /*
  * Fragment grammar (everything after `#`):
  *
- *   1.<flags>.<secret>.<wrapper>[.<item>][.<recipe>][.<wish>][.<riddle>]
+ *   1.<flags>.<secret>.<wrapper>[.<item>][.<recipe>][.<wish>][.<riddle>][.<spot>]
  *
- * flags: a decimal number 0..15 with no leading zero; bit0 item, bit1 recipe,
- * bit2 wish, bit3 riddle. Optional fields appear in that order, exactly when
- * their bit is set. Every field has one canonical spelling, so a link decodes
+ * flags: a decimal number 0..31 with no leading zero; bit0 item, bit1 recipe,
+ * bit2 wish, bit3 riddle, bit4 spot (only together with a riddle). Optional
+ * fields appear in that order, exactly when their bit is set. Every field has one canonical spelling, so a link decodes
  * to one value and back to the same string; anything else decodes to `null`.
  *
- * A riddle link carries the question only. The answer is nowhere, and without
- * it the link names no address: the key comes from the secret AND the answer
- * (see `riddle.ts`).
+ * A riddle link carries the question. The answer is nowhere: the key comes
+ * from the secret AND the answer (see `riddle.ts`). Unless its giver chose
+ * otherwise it also carries the spot, the public key hash of the gift's
+ * address, so that a page can tell whether the gift is still there before it
+ * is answered. A link without a riddle never carries one: its secret already
+ * names the address.
  */
 
 const MAX_FRAGMENT_CHARS = 720;
@@ -24,13 +27,15 @@ const WRAPPER_RE = /^[a-z0-9-]{1,24}$/;
 const RECIPE_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const TOKEN_ID_RE = /^[0-9a-f]{64}$/;
 const SATS_RE = /^[1-9][0-9]{0,15}$/;
-const FLAGS_RE = /^(?:[0-9]|1[0-5])$/;
+const FLAGS_RE = /^(?:[0-9]|[12][0-9]|3[01])$/;
+const PKH_BYTES = 20;
 const B64URL_RE = /^[A-Za-z0-9_-]*$/;
 
 const FLAG_ITEM = 1;
 const FLAG_RECIPE = 2;
 const FLAG_WISH = 4;
 const FLAG_RIDDLE = 8;
+const FLAG_SPOT = 16;
 
 const B64URL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
@@ -97,7 +102,7 @@ export function wishBytes(wish: string): number {
 }
 
 /**
- * The full link: `<origin>/<wrapper>/#1.<flags>.<secret>.<wrapper>[.<item>][.<recipe>][.<wish>][.<riddle>]`.
+ * The full link: `<origin>/<wrapper>/#1.<flags>.<secret>.<wrapper>[.<item>][.<recipe>][.<wish>][.<riddle>][.<spot>]`.
  *
  * The wrapper's id is also the page's path, so that the host can serve that
  * wrapper's own share card (a chat app never sees what follows `#`). The path
@@ -147,6 +152,12 @@ export function encodeLink(link: PackageLink, origin: string): string {
         flags |= FLAG_RIDDLE;
         tail.push(b64urlEncode(bytes));
     }
+    if (link.spot !== undefined) {
+        if (link.riddle === undefined) throw new Error('Only a riddle link carries a spot');
+        if (!(link.spot instanceof Uint8Array) || link.spot.length !== PKH_BYTES) throw new Error('Invalid spot');
+        flags |= FLAG_SPOT;
+        tail.push(b64urlEncode(link.spot));
+    }
     const fragment = ['1', String(flags), b64urlEncode(link.secret), link.wrapper, ...tail].join('.');
     return `${origin.replace(/\/+$/, '')}/${link.wrapper}/#${fragment}`;
 }
@@ -168,7 +179,9 @@ function decodeStrict(hash: string): PackageLink | null {
     const parts = frag.split('.');
     if (parts.length < 4 || parts[0] !== '1' || !FLAGS_RE.test(parts[1]!)) return null;
     const flags = Number(parts[1]);
-    const optionalCount = (flags & 1) + ((flags >> 1) & 1) + ((flags >> 2) & 1) + ((flags >> 3) & 1);
+    // A spot belongs to a riddle: without one it would say nothing the secret does not.
+    if (flags & FLAG_SPOT && !(flags & FLAG_RIDDLE)) return null;
+    const optionalCount = (flags & 1) + ((flags >> 1) & 1) + ((flags >> 2) & 1) + ((flags >> 3) & 1) + ((flags >> 4) & 1);
     if (parts.length !== 4 + optionalCount) return null;
 
     const secret = b64urlDecode(parts[2]!);
@@ -181,6 +194,7 @@ function decodeStrict(hash: string): PackageLink | null {
     let recipe: string | undefined;
     let wish: string | undefined;
     let riddle: string | undefined;
+    let spot: Uint8Array | undefined;
 
     if (flags & FLAG_ITEM) {
         const field = parts[next++]!;
@@ -214,11 +228,17 @@ function decodeStrict(hash: string): PackageLink | null {
         if (normaliseWish(text) !== text) return null;
         riddle = text;
     }
+    if (flags & FLAG_SPOT) {
+        const bytes = b64urlDecode(parts[next++]!);
+        if (bytes === null || bytes.length !== PKH_BYTES) return null;
+        spot = bytes;
+    }
 
     const link: { -readonly [K in keyof PackageLink]: PackageLink[K] } = { version: 1, secret, wrapper };
     if (item !== undefined) link.item = item;
     if (recipe !== undefined) link.recipe = recipe;
     if (wish !== undefined) link.wish = wish;
     if (riddle !== undefined) link.riddle = riddle;
+    if (spot !== undefined) link.spot = spot;
     return link;
 }

@@ -40,6 +40,12 @@ was sent keeps naming the same address.
   the part after `#`.
 - A record you choose to keep in your browser holds the amount, the time and
   the gift's address (only part of it for a gift you received), never the link.
+- The link of a riddle gift names the gift's address, so that the page can
+  say whether the gift is still there before anyone answers. Whoever has the
+  link can therefore look that address up on the chain: what it holds, and
+  when it was funded or taken. Nobody signs a link, so what a link says about
+  a gift's status is only as good as the hands it passed through. The giver
+  can leave the address out ("Hide the gift's status") when making the gift.
 
 None of this gives access to a gift.
 

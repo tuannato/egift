@@ -25,6 +25,12 @@ export interface PackageLink {
      * the key is derived from the secret and the answer (`unlockKey`).
      */
     readonly riddle?: string;
+    /**
+     * Only with a riddle: the 20-byte public key hash of the gift's address, so that a page can ask the chain whether
+     * the gift is still there before anyone has answered. It names where the gift is; it opens nothing. Untrusted:
+     * nobody signs a link, so what it says is checked against the key the answer gives.
+     */
+    readonly spot?: Uint8Array;
 }
 
 /** The one-time key of a package, derived from the link's secret. */

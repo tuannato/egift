@@ -1,4 +1,4 @@
-import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, deriveKey, encodeLink, entitlement, isStamp, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
+import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, addressOfPkh, deriveKey, encodeLink, entitlement, isStamp, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
 import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from '../../core';
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
@@ -97,10 +97,19 @@ function invalidPage(root: HTMLElement, ctx: Ctx): Dispose {
 }
 
 /**
- * A locked gift, before the answer. The link names no address, so there is
- * nothing to read from the network yet: only the wrapper, closed, and the
- * giver's question. An answer becomes a key; the key names an address; what
- * the network holds there says the rest:
+ * A locked gift, before the answer: a lock, closed, and the giver's question.
+ *
+ * A link that names the gift's address (its spot; the default) lets the page
+ * look before anyone answers. A gift already taken, or not funded yet, says so
+ * at once and asks for no answer. For a gift that is there, the page learns
+ * whether its wrapper was paid for and fetches that wrapper's pictures, so the
+ * right answer leads straight to the gift as it was wrapped. An answer is then
+ * right exactly when its key is the key of that address: nothing is asked of
+ * the network to tell a wrong one.
+ *
+ * A link without a spot (the giver chose to hide the gift's status, or the
+ * link is an older one) names no address. An answer becomes a key; the key
+ * names an address; what the network holds there says the rest:
  *
  * - money: the answer was right — on to the gift;
  * - a history and no money: right too, but the gift was already taken home;
@@ -108,12 +117,21 @@ function invalidPage(root: HTMLElement, ctx: Ctx): Dispose {
  *   the two cannot be told apart, and the screen says so).
  */
 function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: (key: PackageKey) => void): Dispose {
-    // Before an answer nothing can be read from the chain: not what the gift holds, not whether its wrapper was paid
-    // for. Every locked gift therefore wears the same wrapper, a lock; the giver's own comes after the answer.
+    // Every locked gift wears the same wrapper before the answer, a lock: the giver's own comes after it.
     const def = LOCK_WRAPPER;
     const card = stageCard(def);
     let disposed = false;
     let working = false;
+    // Where the gift is, when the link says. Nobody signs a link: this is only ever used to look, and an answer's
+    // own key is held against it.
+    let spotAddress: string | undefined;
+    try {
+        spotAddress = link.spot ? addressOfPkh(link.spot) : undefined;
+    } catch {
+        spotAddress = undefined;
+    }
+    const spot = spotAddress !== undefined ? link.spot : undefined;
+    const atSpot = (pkh: Uint8Array): boolean => spot !== undefined && pkh.length === spot.length && pkh.every((b, i) => b === spot[i]);
 
     const q = h('blockquote', { class: 'riddle-q' });
     setUserText(q, link.riddle ?? '');
@@ -136,12 +154,19 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         submit.disabled = true;
         submit.textContent = t('pkg.riddle.working');
         say();
-        let outcome: 'right' | 'wrong' | 'taken' | 'offline' = 'offline';
+        let outcome: 'right' | 'wrong' | 'taken' | 'gone' | 'offline' = 'offline';
         let key: PackageKey | null = null;
         try {
             key = await track(unlockKey(link, answer.value));
-            const state = await track(ctx.chain.read(key.address));
-            outcome = state.kind === 'empty' ? 'wrong' : state.kind === 'taken' ? 'taken' : 'right';
+            if (spot && !atSpot(key.pkh)) {
+                // Not the key of the address the link names: a wrong answer, and the network is not asked.
+                outcome = 'wrong';
+            } else {
+                const state = await track(ctx.chain.read(key.address));
+                // With a spot the answer is right whatever the address holds now; without one, an empty address is "not this one".
+                if (spot) outcome = state.kind === 'funded' ? 'right' : 'gone';
+                else outcome = state.kind === 'empty' ? 'wrong' : state.kind === 'taken' ? 'taken' : 'right';
+            }
         } catch {
             outcome = 'offline';
         }
@@ -149,12 +174,29 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         working = false;
         submit.disabled = false;
         submit.textContent = t('pkg.riddle.submit');
+        if (deferred !== undefined) {
+            const kind = deferred;
+            deferred = undefined;
+            showGone(kind);
+            // The gift is not there to be opened and the form is gone: a wrong answer has nothing to be told on.
+            if (kind !== null && outcome !== 'right' && outcome !== 'gone') return;
+        }
+        if (outcome === 'gone' && key) {
+            // The right answer to a gift that is no longer (or not yet) there: on to its own screen, which says so.
+            unlocked.set(secretId(link.secret), key);
+            onUnlocked(key);
+            return;
+        }
         if (outcome === 'right' && key) {
             unlocked.set(secretId(link.secret), key);
             // The lock turns and opens (a second and a half at most), then the gift's own wrapper takes the stage.
             cue.open();
             try {
-                await Promise.race([card.handle?.open() ?? Promise.resolve(), new Promise(res => setTimeout(res, 2200))]);
+                // While the lock plays, the look ahead (was the wrapper paid for?) is given the same time to finish.
+                await Promise.all([
+                    Promise.race([card.handle?.open() ?? Promise.resolve(), new Promise(res => setTimeout(res, 2200))]),
+                    Promise.race([looking ?? Promise.resolve(), new Promise(res => setTimeout(res, 2200))]),
+                ]);
             } catch {
                 /* the gift is shown whether or not the lock could be played */
             }
@@ -196,7 +238,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         cue.deny();
         answer.classList.add('input--bad');
         // Nothing at that address: no payment control, and the same warning an empty package carries.
-        say(h('p', { class: 'state-title' }, t('pkg.riddle.wrong')), h('p', { class: 'state-next' }, t('pkg.riddle.wrong.next')));
+        say(h('p', { class: 'state-title' }, t('pkg.riddle.wrong')), h('p', { class: 'state-next' }, t(spot ? 'pkg.riddle.again' : 'pkg.riddle.wrong.next')));
         answer.select?.();
     }
     answer.addEventListener('input', () => answer.classList.remove('input--bad'));
@@ -218,6 +260,78 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         submit,
         msg,
     );
+    const lead = h('p', { class: 'lead' }, t('pkg.riddle.lead'));
+    // What stands in place of the question when the gift is not there to be opened: no field, no button, and the
+    // warning an empty package always carries.
+    const slot = h('div', { class: 'riddle-slot' }, form);
+    /** A look that came back while an answer was being tried: shown once the try is over. */
+    let deferred: 'taken' | 'empty' | null | undefined;
+    /** The screen says "nothing here yet": worth another look when the page comes back or the network does. */
+    let waiting = false;
+    const showGone = (kind: 'taken' | 'empty' | null): void => {
+        if (working) {
+            deferred = kind;
+            return;
+        }
+        waiting = kind === 'empty';
+        lead.hidden = kind !== null;
+        if (kind === null) {
+            if (!slot.contains(form)) slot.replaceChildren(form);
+            return;
+        }
+        // The form is taken off the page, not hidden: there is nothing here to press.
+        slot.replaceChildren(
+            h('div', { class: 'riddle-gone', role: 'status' }, h('p', { class: 'state-title' }, t(kind === 'taken' ? 'pkg.taken' : 'pkg.empty')), h('p', { class: 'state-next' }, t(kind === 'taken' ? 'pkg.taken.next' : 'pkg.empty.next'))),
+            h('p', { class: 'warning danger scam' }, t('pkg.empty.scam')),
+        );
+    };
+    /** The wrapper's pictures, asked for ahead of the answer and held so that the browser keeps them. */
+    const warmed: HTMLImageElement[] = [];
+    let again: ReturnType<typeof setTimeout> | undefined;
+    /** Look at the address the link names: is the gift there, was its wrapper paid for. */
+    async function lookAhead(n = 0): Promise<void> {
+        if (!spotAddress || !spot) return;
+        if (again !== undefined) clearTimeout(again);
+        again = undefined;
+        let state: Awaited<ReturnType<typeof ctx.chain.read>>;
+        try {
+            state = await ctx.chain.read(spotAddress);
+        } catch {
+            // The network could not say. What is shown stands; a screen that is waiting for the gift keeps looking.
+            if (!disposed && waiting && n < 20) again = setTimeout(() => void lookAhead(n + 1), 15000);
+            return;
+        }
+        if (disposed) return;
+        if (state.kind !== 'funded') {
+            showGone(state.kind === 'taken' ? 'taken' : 'empty');
+            // "Not funded yet" can change: the page looks again now and then, quietly, for five minutes.
+            if (state.kind === 'empty' && n < 20) again = setTimeout(() => void lookAhead(n + 1), 15000);
+            return;
+        }
+        showGone(null);
+        const wanted = wrapperById(link.wrapper);
+        if (!wanted || warmed.length) return;
+        const offer = offerOf(wanted);
+        if (offer.kind === 'paid') {
+            let paid = false;
+            try {
+                const e = await entitlement({ chain: ctx.chain, coins: state.coins, wrapper: wanted.id, pkh: spot, offer, budgetMs: 8000 });
+                paid = e === 'paid' || e === 'owned';
+            } catch {
+                paid = false;
+            }
+            // Not paid for, or not known in time: nothing is fetched, and the gift's own screen asks again after the answer.
+            if (disposed || !paid) return;
+            ENTITLED.add(paidFor(spotAddress, wanted.id));
+        }
+        if (typeof Image !== 'function') return;
+        for (const l of dressed(wanted, link.recipe).layers) {
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = `/wrappers/${wanted.id}/${l.art}`;
+            warmed.push(img);
+        }
+    }
     root.append(
         h(
             'section',
@@ -225,13 +339,23 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             layout({
                 kind: 'locked',
                 plate: plate(card, def),
-                head: [h('h1', null, t('pkg.riddle.title')), h('p', { class: 'lead' }, t('pkg.riddle.lead'))],
-                body: [form, h('p', { class: 'warning danger recovery' }, t('pkg.recovery'))],
+                head: [h('h1', null, t('pkg.riddle.title')), lead],
+                body: [slot, h('p', { class: 'warning danger recovery' }, t('pkg.recovery'))],
             }),
         ),
     );
+    let looking: Promise<void> | null = lookAhead();
+    // A page that says "nothing here yet" looks again when it is come back to, or when the network returns.
+    const relook = (): void => {
+        if (!disposed && waiting && !working && document.visibilityState !== 'hidden') looking = lookAhead();
+    };
+    document.addEventListener('visibilitychange', relook);
+    window.addEventListener('online', relook);
     return () => {
         disposed = true;
+        if (again !== undefined) clearTimeout(again);
+        document.removeEventListener('visibilitychange', relook);
+        window.removeEventListener('online', relook);
         card.destroy();
     };
 }
@@ -247,6 +371,8 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
  */
 /** Gifts this page has already seen paid for (by address): a language change, or the gift being taken, does not undress them. Memory only. */
 const ENTITLED = new Set<string>();
+/** The name a paid gift is remembered under: its address and the wrapper that was paid for. */
+const paidFor = (address: string, wrapper: string): string => `${address} ${wrapper}`;
 /** After the first answer, how long to wait before each further look when the chain could not say. */
 const ENTITLE_RETRIES_MS = [2000, 6000, 15000];
 
@@ -258,7 +384,7 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
     // mean changes nothing.
     const worn = wanted ? dressed(wanted, link.recipe) : undefined;
     if (!wanted || offer.kind === 'free') return openPackage(root, ctx, link, key, worn ?? wrapperById(DEFAULT_WRAPPER));
-    if (ENTITLED.has(key.address)) return openPackage(root, ctx, link, key, worn);
+    if (ENTITLED.has(paidFor(key.address, wanted.id))) return openPackage(root, ctx, link, key, worn);
     const fallback = wrapperById(DEFAULT_WRAPPER);
     const card = stageCard(fallback);
     root.append(
@@ -305,7 +431,7 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
             void ask(12000).then(v => {
                 if (gone) return;
                 if (v === 'paid') {
-                    ENTITLED.add(key.address);
+                    ENTITLED.add(paidFor(key.address, wanted.id));
                     // Shown at once while the gift is still closed; otherwise from the next time this screen is drawn.
                     if (untouched()) show(worn);
                 } else if (v === 'unknown') again(n + 1);
@@ -316,7 +442,7 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
         // Four seconds at most before something is shown: the gift never waits long on a wrapper.
         const v = await ask(4000);
         if (gone) return;
-        if (v === 'paid') ENTITLED.add(key.address);
+        if (v === 'paid') ENTITLED.add(paidFor(key.address, wanted.id));
         show(v === 'paid' ? worn : fallback);
         // A slow network is not a verdict: the page looks again a few times, quietly.
         if (v === 'unknown') again(0);

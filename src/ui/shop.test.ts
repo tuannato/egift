@@ -192,7 +192,7 @@ describe('the riddle lock', () => {
         expect(newSecret).not.toHaveBeenCalled();
     });
 
-    it('a locked gift is made from the secret and the answer; the link carries the question and no address', async () => {
+    it('a locked gift is made from the secret and the answer; the link carries the question, never the answer', async () => {
         app = boot();
         await makeLocked(app, 'Our café?', 'Giảng');
         const made = getMade()!;
@@ -203,6 +203,8 @@ describe('the riddle lock', () => {
         expect(made.key.address).toBe((await unlockKey(link, ' giang ')).address);
         expect(made.key.address).not.toBe(deriveKey(link.secret).address);
         expect(made.link).not.toContain(made.key.address.replace('ecash:', ''));
+        // By default it names where the gift is (its spot), so that a page can tell whether it is still there.
+        expect(link.spot).toEqual(made.key.pkh);
         expect(made.link.toLowerCase()).not.toContain('giang');
         // The created screen shows the question and where the answer must not travel.
         expect(app.root.querySelector('.screen-created .riddle-q')!.textContent).toBe('Our café?');
@@ -305,6 +307,165 @@ describe('the riddle lock', () => {
         await flush();
         expect(app.root.querySelector('.screen-locked')).toBeNull();
         expect(app.root.querySelector('.screen-package .slide')).not.toBeNull();
+    });
+});
+
+describe('a riddle link that names where the gift is', () => {
+    const answer = async (a: Booted, text: string): Promise<void> => {
+        type(a.root.querySelector('#rd-answer') as HTMLInputElement, text);
+        const submit = a.root.querySelector('.riddle-form button[type=submit]') as HTMLButtonElement;
+        (a.root.querySelector('.riddle-form') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await until(() => !a.root.contains(submit) || !submit.disabled);
+        await flush();
+    };
+    async function spotGift(chain: DemoChain, state: 'funded' | 'taken' | 'unfunded', wrapper = 'lixi', extra?: Parameters<DemoChain['fund']>[2] | ((pkh: Uint8Array) => Parameters<DemoChain['fund']>[2])) {
+        const secret = newSecret();
+        const plain = { version: 1 as const, secret, wrapper, wish: 'chuc mung nam moi', riddle: 'What says meow?' };
+        const key = await unlockKey(plain, 'cat');
+        if (state !== 'unfunded') chain.fund(key.address, 8888n, typeof extra === 'function' ? extra(key.pkh) : extra);
+        if (state === 'taken') chain.steal(key.address);
+        const url = encodeLink({ ...plain, spot: key.pkh }, location.origin);
+        return { key, frag: url.slice(url.indexOf('#')) };
+    }
+
+    it('the giver may hide the status: then the link names no address', async () => {
+        app = boot();
+        type(app.root.querySelector('#f-amount') as HTMLInputElement, '88');
+        const box = app.root.querySelector('#f-riddle') as HTMLInputElement;
+        box.checked = true;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+        const hide = app.root.querySelector('#f-riddle-hide') as HTMLInputElement;
+        expect(hide.checked).toBe(false);
+        expect(hide.closest('label')!.textContent).toContain(t('create.riddle.hide'));
+        hide.checked = true;
+        hide.dispatchEvent(new Event('change', { bubbles: true }));
+        type(app.root.querySelector('#f-riddle-q') as HTMLInputElement, 'Our café?');
+        type(app.root.querySelector('#f-riddle-a') as HTMLInputElement, 'Giảng');
+        type(app.root.querySelector('#f-riddle-a2') as HTMLInputElement, 'Giảng');
+        (app.root.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await until(() => getMade() !== null);
+        const link = decodeFragment(getMade()!.link.slice(getMade()!.link.indexOf('#')))!;
+        expect(link.riddle).toBe('Our café?');
+        expect(link.spot).toBeUndefined();
+    });
+
+    it('a gift that is there: the question is asked, a wrong answer is told without the network, the right one opens it', async () => {
+        const chain = createDemoChain();
+        const { key, frag } = await spotGift(chain, 'funded');
+        const read = vi.spyOn(chain, 'read');
+        history.replaceState(null, '', '/' + frag);
+        app = boot(chain);
+        await until(() => read.mock.calls.length > 0);
+        await flush();
+        // One look at the address the link names; the question stands, and nothing of the gift is shown.
+        expect(read.mock.calls.map(c => c[0])).toEqual([key.address]);
+        expect(app.root.querySelector('.screen-locked .riddle-form')).not.toBeNull();
+        expect(main(app).textContent).not.toContain('88.88');
+        expect(main(app).textContent).not.toContain('chuc mung nam moi');
+        expect(main(app).querySelectorAll('.scam')).toHaveLength(1);
+        await answer(app, 'dog');
+        expect(read).toHaveBeenCalledTimes(1);
+        expect(main(app).textContent).toContain(t('pkg.riddle.wrong'));
+        expect(main(app).textContent).toContain(t('pkg.riddle.again'));
+        expect(main(app).textContent).not.toContain(t('pkg.riddle.wrong.next'));
+        expect(app.root.querySelector('.screen-locked')).not.toBeNull();
+        await answer(app, ' CAT ');
+        expect(app.root.querySelector('.screen-locked')).toBeNull();
+        expect(main(app).querySelector('.slide')).not.toBeNull();
+    });
+
+    it('a gift already taken, or not funded yet, says so before any answer: no field, no button, the warning', async () => {
+        for (const [state, title, next] of [['taken', 'pkg.taken', 'pkg.taken.next'], ['unfunded', 'pkg.empty', 'pkg.empty.next']] as const) {
+            resetPage('en');
+            const chain = createDemoChain();
+            const { frag } = await spotGift(chain, state);
+            history.replaceState(null, '', '/' + frag);
+            app = boot(chain);
+            await until(() => app!.root.querySelector('.riddle-gone') !== null);
+            expect(app.root.querySelector('.screen-locked')).not.toBeNull();
+            expect(main(app).textContent).toContain(t(title));
+            expect(main(app).textContent).toContain(t(next));
+            expect(main(app).querySelector('.riddle-form, input, button, a')).toBeNull();
+            expect(main(app).querySelectorAll('.scam')).toHaveLength(1);
+            expect(main(app).textContent).toContain(t('pkg.recovery'));
+            expect(main(app).textContent).not.toContain('What says meow?');
+            app.stop();
+            app = null;
+        }
+    });
+
+    it('a gift not funded yet is looked for again when the page is come back to; once it is there the question returns', async () => {
+        const chain = createDemoChain();
+        const { key, frag } = await spotGift(chain, 'unfunded');
+        history.replaceState(null, '', '/' + frag);
+        app = boot(chain);
+        await until(() => app!.root.querySelector('.riddle-gone') !== null);
+        expect(main(app).querySelector('.riddle-form')).toBeNull();
+        chain.fund(key.address, 8888n);
+        window.dispatchEvent(new Event('online'));
+        await until(() => app!.root.querySelector('.riddle-form') !== null);
+        expect(app.root.querySelector('.riddle-gone')).toBeNull();
+        expect(main(app).querySelectorAll('.scam')).toHaveLength(1);
+        await answer(app, 'cat');
+        expect(main(app).querySelector('.slide')).not.toBeNull();
+    });
+
+    it('a gift taken between the look and the answer: the right answer goes on to its own screen, which says so', async () => {
+        const chain = createDemoChain();
+        const { key, frag } = await spotGift(chain, 'funded');
+        const read = vi.spyOn(chain, 'read');
+        history.replaceState(null, '', '/' + frag);
+        app = boot(chain);
+        await until(() => read.mock.calls.length > 0);
+        await flush();
+        chain.steal(key.address);
+        await answer(app, 'cat');
+        expect(app.root.querySelector('.screen-locked')).toBeNull();
+        expect(main(app).textContent).toContain(t('pkg.taken'));
+        expect(main(app).querySelector('.slide, input')).toBeNull();
+    });
+
+    it('a spot that is not the answer\'s address opens nothing: the right answer reads as wrong', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const plain = { version: 1 as const, secret, wrapper: 'lixi', riddle: 'What says meow?' };
+        const real = await unlockKey(plain, 'cat');
+        chain.fund(real.address, 8888n);
+        // Someone rewrote the link to name another address, one that holds money.
+        const other = deriveKey(new Uint8Array(16).fill(9));
+        chain.fund(other.address, 500n);
+        const url = encodeLink({ ...plain, spot: other.pkh }, location.origin);
+        history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
+        app = boot(chain);
+        await flush();
+        await answer(app, 'cat');
+        expect(app.root.querySelector('.screen-locked')).not.toBeNull();
+        expect(main(app).textContent).toContain(t('pkg.riddle.wrong'));
+        expect(main(app).querySelector('.slide, .amount-block')).toBeNull();
+    });
+
+    it('a paid wrapper is learned before the answer: the right answer leads straight to it, never to the default', async () => {
+        const maker = deriveKey(new Uint8Array(16).fill(0x33));
+        const offer = { sats: 50_000n, payTo: maker.address };
+        const hex = (b: Uint8Array) => [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+        const p2pkh = (pkh: Uint8Array) => `76a914${hex(pkh)}88ac`;
+        setOfferForDev('mecha', offer);
+        const chain = createDemoChain();
+        const { frag } = await spotGift(chain, 'funded', 'mecha', pkh => ({
+            tx: { inputs: ['76a914' + '11'.repeat(20) + '88ac'], outputs: [{ sats: 0n, script: '6a' + stampOpReturnRaw('mecha', pkh) }, { sats: 8888n, script: p2pkh(pkh) }, { sats: offer.sats, script: p2pkh(maker.pkh) }] },
+        }));
+        const read = vi.spyOn(chain, 'read');
+        history.replaceState(null, '', '/' + frag);
+        app = boot(chain);
+        await until(() => read.mock.calls.length > 0);
+        // Answered at once: the lock's own opening gives the look ahead the time it needs.
+        await answer(app, 'cat');
+        // No stand-in, no "loading": the gift is in its own wrapper at once.
+        expect(app.root.querySelector('.screen-locked')).toBeNull();
+        expect(document.documentElement.dataset.wears).toBe('mecha');
+        expect(main(app).querySelector('.slide')).not.toBeNull();
+        expect(main(app).querySelector('.loading')).toBeNull();
+        setOfferForDev('mecha', null);
     });
 });
 

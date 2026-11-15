@@ -6,7 +6,7 @@ export * from './types';
 export { FLOOR_SATS, CAP_SATS, CONFIRM_SATS, DUST_SATS, FEE_PER_KB, WISH_MAX_BYTES, RIDDLE_MAX_BYTES, RIDDLE_ROUNDS, DEFAULT_WRAPPER, MAX_SWEEP_INPUTS, MAX_TOKEN_INPUTS } from './limits';
 export { newSecret, encodeLink, decodeFragment, wishBytes, riddleBytes } from './link';
 export { parseRecipe, formatRecipe, type Recipe, type RecipeFace } from './recipe';
-export { deriveKey } from './keys';
+export { deriveKey, addressOfPkh } from './keys';
 export { normaliseAnswer, riddleRoot, unlockKey } from './riddle';
 export { buildSweep, isValidDestination, takeFeeEstimate } from './tx';
 export { fundLinks, stampedFundLinks, tokenFundLinks, bip21Amount } from './bip21';
