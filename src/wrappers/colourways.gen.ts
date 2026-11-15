@@ -138,13 +138,13 @@ export const COLOURWAYS: Readonly<Record<string, { readonly own: string; readonl
             {
                 id: 'blue',
                 chip: '#2380DA',
-                files: ['body.svg', 'neck.svg', 'sheet-low.svg', 'sheet-up.svg', 'strings-a.svg', 'strings-b.svg', 'tail.svg', 'wing-l.svg', 'wing-r.svg'],
+                files: ['body.svg', 'head.svg', 'neck.svg', 'sheet-low.svg', 'sheet-up.svg', 'strings-a.svg', 'strings-b.svg', 'tail.svg', 'wing-l.svg', 'wing-r.svg'],
                 map: { '#A9301F': '#1462AB', '#B5321F': '#1369B7', '#D8432F': '#2380DA' },
             },
             {
                 id: 'saffron',
                 chip: '#C77900',
-                files: ['body.svg', 'neck.svg', 'sheet-low.svg', 'sheet-up.svg', 'strings-a.svg', 'strings-b.svg', 'tail.svg', 'wing-l.svg', 'wing-r.svg'],
+                files: ['body.svg', 'head.svg', 'neck.svg', 'sheet-low.svg', 'sheet-up.svg', 'strings-a.svg', 'strings-b.svg', 'tail.svg', 'wing-l.svg', 'wing-r.svg'],
                 map: { '#A9301F': '#9E5E00', '#B5321F': '#A76400', '#D8432F': '#C77900' },
             },
         ],

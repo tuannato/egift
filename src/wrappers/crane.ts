@@ -7,7 +7,7 @@ import { scaled, together, tune } from './tune';
  * paper stands on its corner, its creases showing, strings of small cranes
  * hanging down the sides of an indigo room. Opening: the sheet folds in half,
  * gathers to a single spine, and from the spine the body, the wings, the neck
- * and the tail swing out; the crane lifts, and three more go by further off.
+ * and the tail swing out and the head folds down; the crane lifts, and three more go by further off.
  *
  * The stage moves, turns and scales whole layers, so a fold is a scale
  * through zero and the crane is assembled from parts that turn about their
@@ -17,9 +17,9 @@ import { scaled, together, tune } from './tune';
  * (scripts/art/crane.gen.mjs): each SVG's viewBox is its box.
  */
 
-const PARTS = ['body', 'wing-l', 'wing-r', 'neck', 'tail'] as const;
+const PARTS = ['body', 'wing-l', 'wing-r', 'neck', 'head', 'tail'] as const;
 /** How far the finished crane lifts. */
-const LIFT = -12;
+const LIFT = -6;
 
 const open: Step[] = [
     // 1. The sheet folds in half: the upper half comes down (a scale through zero), showing its white side.
@@ -30,17 +30,20 @@ const open: Step[] = [
     { kind: 'move', layer: 'sheet-low', at: 700, dur: 340, ease: 'inout', to: { sx: 0.05 } },
     { kind: 'move', layer: 'sheet-in', at: 1000, dur: 120, to: { opacity: 0 } },
     { kind: 'move', layer: 'sheet-low', at: 1000, dur: 120, to: { opacity: 0 } },
-    // 3. From the spine: the body, then the wings, then neck and tail, each about its joint.
+    // 3. From the spine: the body, then the wings swing down and out, then neck and tail swing up, each
+    //    about its joint; last the tip of the neck folds down into the head.
     { kind: 'move', layer: 'body', at: 960, dur: 80, to: { opacity: 1 } },
     { kind: 'move', layer: 'body', at: 960, dur: 380, ease: 'back', to: { sx: 1 } },
-    { kind: 'move', layer: 'wing-l', at: 1160, dur: 60, to: { opacity: 1 } },
-    { kind: 'move', layer: 'wing-l', at: 1160, dur: 560, ease: 'back', to: { sx: 1, sy: 1, turn: 0 } },
-    { kind: 'move', layer: 'wing-r', at: 1240, dur: 60, to: { opacity: 1 } },
-    { kind: 'move', layer: 'wing-r', at: 1240, dur: 560, ease: 'back', to: { sx: 1, sy: 1, turn: 0 } },
-    { kind: 'move', layer: 'neck', at: 1420, dur: 60, to: { opacity: 1 } },
-    { kind: 'move', layer: 'neck', at: 1420, dur: 460, ease: 'back', to: { sx: 1, turn: 0 } },
-    { kind: 'move', layer: 'tail', at: 1500, dur: 60, to: { opacity: 1 } },
-    { kind: 'move', layer: 'tail', at: 1500, dur: 460, ease: 'back', to: { sx: 1, turn: 0 } },
+    { kind: 'move', layer: 'wing-l', at: 1140, dur: 60, to: { opacity: 1 } },
+    { kind: 'move', layer: 'wing-l', at: 1140, dur: 520, ease: 'back', to: { sx: 1, sy: 1, turn: 0 } },
+    { kind: 'move', layer: 'wing-r', at: 1220, dur: 60, to: { opacity: 1 } },
+    { kind: 'move', layer: 'wing-r', at: 1220, dur: 520, ease: 'back', to: { sx: 1, sy: 1, turn: 0 } },
+    { kind: 'move', layer: 'neck', at: 1360, dur: 60, to: { opacity: 1 } },
+    { kind: 'move', layer: 'neck', at: 1360, dur: 440, ease: 'back', to: { sy: 1, turn: 0 } },
+    { kind: 'move', layer: 'tail', at: 1440, dur: 60, to: { opacity: 1 } },
+    { kind: 'move', layer: 'tail', at: 1440, dur: 440, ease: 'back', to: { sy: 1, turn: 0 } },
+    { kind: 'move', layer: 'head', at: 1800, dur: 40, to: { opacity: 1 } },
+    { kind: 'move', layer: 'head', at: 1800, dur: 220, ease: 'out', to: { turn: 0 } },
     { kind: 'scatter', layer: 'fleck', at: 1300, dur: 1100, count: 12, spread: 130, fall: 70 },
     // 4. The crane lifts; three more pass further off.
     ...PARTS.map((layer): Step => ({ kind: 'move', layer, at: 2000, dur: 900, ease: 'inout', to: { y: LIFT } })),
@@ -61,8 +64,8 @@ const idle: IdleStep[] = [
 const afterglow: IdleStep[] = [
     ...hang,
     ...PARTS.map((layer): IdleStep => ({ layer, field: 'y', amp: 4, period: 5200 })),
-    { layer: 'wing-l', field: 'turn', amp: 5, period: 2600 },
-    { layer: 'wing-r', field: 'turn', amp: 5, period: 2600, phase: 0.5 },
+    { layer: 'wing-l', field: 'turn', amp: 4, period: 2600 },
+    { layer: 'wing-r', field: 'turn', amp: 4, period: 2600, phase: 0.5 },
     { layer: 'flock', field: 'y', amp: 3, period: 4400, phase: 0.3 },
 ];
 
@@ -87,11 +90,13 @@ export const crane: WrapperDef = {
         { id: 'sheet-low', art: 'sheet-low.svg', box: [60, 215, 240, 120], depth: 0.4 },
         { id: 'sheet-in', art: 'sheet-in.svg', box: [60, 215, 240, 120], origin: [0.5, 0], start: { sy: 0 }, depth: 0.4 },
         { id: 'sheet-up', art: 'sheet-up.svg', box: [60, 95, 240, 120], origin: [0.5, 1], depth: 0.4 },
-        { id: 'tail', art: 'tail.svg', box: [184, 190, 116, 92], origin: [8 / 116, 76 / 92], start: { opacity: 0, sx: 0.2, turn: 78 }, depth: 0.45 },
-        { id: 'neck', art: 'neck.svg', box: [44, 196, 132, 86], origin: [124 / 132, 70 / 86], start: { opacity: 0, sx: 0.2, turn: -78 }, depth: 0.45 },
-        { id: 'wing-r', art: 'wing-r.svg', box: [176, 86, 104, 184], origin: [6 / 104, 164 / 184], start: { opacity: 0, sx: 0.25, sy: 0.1, turn: 40 }, depth: 0.5 },
-        { id: 'wing-l', art: 'wing-l.svg', box: [80, 86, 104, 184], origin: [98 / 104, 164 / 184], start: { opacity: 0, sx: 0.25, sy: 0.1, turn: -40 }, depth: 0.5 },
-        { id: 'body', art: 'body.svg', box: [150, 226, 60, 84], start: { opacity: 0, sx: 0.1 }, depth: 0.5 },
+        { id: 'tail', art: 'tail.svg', box: [180, 120, 86, 174], origin: [18 / 86, 164 / 174], start: { opacity: 0, sy: 0.25, turn: 115 }, depth: 0.45 },
+        { id: 'neck', art: 'neck.svg', box: [94, 124, 86, 170], origin: [70 / 86, 160 / 170], start: { opacity: 0, sy: 0.25, turn: -115 }, depth: 0.45 },
+        // The head starts turned up in line with the neck, and folds down about the bend.
+        { id: 'head', art: 'head.svg', box: [64, 122, 50, 50], origin: [40 / 50, 9 / 50], start: { opacity: 0, turn: 108 }, depth: 0.45 },
+        { id: 'wing-r', art: 'wing-r.svg', box: [174, 190, 144, 112], origin: [22 / 144, 82 / 112], start: { opacity: 0, sx: 0.2, sy: 0.3, turn: -72 }, depth: 0.5 },
+        { id: 'wing-l', art: 'wing-l.svg', box: [42, 204, 144, 100], origin: [122 / 144, 68 / 100], start: { opacity: 0, sx: 0.2, sy: 0.3, turn: 72 }, depth: 0.5 },
+        { id: 'body', art: 'body.svg', box: [150, 254, 60, 82], start: { opacity: 0, sx: 0.1 }, depth: 0.5 },
         { id: 'fleck', art: 'fleck.svg', box: [176, 246, 8, 8] },
     ],
     idle,

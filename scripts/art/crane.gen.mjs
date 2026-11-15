@@ -31,13 +31,23 @@ function svg(name, box, inner) {
     const [x, y, w, h] = box;
     writeFileSync(join(OUT, `${name}.svg`), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">${inner}</svg>`);
 }
-/** A very small crane, seen flat: two wings, a neck, a tail. `s` is half its span. */
-const mini = (cx, cy, s, a, b) =>
-    poly([[cx, cy + s * 0.25], [cx - s * 0.75, cy - s], [cx - s * 0.25, cy + s * 0.05]], a) +
-    poly([[cx, cy + s * 0.25], [cx + s * 0.75, cy - s], [cx + s * 0.25, cy + s * 0.05]], b) +
-    poly([[cx - s * 0.2, cy + s * 0.1], [cx - s * 1.15, cy - s * 0.1], [cx - s * 0.1, cy + s * 0.5]], b) +
-    poly([[cx + s * 0.2, cy + s * 0.1], [cx + s * 1.1, cy - s * 0.2], [cx + s * 0.1, cy + s * 0.5]], a) +
-    poly([[cx - s * 0.22, cy + s * 0.12], [cx + s * 0.22, cy + s * 0.12], [cx, cy + s * 0.62]], a);
+/**
+ * A very small crane in the same view as the big one: two broad wings spread to the sides, a steep
+ * neck with the head folded down on the left, a plain steep tail on the right, a kite body below.
+ * `s` is half its span.
+ */
+const mini = (cx, cy, s, a, b) => {
+    const P = pts => pts.map(([x, y]) => [cx + x * s, cy + y * s]);
+    return (
+        poly(P([[0.06, 0.1], [0.3, 0.16], [0.56, -0.98]]), b) +
+        poly(P([[-0.06, 0.1], [-0.3, 0.16], [-0.6, -0.86], [-0.5, -0.92]]), a) +
+        poly(P([[-0.5, -0.92], [-0.88, -0.56], [-0.62, -0.8]]), b) +
+        poly(P([[0, -0.12], [-1, -0.36], [-0.3, 0.3]]), a) +
+        poly(P([[0, -0.12], [1, -0.44], [0.3, 0.3]]), b) +
+        poly(P([[0, -0.06], [-0.24, 0.16], [0, 0.62]]), a) +
+        poly(P([[0, -0.06], [0.24, 0.16], [0, 0.62]]), b)
+    );
+};
 
 /* ---- room: indigo, a lighter band low down like a table's far edge ---- */
 {
@@ -74,21 +84,29 @@ const SX = 180, SY = 215, H = 120;
     svg('sheet-in', [SX - H, SY, 2 * H, H], inn);
 }
 
-/* ---- the crane, drawn where it ends. Each part is its own layer, turning about where it joins the body. ---- */
-const BX = 180, BY = 262; // the middle of the body
+/* ---- the crane, drawn where it ends: the classic orizuru seen a little from the front. Two broad wings
+   spread to the sides, a thin neck rising steeply on the left with its head folded sharply down, a plain
+   steep spike of a tail on the right, a compact kite of a body low in the middle. Each part is its own
+   layer, turning about where it joins the body. ---- */
+const BX = 180;
 {
-    // Body: a small kite, two faces.
-    svg('body', [150, 226, 60, 84], poly([[BX, 230], [BX - 26, BY], [BX, 306]], C.red) + poly([[BX, 230], [BX + 26, BY], [BX, 306]], C.redLo));
-    // Wings: long triangles up and out from the body's top. Outer face coloured, the face nearer the body white (the paper's other side).
-    svg('wing-l', [80, 86, 104, 184], poly([[BX - 2, 250], [88, 92], [124, 222]], C.red) + poly([[BX - 2, 250], [124, 222], [150, 266]], C.paper) + poly([[BX - 2, 250], [88, 92], [150, 180]], C.redLo, ' opacity="0.55"'));
-    svg('wing-r', [176, 86, 104, 184], poly([[BX + 2, 250], [272, 92], [236, 222]], C.redLo) + poly([[BX + 2, 250], [236, 222], [210, 266]], C.paperLo) + poly([[BX + 2, 250], [272, 92], [210, 180]], C.red, ' opacity="0.55"'));
-    // Neck and head (left), tail (right).
-    svg('neck', [44, 196, 132, 86], poly([[170, 258], [70, 208], [164, 278]], C.red) + poly([[170, 258], [70, 208], [150, 240]], C.redLo, ' opacity="0.6"') + poly([[70, 208], [50, 236], [86, 220]], C.redLo));
-    svg('tail', [184, 190, 116, 92], poly([[190, 258], [266, 216], [196, 278]], C.redLo) + poly([[190, 258], [266, 216], [210, 240]], C.red, ' opacity="0.6"'));
+    // Body: a compact kite, two faces. It lies over the roots of everything else.
+    svg('body', [150, 254, 60, 82], poly([[BX, 256], [BX - 28, 284], [BX, 334]], C.red) + poly([[BX, 256], [BX + 28, 284], [BX, 334]], C.redLo));
+    // Wings: broad triangles out to the sides from the body's top, two coloured faces about a crease;
+    // the wedge nearest the body shows the paper's white side. The far (right) wing sits a little higher.
+    const wing = (top, tip, mid, rootLo, lead, trail, white) => poly([top, tip, mid], lead) + poly([tip, rootLo, mid], trail) + poly([top, mid, rootLo], white);
+    svg('wing-l', [42, 204, 144, 100], wing([182, 248], [54, 206], [136, 264], [144, 300], C.red, C.redLo, C.paper));
+    svg('wing-r', [174, 190, 144, 112], wing([178, 248], [308, 194], [224, 262], [216, 300], C.redLo, C.red, C.paperLo));
+    // Neck (left): long and thin, one face and a sliver. Its root is hidden behind the wings and the body.
+    svg('neck', [94, 124, 86, 170], poly([[148, 290], [170, 281], [108, 128], [99, 132]], C.redLo) + poly([[170, 281], [176, 278], [108, 128]], C.red));
+    // Head: the tip of the neck folded sharply down, one small face.
+    svg('head', [64, 122, 50, 50], poly([[108, 128], [68, 160], [98, 152]], C.red));
+    // Tail (right): a plain sharp spike, one face and a sliver.
+    svg('tail', [180, 120, 86, 174], poly([[184, 278], [206, 288], [262, 124]], C.red) + poly([[206, 288], [212, 290], [262, 124]], C.redLo));
 }
 
 /* ---- flock: three small cranes further off, on a rising line ---- */
-svg('flock', [196, 40, 150, 120], mini(232, 132, 15, C.paper, C.paperLo) + mini(280, 96, 11, C.gold, C.paperLo) + mini(318, 64, 8, C.paper, C.paperLo));
+svg('flock', [196, 40, 150, 120], mini(232, 134, 17, C.paper, C.paperLo) + mini(282, 98, 12, C.gold, C.paperLo) + mini(320, 66, 9, C.paper, C.paperLo));
 
 /* ---- fleck: gold dust when the wings open ---- */
 svg('fleck', [176, 246, 8, 8], poly([[180, 246], [184, 250], [180, 254], [176, 250]], C.gold));
