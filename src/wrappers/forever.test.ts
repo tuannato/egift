@@ -19,6 +19,7 @@ import { formatRecipe, parseRecipe } from '../core/recipe';
 const SHIPPED = [
     'lixi', 'mecha', 'signal', 'fold', 'cake', 'letter', 'inkwash', 'snowbox', 'fireworks', 'dopaper', 'lantern', 'bouquet',
     'lace', 'cloudmoon', 'diploma', 'wreath', 'skyline', 'basket', 'latte', 'dawn', 'pumpkin', 'rangoli', 'paperbag', 'archmoon',
+    'vinyl', 'bottle', 'seeds', 'crane', 'cradle', 'orbit',
 ] as const;
 
 describe('links are forever', () => {

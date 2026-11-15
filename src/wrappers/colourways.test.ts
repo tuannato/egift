@@ -22,12 +22,19 @@ const recolour = (text: string, map: Readonly<Record<string, string>>): string =
 describe('colourways of the art', () => {
     // A colourway's place in its wrapper's list has gone out in links (`a` + its letter), and its colours with it:
     // add at the end of a list; never reorder, remove or re-tune one.
-    it('the lists as they went out on 15 November 2026', () => {
+    it('the lists as they went out (15 and 16 November 2026)', () => {
         expect(Object.fromEntries(Object.entries(COLOURWAYS).map(([id, w]) => [id, w.ways.map(c => `${c.id} ${c.chip}`)]))).toEqual({
             snowbox: ['pine #02442F', 'plum #4A2954'],
             cake: ['plum #51335E', 'forest #1F4C31'],
             fold: ['indigo #4E7ACD', 'moss #5C8B52'],
             wreath: ['spring #B0586A', 'frost #396999'],
+            // Added on 16 November 2026, with the six wrappers that came then.
+            vinyl: ['blue #277EE2', 'rose #CA458A'],
+            bottle: ['violet #544B7A', 'green #2E5F46'],
+            seeds: ['sunflower #D37F22', 'lavender #9676CC'],
+            crane: ['blue #2380DA', 'saffron #C77900'],
+            cradle: ['lilac #A08EC2', 'peach #C8847B'],
+            orbit: ['violet #624283', 'teal #006065'],
         });
         for (const [id, w] of Object.entries(COLOURWAYS)) {
             expect(wrapperById(id), id).toBeDefined();

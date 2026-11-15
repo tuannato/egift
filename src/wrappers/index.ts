@@ -26,6 +26,12 @@ import { pumpkin } from './pumpkin';
 import { rangoli } from './rangoli';
 import { paperbag } from './paperbag';
 import { archmoon } from './archmoon';
+import { vinyl } from './vinyl';
+import { bottle } from './bottle';
+import { seeds } from './seeds';
+import { crane } from './crane';
+import { cradle } from './cradle';
+import { orbit } from './orbit';
 
 /** The built-in wrappers, in the order the picker shows them. */
 import { lock } from './lock';
@@ -37,7 +43,7 @@ import { lock } from './lock';
  */
 export const LOCK_WRAPPER: WrapperDef = lock;
 
-export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon];
+export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit];
 
 export function wrapperById(id: string): WrapperDef | undefined {
     return WRAPPERS.find(w => w.id === id);
