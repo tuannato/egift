@@ -21,6 +21,9 @@ export interface Capsule {
     destroy(): void;
 }
 
+/** How tall the capsule is when stepped down to a strip. */
+const PEEK_PX = 76;
+
 /** The height the capsule takes: its content plus chrome, up to the limit. Pure. */
 export function capsuleHeight(content: number, chrome: number, limit: number): number {
     const want = Math.max(0, Math.ceil(content)) + Math.max(0, chrome);
@@ -45,6 +48,19 @@ export function makeCapsule(children: (Node | null | undefined | false)[], kind?
     const el = h('div', { class: 'capsule layout-body' + (kind ? ' capsule--' + kind : '') }, scroller, clasp);
     const root = document.documentElement;
     let tall = false;
+    // Stepped down to a strip, by the person's own press, so that what is on stage can be seen large. Never by itself.
+    let low = false;
+    const peek = h('div', { class: 'cap-peek' });
+    el.append(peek);
+    const setLow = (on: boolean): void => {
+        if (low === on) return;
+        low = on;
+        el.classList.toggle('is-low', low);
+        if (low) root.dataset.capLow = 'yes';
+        else delete root.dataset.capLow;
+        el.dispatchEvent(new CustomEvent('cap:lowchange', { bubbles: true, detail: { on: low } }));
+        schedule();
+    };
     let first = true;
     let raf = 0;
 
@@ -57,6 +73,14 @@ export function makeCapsule(children: (Node | null | undefined | false)[], kind?
 
     function measure(): void {
         raf = 0;
+        if (low) {
+            // A strip: one line of what the card holds, and the way back to all of it.
+            if (grab.isConnected) grab.remove();
+            el.classList.remove('is-scroll');
+            el.style.setProperty('height', `${PEEK_PX}px`);
+            root.style.setProperty('--cap-h', `${PEEK_PX}px`);
+            return;
+        }
         const content = inner.offsetHeight;
         if (content === 0 && !inner.isConnected) return;
         const lim = limit();
@@ -99,8 +123,35 @@ export function makeCapsule(children: (Node | null | undefined | false)[], kind?
         el.classList.toggle('is-tall', tall);
         schedule();
     });
+    // Step down to a strip or back up. `text` is what the strip says; `label` and `run` give it one button, which
+    // brings the card back first and then does its job.
+    el.addEventListener('cap:low', e => {
+        const d = (e as CustomEvent<{ on?: boolean; text?: string; label?: string; run?: () => void }>).detail ?? {};
+        if (d.on) {
+            const parts: Node[] = [h('span', { class: 'cap-peek-text' }, d.text ?? '')];
+            if (d.label) {
+                parts.push(
+                    h(
+                        'button',
+                        {
+                            type: 'button',
+                            class: 'btn btn-primary cap-peek-go',
+                            onclick: () => {
+                                setLow(false);
+                                d.run?.();
+                            },
+                        },
+                        d.label,
+                    ),
+                );
+            }
+            peek.replaceChildren(...parts);
+        }
+        setLow(d.on === true);
+    });
     // A job to finish (a panel opened inside): lift the limit and bring the job into view.
     el.addEventListener('cap:show', e => {
+        setLow(false);
         const target = e.target instanceof HTMLElement ? e.target : null;
         if (!tall) {
             tall = true;
@@ -152,6 +203,7 @@ export function makeCapsule(children: (Node | null | undefined | false)[], kind?
         inner,
         destroy() {
             live.delete(cap);
+            delete root.dataset.capLow;
             ro?.disconnect();
             offBusy();
             window.removeEventListener('resize', onViewport);

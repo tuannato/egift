@@ -176,6 +176,8 @@ export const vi = {
     'gift.amount.label': 'Số tiền',
     'gift.ref.label': 'Gói',
     'pkg.loading': 'Đang đọc gói quà trên mạng lưới…',
+    'pkg.look': "Xem vỏ lớn hơn",
+    'pkg.look.back': "Hiện lại thông tin",
     'pkg.neterr': 'Chưa kết nối được mạng',
     'pkg.empty': 'Gói này chưa có gì.',
     'pkg.empty.next': 'Đang chờ người gửi nạp quà vào.',

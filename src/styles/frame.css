@@ -554,3 +554,6 @@ label[for="th-addr"] { text-transform: none; letter-spacing: 0.04em; }
 /* A phone paints its own grey flash over whatever is tapped. A door on the shelf is a button as tall as the page,
    so that flash was a dark band from top to bottom, over the capsule too. Every control here shows its own press. */
 html { -webkit-tap-highlight-color: transparent; }
+
+/* The page fits the screen and stays that size: it scrolls both ways, and neither a double tap nor a pinch zooms it. */
+html { touch-action: pan-x pan-y; }

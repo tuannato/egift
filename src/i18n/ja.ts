@@ -178,6 +178,8 @@ export const ja: Record<keyof typeof vi, string> = {
     'gift.amount.label': "金額",
     'gift.ref.label': "パッケージ",
     'pkg.loading': "ネットワークからギフトを読み取っています…",
+    'pkg.look': "ラッピングを大きく見る",
+    'pkg.look.back': "詳細をもう一度表示",
     'pkg.neterr': "ネットワークに接続できませんでした",
     'pkg.empty': "このパッケージにはまだ何も入っていません。",
     'pkg.empty.next': "贈り主の入金を待っています。",

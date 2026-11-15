@@ -178,6 +178,8 @@ export const pt: Record<keyof typeof vi, string> = {
     'gift.amount.label': "Valor",
     'gift.ref.label': "Pacote",
     'pkg.loading': "Lendo o presente na rede…",
+    'pkg.look': "Ver o embrulho maior",
+    'pkg.look.back': "Mostrar os detalhes de novo",
     'pkg.neterr': "Não foi possível conectar à rede",
     'pkg.empty': "Ainda não há nada neste pacote.",
     'pkg.empty.next': "Esperando o depósito de quem enviou.",

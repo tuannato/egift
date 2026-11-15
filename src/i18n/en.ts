@@ -178,6 +178,8 @@ export const en: Record<keyof typeof vi, string> = {
     'gift.amount.label': 'Amount',
     'gift.ref.label': 'Package',
     'pkg.loading': 'Reading the gift from the network…',
+    'pkg.look': "See the wrapper larger",
+    'pkg.look.back': "Show the details again",
     'pkg.neterr': 'Could not reach the network',
     'pkg.empty': 'There is nothing in this package yet.',
     'pkg.empty.next': 'Waiting for the sender to fund it.',

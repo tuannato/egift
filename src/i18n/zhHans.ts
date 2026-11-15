@@ -178,6 +178,8 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'gift.amount.label': "金额",
     'gift.ref.label': "礼包",
     'pkg.loading': "正在从网络读取礼物…",
+    'pkg.look': "放大查看封套",
+    'pkg.look.back': "重新显示详情",
     'pkg.neterr': "连不上网络",
     'pkg.empty': "这个礼包里还没有东西。",
     'pkg.empty.next': "正在等待送礼人存入。",

@@ -178,6 +178,8 @@ export const id: Record<keyof typeof vi, string> = {
     'gift.amount.label': "Jumlah",
     'gift.ref.label': "Paket",
     'pkg.loading': "Membaca hadiah dari jaringan…",
+    'pkg.look': "Lihat bungkus lebih besar",
+    'pkg.look.back': "Tampilkan lagi rinciannya",
     'pkg.neterr': "Tidak bisa terhubung ke jaringan",
     'pkg.empty': "Belum ada apa-apa di dalam paket ini.",
     'pkg.empty.next': "Menunggu pengirim mengisinya.",

@@ -178,6 +178,8 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'gift.amount.label': "金額",
     'gift.ref.label': "禮包",
     'pkg.loading': "正在從網路讀取禮物…",
+    'pkg.look': "放大查看封套",
+    'pkg.look.back': "重新顯示詳情",
     'pkg.neterr': "連不上網路",
     'pkg.empty': "這個禮包裡還沒有東西。",
     'pkg.empty.next': "正在等待送禮人存入。",

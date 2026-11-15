@@ -178,6 +178,8 @@ export const ru: Record<keyof typeof vi, string> = {
     'gift.amount.label': "Сумма",
     'gift.ref.label': "Пакет",
     'pkg.loading': "Читаем подарок из сети…",
+    'pkg.look': "Показать обёртку крупнее",
+    'pkg.look.back': "Снова показать сведения",
     'pkg.neterr': "Не удалось связаться с сетью",
     'pkg.empty': "В этом пакете пока ничего нет.",
     'pkg.empty.next': "Ждём, когда отправитель его пополнит.",

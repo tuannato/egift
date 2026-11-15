@@ -178,6 +178,8 @@ export const ko: Record<keyof typeof vi, string> = {
     'gift.amount.label': "금액",
     'gift.ref.label': "꾸러미",
     'pkg.loading': "네트워크에서 선물을 읽는 중…",
+    'pkg.look': "포장 크게 보기",
+    'pkg.look.back': "내용 다시 보기",
     'pkg.neterr': "네트워크에 연결하지 못했어요",
     'pkg.empty': "이 꾸러미에는 아직 아무것도 없어요.",
     'pkg.empty.next': "보낸 사람의 입금을 기다리고 있어요.",

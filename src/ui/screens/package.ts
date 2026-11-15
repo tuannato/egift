@@ -4,7 +4,7 @@ import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
 import type { WrapperDef } from '../../stage';
 import { stageCard, prefersReducedMotion } from '../stageCard';
-import { clear, h } from '../dom';
+import { clear, h, svg } from '../dom';
 import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
 import { getLang, localeOf, t } from '../../i18n';
@@ -444,6 +444,14 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
         },
     });
     const below = h('div', { class: 'below', 'aria-live': 'polite' });
+    // The button that lets the wrapper be looked at large (see where the screen is put together, below).
+    const lookBtn = h(
+        'button',
+        { type: 'button', class: 'look-btn', 'aria-pressed': 'false', 'aria-label': t('pkg.look') },
+        svg('svg', { viewBox: '0 0 24 24', width: 20, height: 20, 'aria-hidden': 'true', focusable: 'false' }, svg('path', { d: 'M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6' })),
+    );
+    let lookHost: HTMLElement | null = null;
+    const capOf = (host: HTMLElement | null): Element | null => host?.querySelector('.capsule') ?? null;
     const plateEl = plate(card, def);
 
     function syncOverlay(): void {
@@ -822,10 +830,21 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
         below.append(...rest);
     }
 
+    function syncLook(): void {
+        // Only beside a gift that is open: an empty or taken package carries no control at all.
+        const look = !loading && !!state && state.kind === 'funded' && revealed;
+        if (look && lookHost && !lookBtn.isConnected) lookHost.append(lookBtn);
+        else if (!look && lookBtn.isConnected) {
+            capOf(lookHost)?.dispatchEvent(new CustomEvent('cap:low', { detail: { on: false } }));
+            lookBtn.remove();
+        }
+    }
+
     function renderBelow(): void {
         // A slide torn down mid-drag never hears the thumb leave: stop its note here.
         cue.scrubEnd();
         clear(below);
+        syncLook();
         // An empty or taken package: the wrapper steps back, dimmed by the frame around the stage.
         plateEl.classList.toggle('plate--dim', !loading && !!state && state.kind !== 'funded' && !locked && !finished);
         if (disposed) return;
@@ -961,7 +980,33 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
         /* no live updates: the first read still shows the state */
     }
 
-    root.append(h('section', { class: 'screen screen-package' }, layout({ kind: 'package', plate: plateEl, body: [below] })));
+    // ---- Look at the wrapper: on a phone the card takes most of the screen once the gift is open, and the wrapper
+    //      stands small above it. One press steps the card down to a strip, and the wrapper grows; another brings it back.
+    const section = h('section', { class: 'screen screen-package' }, layout({ kind: 'package', plate: plateEl, body: [below] }));
+    lookHost = section;
+    syncLook();
+    const capEl = section.querySelector('.capsule');
+    lookBtn.addEventListener('click', () => {
+        if (!capEl) return;
+        const on = lookBtn.getAttribute('aria-pressed') !== 'true';
+        const funded = state?.kind === 'funded';
+        const take = funded ? [...below.querySelectorAll('button')].find(b => (b.textContent ?? '').trim() === t('pkg.take') && !b.disabled) : undefined;
+        capEl.dispatchEvent(
+            new CustomEvent('cap:low', {
+                detail: {
+                    on,
+                    text: funded && state ? `${formatXec(state.xecSats, getLang())} XEC` : '',
+                    ...(take ? { label: t('pkg.take'), run: () => [...below.querySelectorAll('button')].find(b => (b.textContent ?? '').trim() === t('pkg.take'))?.click() } : {}),
+                },
+            }),
+        );
+    });
+    section.addEventListener('cap:lowchange', e => {
+        const on = (e as CustomEvent<{ on: boolean }>).detail?.on === true;
+        lookBtn.setAttribute('aria-pressed', String(on));
+        lookBtn.setAttribute('aria-label', t(on ? 'pkg.look.back' : 'pkg.look'));
+    });
+    root.append(section);
     if (state && opened) {
         // Back from a remount while an operation holds the screen: the wrapper stays open.
         firstApply = false;

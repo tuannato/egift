@@ -178,6 +178,8 @@ export const th: Record<keyof typeof vi, string> = {
     'gift.amount.label': "จำนวนเงิน",
     'gift.ref.label': "แพ็กเกจ",
     'pkg.loading': "กำลังอ่านของขวัญจากเครือข่าย…",
+    'pkg.look': "ดูลายห่อให้ใหญ่ขึ้น",
+    'pkg.look.back': "แสดงรายละเอียดอีกครั้ง",
     'pkg.neterr': "เชื่อมต่อเครือข่ายไม่ได้",
     'pkg.empty': "ยังไม่มีอะไรในแพ็กเกจนี้",
     'pkg.empty.next': "กำลังรอผู้ส่งเติมเงิน",

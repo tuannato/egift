@@ -943,3 +943,26 @@ button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin:
 .topbar { z-index: 7; }
 .leave { width: min(320px, calc(100vw - var(--edge) * 2)); box-sizing: border-box; }
 .leave-row .btn { flex: none; white-space: nowrap; width: auto; }
+
+/* ---------- Look at the wrapper: the card steps down to a strip (phones) ---------- */
+.cap-peek { display: none; }
+.capsule.is-low .cap-scroll, .capsule.is-low .cap-grab { display: none; }
+.capsule.is-low .cap-peek { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 100%; padding: 0 14px 0 22px; box-sizing: border-box; }
+.cap-peek-text { min-width: 0; font: 700 22px / 1 var(--display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-peek .cap-peek-go { flex: none; width: auto; min-height: 48px; padding: 0 20px; }
+/* The button that does it: a small dark glass disc on the wrapper, just above the card's corner. */
+.look-btn {
+    position: fixed; z-index: 5; right: calc(var(--edge) + 8px); bottom: calc(var(--cap-h) + var(--kb, 0px) + var(--edge) + 14px);
+    width: 44px; height: 44px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; display: grid; place-items: center;
+    color: #f4f1ea; background: rgba(8, 9, 12, 0.58); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 8px 20px -8px rgba(0, 0, 0, 0.8);
+    transition: bottom 640ms var(--bounce), background-color 160ms linear, transform 180ms var(--spring);
+}
+.look-btn svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.look-btn:active { transform: scale(0.92); }
+.look-btn[aria-pressed="true"] { background: rgba(244, 241, 234, 0.92); color: #14151a; }
+.look-btn:focus-visible { outline: 2px solid #f4f1ea; outline-offset: 2px; }
+.look-btn[hidden] { display: none; }
+/* A wide screen shows the wrapper whole beside the card: nothing to step out of the way. */
+@media (min-width: 960px) { .look-btn { display: none; } }
+@media (prefers-reduced-motion: reduce) { .look-btn { transition: none; } }
+.capsule.is-low .cap-clasp, .capsule.is-low::before { display: none; }

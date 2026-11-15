@@ -77,6 +77,12 @@ function lazyChain(): Chain {
     };
 }
 
+// The page does not zoom: not on a double tap (the stylesheet's `touch-action`), not on a pinch. Safari reports a
+// pinch as a gesture of its own and ignores the viewport's word on it, so it is declined here.
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+    document.addEventListener(type, e => e.preventDefault(), { passive: false });
+}
+
 const root = document.getElementById('app');
 if (root) {
     const params = new URLSearchParams(location.search);

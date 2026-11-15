@@ -178,6 +178,8 @@ export const fr: Record<keyof typeof vi, string> = {
     'gift.amount.label': "Montant",
     'gift.ref.label': "Colis",
     'pkg.loading': "Lecture du cadeau sur le réseau…",
+    'pkg.look': "Voir l'emballage en grand",
+    'pkg.look.back': "Réafficher les détails",
     'pkg.neterr': "Le réseau n'a pas pu être joint",
     'pkg.empty': "Il n'y a encore rien dans ce colis.",
     'pkg.empty.next': "En attente que l'expéditeur l'alimente.",
