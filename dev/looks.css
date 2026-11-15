@@ -1,0 +1,133 @@
+/*
+ * The picking sheet for capsule colourways. Dev only.
+ * Each `.mini` is the capsule at about half size: `applyTheme` puts the --th-* tokens and the
+ * data attributes on it, and the rules below rebuild what `src/styles/capsule.css` builds from
+ * them for each material, corner and face (same mixes, same gradients, lengths halved).
+ */
+html, body { margin: 0; background: #08080a; color: #f4f1ea; font-family: 'Inter', system-ui, sans-serif; }
+#root { width: 1500px; height: 1100px; box-sizing: border-box; padding: 8px 14px 10px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+.sheet-head { margin: 0; font: 500 11px / 1.3 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: #a3a3aa; }
+.missing { color: #ff7a6b; }
+
+.row {
+    flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 104px 112px repeat(7, 1fr); gap: 12px; align-items: stretch; padding: 8px 12px 6px 8px; border-radius: 10px;
+    /* The room the capsule floats in: the wrapper's ground, lit by its ambient colours. */
+    background:
+        radial-gradient(42% 120% at 34% 0%, color-mix(in srgb, var(--amb-1, transparent) 26%, transparent), transparent 70%),
+        radial-gradient(42% 120% at 86% 100%, color-mix(in srgb, var(--amb-2, transparent) 22%, transparent), transparent 70%),
+        var(--ground);
+}
+.thumb { height: 100%; width: 100%; min-height: 0; object-fit: cover; border-radius: 6px; }
+.who { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+.who-name { margin: 0; font: 700 16px / 1.15 'Inter', system-ui, sans-serif; letter-spacing: -0.02em; color: #f5f5f2; }
+.who-id { margin: 0; font: 500 12px / 1.2 'JetBrains Mono', ui-monospace, monospace; color: #d6d6da; }
+.who-kind { margin: 0; font: 500 9.5px / 1.3 'JetBrains Mono', ui-monospace, monospace; color: #b4b4ba; }
+
+.cell { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 3px; }
+.cell--none { align-items: center; justify-content: center; color: #6c6c74; font-size: 18px; }
+/* The key: always black on white, whatever the card. */
+.key {
+    position: absolute; left: -5px; top: -5px; z-index: 3; min-width: 24px; height: 24px; box-sizing: border-box; padding: 0 5px; display: grid; place-items: center;
+    border-radius: 6px; background: #fff; color: #08080a; font: 800 16px / 1 'Inter', system-ui, sans-serif; box-shadow: 0 0 0 2px #08080a;
+}
+.key--pick { background: #ffd84a; }
+.cap { margin: 0; height: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 500 9.5px / 12px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.04em; color: #c9c9cf; text-shadow: 0 0 3px #000; }
+.cap-pick { color: #ffd84a; font-weight: 700; }
+.cap-flag { color: #ffb4a8; font-weight: 600; }
+
+/* ---------- The capsule in small ---------- */
+.mini {
+    /* What the frame builds from the theme (capsule.css, :root). */
+    --surface: var(--th-surface); --ink: var(--th-ink); --dim: var(--th-dim); --accent: var(--th-accent); --on-accent: var(--th-on-accent);
+    --text: 'Inter', ui-sans-serif, system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --r-cap: 16px; --r-ctl: 999px; --cut: 0px;
+    --display: var(--text); --d-weight: 650; --d-track: -0.025em; --fig-weight: 700; --fig-track: -0.05em;
+    --glass: color-mix(in srgb, var(--surface) 54%, transparent);
+    --glass-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    position: relative; flex: 1 1 0; min-height: 0; box-sizing: border-box; padding: 11px 12px 10px 14px; display: flex; flex-direction: column; overflow: hidden;
+    border-radius: var(--r-cap); color: var(--ink);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 52%, rgba(120, 120, 130, 0.22)), var(--glass) 46%, color-mix(in srgb, var(--surface) 80%, rgba(0, 0, 0, 0.6)));
+    -webkit-backdrop-filter: blur(11px) saturate(1.6); backdrop-filter: blur(11px) saturate(1.6);
+    box-shadow: var(--glass-edge), 0 14px 30px -12px rgba(0, 0, 0, 0.9);
+}
+.mini-title { margin: 0; padding-left: 14px; font: var(--d-weight) 13.5px / 1.2 var(--display); letter-spacing: var(--d-track); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-lead { margin: 2px 0 0; padding-left: 14px; font: 400 10px / 1.35 var(--text); color: var(--dim); white-space: nowrap; overflow: hidden; }
+.mini-figure { margin: auto 0; padding-left: 14px; font-family: var(--display); font-weight: var(--fig-weight); letter-spacing: var(--fig-track); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.mini-unit { margin-left: 5px; font: 600 10px / 1 var(--text); letter-spacing: 0; color: var(--dim); }
+.mini-btn {
+    flex: none; height: 30px; display: grid; place-items: center; border-radius: var(--r-ctl);
+    font: var(--d-weight) 11px / 1 var(--display); letter-spacing: var(--d-track); background: var(--accent); color: var(--on-accent);
+}
+
+/* Face */
+.mini[data-face="tech"] { --display: 'Tektur', var(--text); --fig-weight: 800; --fig-track: -0.015em; }
+.mini[data-face="tech"] .mini-title { font-family: var(--text); font-weight: 750; letter-spacing: -0.022em; }
+.mini[data-face="tech"] .mini-btn { font: 750 10px / 1 var(--text); letter-spacing: 0.06em; text-transform: uppercase; }
+.mini[data-face="mono"] { --display: var(--mono); --d-weight: 500; --d-track: -0.045em; --fig-weight: 300; --fig-track: -0.075em; }
+.mini[data-face="mono"] .mini-btn { letter-spacing: -0.02em; font-weight: 600; }
+
+/* Corner */
+.mini[data-corner="soft"] { --r-cap: 5px; --r-ctl: 3px; }
+.mini[data-corner="cut"] { --r-cap: 0px; --r-ctl: 0px; --cut: 9px; clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.mini[data-corner="cut"] .mini-btn { --c: 6px; clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c)); }
+
+/* Glass over a light surface: frosted, nearly opaque. */
+.mini[data-material="glass"][data-tone="light"] {
+    background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface) 96%, #000) 60%, color-mix(in srgb, var(--surface) 90%, #000));
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--th-ink) 10%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 14px 30px -12px rgba(0, 0, 0, 0.9);
+}
+
+/* Lacquer: the surface at the head, black lacquer below, the accent as gold line and gold button. */
+.mini[data-material="lacquer"] {
+    --body: #1d070a;
+    --gold: linear-gradient(180deg, color-mix(in srgb, var(--accent) 70%, #fff) 0%, var(--accent) 46%, color-mix(in srgb, var(--accent) 76%, #7a4300) 100%);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    background:
+        radial-gradient(90% 75px at 30% 0%, rgba(255, 255, 255, 0.09), transparent 70%),
+        linear-gradient(104deg, transparent 0 16%, rgba(255, 255, 255, 0.04) 16.3% 21%, transparent 21.3%),
+        linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 46%, var(--body)) 24%, color-mix(in srgb, var(--surface) 14%, var(--body)) 52%, var(--body) 100%);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 78%, transparent), 0 0 0 1px rgba(0, 0, 0, 0.55), 0 0 20px -4px color-mix(in srgb, var(--amb-1, var(--accent)) 70%, transparent), 0 14px 30px -12px rgba(0, 0, 0, 0.9);
+}
+.mini[data-material="lacquer"]::before {
+    content: ""; position: absolute; inset: 3px; z-index: 2; pointer-events: none; border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent); border-radius: calc(var(--r-cap) - 3px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 20px, transparent 75px); mask-image: linear-gradient(to bottom, #000 0, #000 20px, transparent 75px);
+}
+.mini[data-material="lacquer"] .mini-btn { background: var(--gold); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(90, 40, 0, 0.5), 0 4px 10px -5px rgba(0, 0, 0, 0.8); }
+
+/* Plate: white armour, dark seams, a hazard tab. */
+.mini[data-material="plate"] {
+    --seam: color-mix(in srgb, var(--ink) 86%, transparent);
+    --panel: linear-gradient(90deg, color-mix(in srgb, var(--surface) 84%, #5b6470) 0 3px, transparent 3px), linear-gradient(180deg, #fff 0, var(--surface) 7px, var(--surface) 70%, color-mix(in srgb, var(--surface) 88%, #5b6470) 100%);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    background:
+        linear-gradient(135deg, var(--seam) 0 calc(var(--cut) * 0.7071 + 2px), transparent 0) 0 0 / calc(var(--cut) + 4px) calc(var(--cut) + 4px) no-repeat,
+        linear-gradient(315deg, var(--seam) 0 calc(var(--cut) * 0.7071 + 2px), transparent 0) 100% 100% / calc(var(--cut) + 4px) calc(var(--cut) + 4px) no-repeat,
+        repeating-linear-gradient(-45deg, var(--accent) 0 4px, var(--ink) 4px 8px) calc(100% - 14px) 2px / 34px 4px no-repeat,
+        var(--panel);
+    box-shadow: inset 0 0 0 2px var(--seam), inset 0 -3px 0 color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.mini[data-material="plate"] .mini-btn {
+    box-shadow: inset 0 0 0 1.5px var(--seam), inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+    background:
+        linear-gradient(135deg, var(--seam) 0 calc(var(--c) * 0.7071 + 2px), transparent 0) 0 0 / calc(var(--c) + 4px) calc(var(--c) + 4px) no-repeat,
+        linear-gradient(315deg, var(--seam) 0 calc(var(--c) * 0.7071 + 2px), transparent 0) 100% 100% / calc(var(--c) + 4px) calc(var(--c) + 4px) no-repeat,
+        var(--accent);
+}
+
+/* Wire: a drawing in light. */
+.mini[data-material="wire"] {
+    --r-cap: 2px;
+    --glass: color-mix(in srgb, var(--surface) 46%, transparent);
+    --glow: 0 0 9px color-mix(in srgb, var(--accent) 50%, transparent);
+    --brackets:
+        linear-gradient(var(--accent), var(--accent)) 0 0 / 9px 1.5px no-repeat, linear-gradient(var(--accent), var(--accent)) 0 0 / 1.5px 9px no-repeat,
+        linear-gradient(var(--accent), var(--accent)) 100% 0 / 9px 1.5px no-repeat, linear-gradient(var(--accent), var(--accent)) 100% 0 / 1.5px 9px no-repeat,
+        linear-gradient(var(--accent), var(--accent)) 0 100% / 9px 1.5px no-repeat, linear-gradient(var(--accent), var(--accent)) 0 100% / 1.5px 9px no-repeat,
+        linear-gradient(var(--accent), var(--accent)) 100% 100% / 9px 1.5px no-repeat, linear-gradient(var(--accent), var(--accent)) 100% 100% / 1.5px 9px no-repeat;
+    background: var(--brackets), repeating-linear-gradient(0deg, color-mix(in srgb, var(--accent) 4%, transparent) 0 1px, transparent 1px 3px) 0 0 / 100% 32px no-repeat, var(--glass);
+    -webkit-backdrop-filter: blur(7px) saturate(1.25); backdrop-filter: blur(7px) saturate(1.25);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent), 0 0 22px -7px var(--accent), 0 14px 30px -12px rgba(0, 0, 0, 0.9);
+}
+.mini[data-material="wire"] :is(.mini-title, .mini-figure) { text-shadow: var(--glow); }
+.mini[data-material="wire"] .mini-btn { background: color-mix(in srgb, var(--accent) 84%, #00303a); box-shadow: 0 0 13px -3px var(--accent); }
