@@ -106,6 +106,10 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
 
     const pool = new Map<string, HTMLImageElement[]>();
     let animating = false;
+    /** A hand is scrubbing through the opening (`seek` between its two ends): every layer may move at any moment. */
+    let scrubbing = false;
+    /** What was last asked for, so that asking again for the same thing writes nothing. */
+    let promoted = 'none';
 
     /**
      * Which layers the browser is asked to keep ready to move. A layer kept
@@ -116,7 +120,10 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
      */
     function setWillChange(on: boolean): void {
         animating = on;
-        const all = on && mode !== null;
+        const all = on && (mode !== null || scrubbing);
+        const want = !on ? 'none' : all ? 'all' : `some:${state}`;
+        if (want === promoted) return;
+        promoted = want;
         let some: Set<string> | null = null;
         if (on && !all) {
             some = new Set((state === 'open' ? (def.afterglow ?? []) : (def.idle ?? [])).map(st => st.layer));
@@ -181,7 +188,7 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
             let el = list[idx];
             if (!el) {
                 el = makeImg(id, 'stage-particle');
-                if (animating && mode !== null) el.style.setProperty('will-change', 'transform, opacity');
+                if (animating && (mode !== null || scrubbing)) el.style.setProperty('will-change', 'transform, opacity');
                 const src = els.get(id)!;
                 root.insertBefore(el, src.nextSibling);
                 list[idx] = el;
@@ -236,6 +243,7 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
 
     function finish(): void {
         mode = null;
+        scrubbing = false;
         stopLoop();
         root.style.removeProperty('opacity');
         pos = len;
@@ -365,6 +373,7 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
                 paint(0);
             } else {
                 mode = 'play';
+                scrubbing = false;
                 setWillChange(true); // the opening moves every layer
                 if (pos >= len) {
                     finish();
@@ -384,11 +393,15 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
         seek(ms: number): void {
             if (destroyed) return;
             mode = null;
-            stopLoop();
+            cancelLoop();
             root.style.removeProperty('opacity');
             const t = Number.isNaN(ms) ? 0 : Math.min(len, Math.max(0, ms));
             pos = t;
             state = t >= len ? 'open' : t <= 0 ? 'closed' : 'opening';
+            // Between the two ends a hand is pulling the opening along, frame after frame: the layers stay ready
+            // for as long as it does. At either end they are let go (the idle loop asks again for its few).
+            scrubbing = state === 'opening';
+            setWillChange(scrubbing);
             paint(t);
             if (t >= def.revealAt) reveal();
             settle(true);

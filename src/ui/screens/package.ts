@@ -3,7 +3,7 @@ import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
 import type { WrapperDef } from '../../stage';
-import { stageCard } from '../stageCard';
+import { stageCard, prefersReducedMotion } from '../stageCard';
 import { clear, h } from '../dom';
 import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
@@ -19,7 +19,7 @@ import { tick } from '../stopwatch';
 import { cue, score } from '../sound';
 import { track } from '../busy';
 import { destroyCapsules } from '../capsule';
-import { slideToOpen } from '../slide';
+import { followStep, slideToOpen } from '../slide';
 import { downloadKeepsake, isKept, keep, keepableWish, keptId } from '../kept';
 import type { Kept, KeptToken } from '../kept';
 import { keepsakeLook } from '../keepsakeArt';
@@ -453,8 +453,51 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
         }
     }
 
+    // ---- The scene follows the thumb on the slide, at no more than its own pace and a half (`followStep`) ----
+    /** Where the thumb asks the opening to be, and where it is, in ms. */
+    let followTo = 0;
+    let followAt = 0;
+    let followLast = 0;
+    let followRaf = 0;
+    const calm = prefersReducedMotion();
+    const seekScene = (ms: number): void => {
+        try {
+            card.handle?.seek(ms <= 0 ? 0 : Math.max(1, ms));
+        } catch {
+            /* the stage is optional */
+        }
+    };
+    const stopFollow = (): void => {
+        if (followRaf !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(followRaf);
+        followRaf = 0;
+    };
+    const followFrame = (now: number): void => {
+        followRaf = 0;
+        if (disposed || opened) return;
+        // A frame that came late (a busy page, a tab in the background) counts for no more than a slow one.
+        const dt = Math.min(64, Math.max(0, now - followLast));
+        followLast = now;
+        followAt = followStep(followAt, followTo, dt);
+        seekScene(followAt);
+        if (Math.abs(followTo - followAt) > 0.5) followRaf = requestAnimationFrame(followFrame);
+    };
+    const follow = (to: number): void => {
+        followTo = to;
+        if (calm || typeof requestAnimationFrame !== 'function') {
+            // No motion wanted, or no frames to be had: the scene is simply put where the thumb is.
+            followAt = to;
+            seekScene(to);
+            return;
+        }
+        if (followRaf !== 0) return;
+        followLast = typeof performance !== 'undefined' ? performance.now() : 0;
+        followRaf = requestAnimationFrame(followFrame);
+    };
+
     function tapToOpen(): void {
         if (opened) return;
+        // The opening plays on from where the scene stands, not from where the thumb got to.
+        stopFollow();
         opened = true;
         openedFor = key.address;
         // Heard only if a touch on the capsule has woken sound: the slide is one.
@@ -477,8 +520,9 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
     }
 
     /**
-     * Slide to open: the thumb pulls the gift's own opening along, frame by
-     * frame, up to just before the reveal; let go early and it closes again.
+     * Slide to open: the gift's own opening follows the thumb, up to just
+     * before the reveal — as fast as a slow hand, never faster than its own
+     * pace and a half, so a flick does not skip it. Let go early and it closes.
      * The knob is a button: pressed (a keyboard, a screen reader), it opens.
      */
     function openBtn(): HTMLElement {
@@ -488,19 +532,11 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
             label: t('pkg.open'),
             onScrub: p => {
                 cue.scrub(p);
-                try {
-                    card.handle?.seek(Math.max(1, p * scrubMs));
-                } catch {
-                    /* the stage is optional */
-                }
+                follow(Math.max(1, p * scrubMs));
             },
             onCancel: () => {
                 cue.scrubEnd();
-                try {
-                    card.handle?.seek(0);
-                } catch {
-                    /* the stage is optional */
-                }
+                follow(0);
             },
             onCommit: tapToOpen,
         });

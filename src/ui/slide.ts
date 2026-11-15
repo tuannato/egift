@@ -20,6 +20,22 @@ export function slideProgress(dx: number, room: number): number {
     return p < 0 ? 0 : p > 1 ? 1 : p;
 }
 
+/**
+ * The scene follows the thumb; it is not dragged by it. However fast the
+ * thumb goes, the opening advances at most this many times its own speed, so
+ * a flick to the end still leaves the opening to be watched. Going back
+ * (the thumb let go early) may be quicker: there is nothing to watch there.
+ */
+export const FOLLOW_RATE = 1.5;
+export const FOLLOW_BACK = 4;
+
+/** Where the scene stands (ms into the opening) after `dtMs` more, on its way from `shown` to `target`. Pure. */
+export function followStep(shown: number, target: number, dtMs: number): number {
+    const dt = dtMs > 0 ? dtMs : 0;
+    if (target > shown) return Math.min(target, shown + dt * FOLLOW_RATE);
+    return Math.max(target, shown - dt * FOLLOW_BACK);
+}
+
 /** Past this point, letting go opens the gift. */
 export const SLIDE_COMMIT = 0.86;
 
