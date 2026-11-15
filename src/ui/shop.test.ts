@@ -451,6 +451,31 @@ describe('buying a wrapper', () => {
         expect(app.root.querySelector('.screen-home')).not.toBeNull();
     });
 
+    it('a gift that was paid for and then taken home still wears its wrapper; one that was never paid for does not', async () => {
+        setOfferForDev('mecha', offer);
+        const chain = createDemoChain();
+        const paid = mechaLink();
+        chain.fund(paid.key.address, 8888n, stamped(paid.key.pkh));
+        chain.steal(paid.key.address);
+        history.replaceState(null, '', '/' + paid.frag);
+        app = boot(chain);
+        await flush(12);
+        // Gone, and said so, in the wrapper its giver paid for.
+        expect(document.documentElement.dataset.wears).toBe('mecha');
+        expect(main(app).textContent).toContain(t('pkg.taken'));
+        app.stop();
+        resetPage('en');
+        setOfferForDev('mecha', offer);
+        const unpaid = mechaLink();
+        chain.fund(unpaid.key.address, 8888n);
+        chain.steal(unpaid.key.address);
+        history.replaceState(null, '', '/' + unpaid.frag);
+        app = boot(chain);
+        await flush(12);
+        expect(document.documentElement.dataset.wears).toBe('signal');
+        expect(main(app).textContent).toContain(t('pkg.taken'));
+    });
+
     it('a-paid-wrapper-is-never-shown-before-its-stamp-is-read', async () => {
         setOfferForDev('mecha', offer);
         const chain = createDemoChain();

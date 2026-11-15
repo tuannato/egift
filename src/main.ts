@@ -53,6 +53,7 @@ function lazyChain(): Chain {
         settle: (txid, address, opts) => get().then(c => c.settle(txid, address, opts)),
         lookup: txid => get().then(c => c.lookup!(txid)),
         detail: txid => get().then(c => c.detail!(txid)),
+        past: a => get().then(c => (c.past ? c.past(a) : [])),
         holders: id => get().then(c => c.holders!(id)),
         everSpent: a => get().then(c => c.everSpent!(a)),
         tokenMeta: id => get().then(c => c.tokenMeta!(id)),

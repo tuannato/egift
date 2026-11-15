@@ -62,6 +62,8 @@ export function createDemoChain(opts: { delayMs?: number } = {}): DemoChain {
     const queued: { v: Verdict; delayMs: number }[] = [];
     let fundCounter = 0;
     const details = new Map<string, TxDetail>();
+    /** What was ever paid into an address, newest first: it outlives the coins. */
+    const pasts = new Map<string, TxDetail[]>();
     const held = new Map<string, Set<string>>();
     /** Addresses something was ever spent from. */
     const spentFrom = new Set<string>();
@@ -195,6 +197,7 @@ export function createDemoChain(opts: { delayMs?: number } = {}): DemoChain {
             addCoin(address, { txid, outIdx: 0, sats, token: o.token ?? o.tokenInfo !== undefined, final: o.final ?? true, ...(o.tokenInfo === undefined ? {} : { tokenInfo: o.tokenInfo }), ...(o.height === undefined ? {} : { height: o.height }) });
             // What the funding transaction looked like, when the caller says (a stamped funding, for instance).
             details.set(txid, o.tx ?? { inputs: ['76a914' + '00'.repeat(20) + '88ac'], outputs: [{ sats, script: '' }] });
+            pasts.set(address, [details.get(txid)!, ...(pasts.get(address) ?? [])]);
             notify(address);
         },
 
@@ -342,6 +345,10 @@ export function createDemoChain(opts: { delayMs?: number } = {}): DemoChain {
                     resolve(rec.status === 'pending' ? 'unknown' : rec.status);
                 });
             });
+        },
+
+        async past(address): Promise<readonly TxDetail[]> {
+            return pasts.get(address) ?? [];
         },
 
         async detail(txid): Promise<TxDetail | null> {

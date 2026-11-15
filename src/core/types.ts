@@ -207,6 +207,11 @@ export interface Chain {
     /** Ask a node what a signed transaction would do to tokens, without sending it. Rejects when no node answered. */
     validate?(rawTx: Uint8Array): Promise<TokenVerdict>;
     /** Call `onChange` whenever something happens at the address. Returns the unsubscribe function. */
+    /**
+     * The transactions in an address's history, newest first (a bounded number of them). Optional: it is what lets a
+     * gift that was already taken home still be shown in the wrapper it was paid for (`ui/screens/package.ts`).
+     */
+    past?(address: string): Promise<readonly TxDetail[]>;
     watch(address: string, onChange: () => void): () => void;
 }
 

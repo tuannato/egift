@@ -381,14 +381,27 @@ export function createChronikChain(opts: { client?: ChronikLike; peers?: readonl
         }
     }
 
+    const toDetail = (tx: ChronikTxLike): TxDetail => ({
+        inputs: tx.inputs.map(i => (typeof i.outputScript === 'string' ? i.outputScript.toLowerCase() : '')),
+        outputs: tx.outputs.map(o => ({ sats: typeof o.sats === 'bigint' ? o.sats : 0n, script: typeof o.outputScript === 'string' ? o.outputScript.toLowerCase() : '' })),
+    });
+
+    /** The newest transactions at an address (one page). A package has a handful: its funding, perhaps a late payment, its sweep. */
+    const PAST_PAGE_SIZE = 100;
+    async function past(address: string): Promise<readonly TxDetail[]> {
+        const addr = packageAddress(address);
+        try {
+            const h = await timed(getClient().address(addr).history(0, PAST_PAGE_SIZE));
+            return h.txs.map(toDetail);
+        } catch (e) {
+            throw readError(e);
+        }
+    }
+
     async function detail(txid: string): Promise<TxDetail | null> {
         if (typeof txid !== 'string' || !TXID_RE.test(txid)) return null;
         try {
-            const tx = await timed(getClient().tx(txid));
-            return {
-                inputs: tx.inputs.map(i => (typeof i.outputScript === 'string' ? i.outputScript.toLowerCase() : '')),
-                outputs: tx.outputs.map(o => ({ sats: typeof o.sats === 'bigint' ? o.sats : 0n, script: typeof o.outputScript === 'string' ? o.outputScript.toLowerCase() : '' })),
-            };
+            return toDetail(await timed(getClient().tx(txid)));
         } catch (e) {
             if (isNotFound(e)) return null;
             throw new ChainError('offline', 'No node could be reached');
@@ -741,5 +754,5 @@ export function createChronikChain(opts: { client?: ChronikLike; peers?: readonl
         };
     }
 
-    return { read, readChecked, broadcast, settle, lookup, detail, holders, everSpent, tokenMeta, validate, watch };
+    return { read, readChecked, broadcast, settle, lookup, detail, past, holders, everSpent, tokenMeta, validate, watch };
 }

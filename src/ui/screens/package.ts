@@ -1,4 +1,4 @@
-import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, deriveKey, encodeLink, entitlement, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
+import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, deriveKey, encodeLink, entitlement, isStamp, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
 import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from '../../core';
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
@@ -152,6 +152,26 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             onUnlocked(key);
             return;
         }
+        if (outcome === 'taken' && key) {
+            // A gift in a paid wrapper that was really funded here carries its payment in the address's history:
+            // nobody sets that up to mislead (it costs the wrapper's price). Such a gift is shown as what it is,
+            // taken home, in its own wrapper.
+            const wanted = wrapperById(link.wrapper);
+            const offer = wanted ? offerOf(wanted) : ({ kind: 'free' } as const);
+            if (wanted && offer.kind === 'paid' && ctx.chain.past) {
+                try {
+                    const txs = await ctx.chain.past(key.address);
+                    if (disposed) return;
+                    if (txs.some(tx => isStamp(tx, wanted.id, key!.pkh, offer))) {
+                        unlocked.set(secretId(link.secret), key);
+                        onUnlocked(key);
+                        return;
+                    }
+                } catch {
+                    /* the history could not be read: the plain "taken" below stands */
+                }
+            }
+        }
         if (outcome === 'taken') {
             // An address with a history and no money: this answer's gift is gone. It is not remembered as "the" answer:
             // someone who has the link but not the answer could have set this up, so another answer may still be tried.
@@ -246,7 +266,14 @@ function entitledPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Pa
     const ask = async (budgetMs: number): Promise<'paid' | 'unpaid' | 'unknown'> => {
         try {
             const s = await ctx.chain.read(key.address);
-            // An empty or taken package has no coins to read a payment from: nothing more to learn.
+            // A gift already taken home has no coins to read a payment from, but its history still holds the
+            // funding: a wrapper that was paid for stays on the gift after it is gone.
+            if (s.kind === 'taken' && ctx.chain.past) {
+                const txs = await Promise.race([ctx.chain.past(key.address), new Promise<null>(res => setTimeout(() => res(null), budgetMs))]);
+                if (txs === null) return 'unknown';
+                return txs.some(tx => isStamp(tx, wanted.id, key.pkh, offer)) ? 'paid' : 'unpaid';
+            }
+            // An empty package has nothing to learn from.
             if (s.kind !== 'funded') return 'unpaid';
             const e = await entitlement({ chain: ctx.chain, coins: s.coins, wrapper: wanted.id, pkh: key.pkh, offer, budgetMs });
             return e === 'paid' || e === 'owned' ? 'paid' : e === 'unpaid' ? 'unpaid' : 'unknown';
