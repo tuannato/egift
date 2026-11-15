@@ -15,7 +15,7 @@ import { join } from 'node:path';
 
 const KB = 1024;
 const LIMITS = {
-    entryGzip: 230 * KB, // the shop's own code, every language included
+    entryGzip: 140 * KB, // the shop's own code with English; one more language adds about 9 kB
     headerRules: 40,
     thumb: 90 * KB,
     card: 320 * KB,

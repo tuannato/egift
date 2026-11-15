@@ -5,14 +5,15 @@ import './styles/capsule.css';
 import './styles/home.css';
 import { ChainError } from './core/types';
 import type { Chain } from './core/types';
-import { initLang } from './i18n';
+import { initLang, loadLang } from './i18n';
 import { startApp } from './ui/app';
 import type { DemoCtx } from './ui/ctx';
 import { setTokenIconSource } from './ui/tokens';
 
 const DEMO_ICON = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#c9a24a"/><circle cx="32" cy="32" r="18" fill="none" stroke="#3a2a08" stroke-width="6"/></svg>');
 
-initLang();
+// The page's language is fetched before anything is drawn (English is already here). If it cannot be fetched, English stands in.
+await loadLang(initLang()).catch(() => {});
 
 /** The heavy piece (`src/heavy.ts`), fetched once. A fetch that failed is forgotten, so the next ask tries again. */
 let heavy: Promise<typeof import('./heavy')> | undefined;

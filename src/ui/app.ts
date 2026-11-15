@@ -3,7 +3,7 @@ import type { Chain } from '../core';
 import { clear, h } from './dom';
 import type { Dispose } from './dom';
 import type { Ctx, DemoCtx } from './ctx';
-import { LANGS, LANG_INFO, getLang, onLangChange, setLang, t } from '../i18n';
+import { LANGS, LANG_INFO, getLang, hasLang, loadLang, onLangChange, setLang, t } from '../i18n';
 import { isInAppBrowser } from './inapp';
 import { ribbon } from './ribbon';
 import { getMade } from './session';
@@ -199,7 +199,10 @@ export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefi
                         'aria-selected': String(l === cur),
                         onclick: () => {
                             close();
-                            if (!isBusy()) setLang(l);
+                            if (isBusy()) return;
+                            // A language that is here changes the page at once; one that is not is fetched first.
+                            if (hasLang(l)) setLang(l);
+                            else void loadLang(l).then(() => (isBusy() ? undefined : setLang(l)), () => {});
                         },
                     },
                     h('span', { class: 'lang-tag' }, LANG_INFO[l].tag),

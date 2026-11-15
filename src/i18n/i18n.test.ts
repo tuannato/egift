@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import './all';
 import { vi } from './vi';
 import { en } from './en';
 import { LANGS, LANG_INFO, SAFETY_KEYS, enabledLangs, getLang, initLang, langForBrowser, setLang, t, tables_forTest } from './index';

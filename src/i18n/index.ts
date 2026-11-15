@@ -1,16 +1,5 @@
-import { vi } from './vi';
 import { en } from './en';
-import { de } from './de';
-import { es } from './es';
-import { fr } from './fr';
-import { id } from './id';
-import { ja } from './ja';
-import { ko } from './ko';
-import { pt } from './pt';
-import { ru } from './ru';
-import { th } from './th';
-import { zhHans } from './zhHans';
-import { zhHant } from './zhHant';
+import type { vi } from './vi';
 
 export type Key = keyof typeof vi;
 
@@ -44,7 +33,27 @@ export function localeOf(lang: Lang): string {
     return LANG_INFO[lang].locale;
 }
 
-const tables: Record<Lang, Record<Key, string>> = { en, de, es, fr, id, ja, ko, pt, ru, th, vi, 'zh-Hans': zhHans, 'zh-Hant': zhHant };
+type Table = Record<Key, string>;
+/**
+ * The tables that have arrived. English is part of the page (it is what
+ * stands in for a missing sentence); every other language is fetched when it
+ * is first asked for, so that a visitor carries one language, not thirteen.
+ */
+const tables: Partial<Record<Lang, Table>> = { en };
+const LOADERS: Record<Exclude<Lang, 'en'>, () => Promise<Table>> = {
+    de: () => import('./de').then(m => m.de),
+    es: () => import('./es').then(m => m.es),
+    fr: () => import('./fr').then(m => m.fr),
+    id: () => import('./id').then(m => m.id),
+    ja: () => import('./ja').then(m => m.ja),
+    ko: () => import('./ko').then(m => m.ko),
+    pt: () => import('./pt').then(m => m.pt),
+    ru: () => import('./ru').then(m => m.ru),
+    th: () => import('./th').then(m => m.th),
+    vi: () => import('./vi').then(m => m.vi),
+    'zh-Hans': () => import('./zhHans').then(m => m.zhHans),
+    'zh-Hant': () => import('./zhHant').then(m => m.zhHant),
+};
 
 /**
  * The warnings a language must carry before it may be offered. A language
@@ -80,7 +89,25 @@ export function enabledLangs(from: Partial<Record<Lang, Partial<Record<Key, stri
     });
 }
 
-export const LANGS: readonly Lang[] = enabledLangs();
+/**
+ * The languages offered. Every shipped table carries every safety key (the
+ * tests hold each file to that), and a table is checked once more when it
+ * arrives: one that fails is not used, and English stands in.
+ */
+export const LANGS: readonly Lang[] = ALL_LANGS;
+
+/** Put a table in place (a language that has been fetched; the tests put all of them in). */
+export function registerLang(lang: Lang, table: Table): void {
+    if (SAFETY_KEYS.every(k => typeof table[k] === 'string' && table[k].trim() !== '')) tables[lang] = table;
+}
+export function hasLang(lang: Lang): boolean {
+    return tables[lang] !== undefined;
+}
+/** Fetch a language's table if it is not here yet. Rejects when it cannot be fetched. */
+export async function loadLang(lang: Lang): Promise<void> {
+    if (lang === 'en' || tables[lang] !== undefined) return;
+    registerLang(lang, await LOADERS[lang]());
+}
 
 let current: Lang = 'en';
 const listeners = new Set<() => void>();
@@ -160,5 +187,5 @@ export function t(key: Key, vars?: Record<string, string | number | bigint>): st
 }
 
 export function tables_forTest(): Record<Lang, Record<Key, string>> {
-    return tables;
+    return tables as Record<Lang, Record<Key, string>>;
 }
