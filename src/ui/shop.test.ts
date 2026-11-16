@@ -134,6 +134,16 @@ describe('the shop', () => {
     });
 });
 
+describe('the pictures on the doors', () => {
+    it('a full shelf shows the cut of each still, asked for with its version', () => {
+        app = boot(undefined, { stay: true });
+        const stills = () => [...app!.root.querySelectorAll('.door img.door-still')].map(i => i.getAttribute('src') ?? '');
+        expect(stills().length).toBe(WRAPPERS.length);
+        expect(stills().every(s => /^\/thumbs\/door\/[a-z0-9-]+\.webp\?v=[a-f0-9]{8}$/.test(s))).toBe(true);
+        expect(app.root.querySelectorAll('.door img.door-still--cut').length).toBe(WRAPPERS.length);
+    });
+});
+
 describe("the notice inside another app's browser", () => {
     it('can be closed by hand, stays closed across a repaint, and keeps nothing', () => {
         vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone) Mobile Twitter for iPhone');

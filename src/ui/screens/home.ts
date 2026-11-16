@@ -4,7 +4,7 @@ import { dressed } from '../../wrappers/looks';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
-import { thumbUrl } from '../../wrappers/artUrl';
+import { doorUrl, thumbUrl } from '../../wrappers/artUrl';
 import { formatXec } from '../../core/money';
 import type { PackageState } from '../../core';
 import type { WrapperDef } from '../../stage';
@@ -93,12 +93,18 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     // A door at rest is a small picture of its wrapper, closed (public/thumbs, drawn by scripts/og-cards.mjs): one
     // image, fetched when it nears the view. Only the door that is worn carries the live scene. A shelf of live
     // scenes is more than a phone's browser will hold.
-    const still = (def: WrapperDef): StageCard => ({
-        el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: thumbUrl(def.id), alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })),
-        handle: null,
-        overlay: h('div', null),
-        destroy() {},
-    });
+    // A door is a narrow window onto the scene, so its picture is the middle of the still, cut out and sharper
+    // (`doorUrl`). When few doors are on the shelf they grow wider than that cut: then the whole still is used.
+    let roomy = false;
+    const dressStill = (img: HTMLElement, def: WrapperDef): void => {
+        img.className = roomy ? 'door-still' : 'door-still door-still--cut';
+        img.setAttribute('src', roomy ? thumbUrl(def.id) : doorUrl(def.id));
+    };
+    const still = (def: WrapperDef): StageCard => {
+        const img = h('img', { alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' });
+        dressStill(img, def);
+        return { el: h('div', { class: 'stage-card' }, img), handle: null, overlay: h('div', null), destroy() {} };
+    };
     const doors: Door[] = WRAPPERS.map(def => {
         const card = still(def);
         const art = h('div', { class: 'door-art' }, card.el);
@@ -546,6 +552,25 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         body.dataset.view = view;
     }
 
+    /**
+     * Whole still or its cut? The cut is the middle 30% of the scene. A door wider than that (few doors on the
+     * shelf, or a screen so short that the scene itself is small) shows the whole still instead.
+     */
+    function fitStills(): void {
+        const shown = doors.filter(d => !d.el.hidden);
+        const one = shown.find(d => d.el.dataset.state === 'even');
+        const sceneW = one ? one.art.getBoundingClientRect().width : 0;
+        const wide = one !== undefined && sceneW > 0 && one.el.getBoundingClientRect().width > sceneW * 0.3 - 1;
+        const next = shown.length <= 5 || wide;
+        if (next === roomy) return;
+        roomy = next;
+        for (const d of doors) {
+            const img = d.live ? null : d.art.querySelector<HTMLElement>('img.door-still');
+            if (img) dressStill(img, d.def);
+        }
+    }
+    window.addEventListener('resize', fitStills);
+
     /** Doors, theme and counter, from `worn`. */
     function sync(): void {
         const def = worn ? wrapperById(worn) : undefined;
@@ -564,6 +589,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             if (on && !d.live) remount(d);
             else if (!on) rest(d);
         }
+        fitStills();
         applyTheme(def);
         setAmbient(def);
         renderBody();
@@ -585,6 +611,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     sync();
     return () => {
         score.stop();
+        window.removeEventListener('resize', fitStills);
         for (const d of doors) d.card.destroy();
     };
 }

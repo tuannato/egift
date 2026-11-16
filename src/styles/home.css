@@ -37,6 +37,8 @@
 }
 .door-art .stage-card, .door-art .stage { width: 100%; }
 .door-still { display: block; width: 100%; height: auto; -webkit-user-drag: none; user-select: none; }
+/* The middle 30% of the still, cut out (scripts/og-cards.mjs): it stands where that part of the whole would. */
+.door-still--cut { width: 30%; margin: 0 auto; }
 .door-btn { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: inherit; }
 .door-btn:focus-visible { outline: 2px solid var(--th-accent); outline-offset: -5px; }
 .door[data-state="open"] .door-btn { cursor: default; }

@@ -16,7 +16,9 @@ const registry = readFileSync('src/wrappers/index.ts', 'utf8');
 const all = /WRAPPERS: readonly WrapperDef\[\] = \[([^\]]+)\]/.exec(registry)[1].split(',').map(s => s.trim()).filter(Boolean);
 const ids = process.argv.length > 2 ? process.argv.slice(2) : all;
 mkdirSync('public/og', { recursive: true });
-mkdirSync('public/thumbs', { recursive: true });
+mkdirSync('public/thumbs/door', { recursive: true });
+/** The part of a wrapper's width a door's picture carries (src/styles/home.css shows it at that width). */
+const DOOR = 0.3;
 /** A wrapper's canvas size, read from its definition (360x450 unless it says otherwise). */
 const sizeOf = id => {
     const m = /size:\s*\[(\d+),\s*(\d+)\]/.exec(readFileSync(`src/wrappers/${id}.ts`, 'utf8'));
@@ -33,6 +35,9 @@ for (const id of ids) {
     const t = `.shots/thumb-${id}.png`;
     execFileSync('node', ['scripts/shot.mjs', `/dev/card.html?id=${id}&thumb`, t, String(w * 2), String(hgt * 2), '2500', 'calm'], { stdio: 'ignore' });
     toWebp(t, `public/thumbs/${id}.webp`, 320, Math.round((320 * hgt) / w), 0.82);
+    // What a door on the shelf shows of it: the middle of the picture (DOOR of its width), at the size it was
+    // photographed. A door is a narrow window onto the scene; the whole picture stretched over the scene is soft.
+    toWebp(t, `public/thumbs/door/${id}.webp`, Math.round(w * 2 * DOOR), hgt * 2, 0.8, [(1 - DOOR) / 2, DOOR]);
     rmSync(t);
     console.log(id);
 }

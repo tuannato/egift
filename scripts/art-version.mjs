@@ -28,7 +28,7 @@ export function versions(root = ROOT) {
         for (const f of readdirSync(join(dir, id)).filter(n => n.endsWith('.svg')).sort()) {
             hash.update(f).update('\0').update(readFileSync(join(dir, id, f))).update('\0');
         }
-        for (const still of [`thumbs/${id}.webp`, `og/${id}.jpg`]) {
+        for (const still of [`thumbs/${id}.webp`, `thumbs/door/${id}.webp`, `og/${id}.jpg`]) {
             const p = join(root, 'public', still);
             if (existsSync(p)) hash.update(still).update('\0').update(readFileSync(p)).update('\0');
         }

@@ -17,5 +17,8 @@ export const artBase = (id: string): string => `/wrappers/${id}/`;
 /** One picture of a wrapper. */
 export const artUrl = (id: string, file: string): string => artBase(id) + file + artQuery(id);
 
-/** The small still of a wrapper, for the shelf and the picker. */
+/** The small still of a wrapper, whole: for the picker, and for a shelf of few doors. */
 export const thumbUrl = (id: string): string => `/thumbs/${id}.webp${artQuery(id)}`;
+
+/** The middle of that still, sharper: what a door on the shelf shows (scripts/og-cards.mjs cuts it). */
+export const doorUrl = (id: string): string => `/thumbs/door/${id}.webp${artQuery(id)}`;

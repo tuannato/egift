@@ -3,6 +3,8 @@
  * The picture is drawn on a canvas at the size asked for and read back; nothing is fetched from anywhere.
  *
  *   node scripts/to-webp.mjs <in.png> <out.webp> <width> <height> [quality 0..1]
+ *
+ * From another script, `toWebp` also takes the part of the picture's width to keep: [start, width] as fractions.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -10,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export function toWebp(src, out, width, height, quality = 0.82) {
+export function toWebp(src, out, width, height, quality = 0.82, crop = null) {
     const chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
     const dir = mkdtempSync(join(tmpdir(), 'gift-webp-'));
     try {
@@ -26,7 +28,10 @@ img.onload = () => {
     c.width = ${Number(width)}; c.height = ${Number(height)};
     const g = c.getContext('2d');
     g.imageSmoothingQuality = 'high';
-    g.drawImage(img, 0, 0, c.width, c.height);
+    const crop = ${JSON.stringify(crop)};
+    // The crop is the part of the picture's width that is kept: where it starts and how wide, as fractions.
+    if (crop) g.drawImage(img, img.naturalWidth * crop[0], 0, img.naturalWidth * crop[1], img.naturalHeight, 0, 0, c.width, c.height);
+    else g.drawImage(img, 0, 0, c.width, c.height);
     document.getElementById('out').textContent = c.toDataURL('image/webp', ${Number(quality)});
 };
 img.src = ${JSON.stringify(png)};

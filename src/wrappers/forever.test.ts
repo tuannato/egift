@@ -45,7 +45,7 @@ describe('links are forever', () => {
         expect(url).toBe('https://egift.cash/snowbox/#1.0.AAAAAAAAAAAAAAAAAAAAAA.snowbox');
         // The page reads the fragment only: with the path or without it, the same gift.
         expect(decodeFragment(new URL(url).hash)).toEqual(decodeFragment('#1.0.AAAAAAAAAAAAAAAAAAAAAA.snowbox'));
-        for (const taken of ['assets', 'wrappers', 'og', 'thumbs', 'dev', 'src', 'lock']) expect(wrapperById(taken), taken).toBeUndefined();
+        for (const taken of ['assets', 'wrappers', 'og', 'thumbs', 'door', 'dev', 'src', 'lock']) expect(wrapperById(taken), taken).toBeUndefined();
     });
 
     it('a plain link written in November 2026 still names the same address', async () => {
