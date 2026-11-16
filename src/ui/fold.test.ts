@@ -144,7 +144,7 @@ describe('no screen folds what must be read', () => {
         expect(foldedSafety()).toEqual([]);
 
         // Opened by the person, pressed, then another language: still open. The one line is the title alone:
-        // whether the gift is remembered is said inside, and what stays in view is that the link is not saved.
+        // whether the gift is remembered is said inside, with the reminder that the link is not saved.
         press(rem);
         expect(rem.open).toBe(true);
         buttonByText(rem, t('sent.remember')).click();

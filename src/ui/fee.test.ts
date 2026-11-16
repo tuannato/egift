@@ -412,13 +412,12 @@ describe('remembering a gift that was sent', () => {
         app.chain.fund(made.key.address, made.sats);
         await flush();
         expect(loadSent()[0]).toMatchObject({ address: made.key.address, sats: '2000', wish: 'For you' });
-        // Said inside the fold only; outside it, always in view, the warning that the link is not saved.
+        // Said inside the fold only, under the reminder that the link is not saved; nothing of it on the closed line.
         const box = app.root.querySelector('.keep-box') as HTMLElement;
         expect(box.querySelector('summary')!.textContent).toBe(t('sent.title'));
+        expect(box.querySelector('.fold-body')!.firstElementChild!.textContent).toBe(t('sent.nolink'));
         expect(box.querySelector('.fold-body')!.textContent).toContain(t('sent.remembered'));
-        const warn = box.querySelector('.warning') as HTMLElement;
-        expect(warn.textContent).toBe(t('sent.nolink'));
-        expect(warn.closest('details')).toBeNull();
+        expect(box.querySelector('.warning')).toBeNull();
         buttonByText(app.root, t('keep.undo')).click();
         expect(loadSent()).toEqual([]);
         // A later change at the package does not write it again; nor does the screen being built again.

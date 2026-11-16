@@ -546,8 +546,9 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     );
 
     // Remembering a gift: where its package is, never its link. Written once the gift is seen funded, unless the
-    // giver switched that off. Whether it is there is said inside the fold only, with the way to take it back out;
-    // what is always in view is the warning that a remembered gift is not a saved link.
+    // giver switched that off. Whether it is there is said inside the fold only, with the way to take it back out
+    // and the reminder that a remembered gift is not a saved link (the screen's own warnings about the link, in
+    // steps 1 and 2, stay in view).
     const remembered = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
     const writeSent = (): boolean =>
         rememberSent({
@@ -601,14 +602,14 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         fold(
             t('sent.title'),
             { id: 'created.remember:' + made.key.address },
+            // First thing in the fold: a remembered gift is not a saved link.
+            h('p', { class: 'strong' }, t('sent.nolink')),
             h('p', { class: 'note' }, t('sent.body')),
             remember,
             forget,
             remembered,
             h('label', { class: 'check' }, autoBox, h('span', null, t('keep.auto'))),
         ),
-        // A money-loss condition, so it is never folded away.
-        h('p', { class: 'warning' }, t('sent.nolink')),
     );
 
     if (made.saved) unlock();
