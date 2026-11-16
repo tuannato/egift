@@ -18,8 +18,8 @@ import { scaled, together, tune } from './tune';
  */
 
 const PARTS = ['body', 'wing-l', 'wing-r', 'neck', 'head', 'tail'] as const;
-/** How far the finished crane lifts. */
-const LIFT = -6;
+/** How far the finished crane lifts: little, so that its head keeps clear of what the page shows above it. */
+const LIFT = -2;
 
 const open: Step[] = [
     // 1. The sheet folds in half: the upper half comes down (a scale through zero), showing its white side.
@@ -31,19 +31,19 @@ const open: Step[] = [
     { kind: 'move', layer: 'sheet-in', at: 1000, dur: 120, to: { opacity: 0 } },
     { kind: 'move', layer: 'sheet-low', at: 1000, dur: 120, to: { opacity: 0 } },
     // 3. From the spine: the body, then the wings swing down and out, then neck and tail swing up, each
-    //    about its joint; last the tip of the neck folds down into the head.
+    //    about its joint; last the tip of the neck folds down into the head, done before the amount is shown.
     { kind: 'move', layer: 'body', at: 960, dur: 80, to: { opacity: 1 } },
     { kind: 'move', layer: 'body', at: 960, dur: 380, ease: 'back', to: { sx: 1 } },
     { kind: 'move', layer: 'wing-l', at: 1140, dur: 60, to: { opacity: 1 } },
     { kind: 'move', layer: 'wing-l', at: 1140, dur: 520, ease: 'back', to: { sx: 1, sy: 1, turn: 0 } },
     { kind: 'move', layer: 'wing-r', at: 1220, dur: 60, to: { opacity: 1 } },
     { kind: 'move', layer: 'wing-r', at: 1220, dur: 520, ease: 'back', to: { sx: 1, sy: 1, turn: 0 } },
-    { kind: 'move', layer: 'neck', at: 1360, dur: 60, to: { opacity: 1 } },
-    { kind: 'move', layer: 'neck', at: 1360, dur: 440, ease: 'back', to: { sy: 1, turn: 0 } },
+    { kind: 'move', layer: 'neck', at: 1300, dur: 60, to: { opacity: 1 } },
+    { kind: 'move', layer: 'neck', at: 1300, dur: 400, ease: 'back', to: { sy: 1, turn: 0 } },
     { kind: 'move', layer: 'tail', at: 1440, dur: 60, to: { opacity: 1 } },
     { kind: 'move', layer: 'tail', at: 1440, dur: 440, ease: 'back', to: { sy: 1, turn: 0 } },
-    { kind: 'move', layer: 'head', at: 1800, dur: 40, to: { opacity: 1 } },
-    { kind: 'move', layer: 'head', at: 1800, dur: 220, ease: 'out', to: { turn: 0 } },
+    { kind: 'move', layer: 'head', at: 1680, dur: 40, to: { opacity: 1 } },
+    { kind: 'move', layer: 'head', at: 1680, dur: 200, ease: 'out', to: { turn: 0 } },
     { kind: 'scatter', layer: 'fleck', at: 1300, dur: 1100, count: 12, spread: 130, fall: 70 },
     // 4. The crane lifts; three more pass further off.
     ...PARTS.map((layer): Step => ({ kind: 'move', layer, at: 2000, dur: 900, ease: 'inout', to: { y: LIFT } })),
@@ -63,7 +63,7 @@ const idle: IdleStep[] = [
 
 const afterglow: IdleStep[] = [
     ...hang,
-    ...PARTS.map((layer): IdleStep => ({ layer, field: 'y', amp: 4, period: 5200 })),
+    ...PARTS.map((layer): IdleStep => ({ layer, field: 'y', amp: 3, period: 5200 })),
     { layer: 'wing-l', field: 'turn', amp: 4, period: 2600 },
     { layer: 'wing-r', field: 'turn', amp: 4, period: 2600, phase: 0.5 },
     { layer: 'flock', field: 'y', amp: 3, period: 4400, phase: 0.3 },

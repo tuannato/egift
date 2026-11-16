@@ -58,11 +58,12 @@ const mini = (cx, cy, s, a, b) => {
     svg('room', [-6, -6, 372, 462], s);
 }
 
-/* ---- strings of small cranes hanging down the sides: two layers, to sway against each other ---- */
+/* ---- strings of small cranes hanging down the sides: two layers, to sway against each other. The outer
+   strings carry larger cranes: on the shelf, at a tenth of this size, they are what says "crane". ---- */
 {
-    const string = (x, top, ys, tones) => `<rect x="${x - 0.6}" y="${top}" width="1.2" height="${ys[ys.length - 1] - top}" fill="${C.paperLo}" opacity="0.55"/>` + ys.map((y, i) => mini(x, y, 19, ...tones[i % tones.length])).join('');
+    const string = (x, top, ys, tones, span = 19) => `<rect x="${x - 0.6}" y="${top}" width="1.2" height="${ys[ys.length - 1] - top}" fill="${C.paperLo}" opacity="0.55"/>` + ys.map((y, i) => mini(x, y, span, ...tones[i % tones.length])).join('');
     const T = [[C.paper, C.paperLo], [C.gold, C.paperLo], [C.red, C.redLo], [C.indigoLo, C.paperLo]];
-    svg('strings-a', [0, -10, 360, 410], string(32, -10, [52, 132, 212, 292, 372], T) + string(328, -10, [84, 164, 244, 324], [T[1], T[0], T[2], T[3]]));
+    svg('strings-a', [0, -10, 360, 410], string(32, -10, [56, 150, 244, 338], T, 27) + string(328, -10, [100, 192, 284, 376], [T[1], T[0], T[2], T[3]], 27));
     svg('strings-b', [0, -10, 360, 290], string(84, -10, [30, 104], [T[2], T[0]]) + string(280, -10, [22, 96], [T[0], T[1]]));
 }
 
