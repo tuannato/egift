@@ -495,6 +495,48 @@ describe('created safety', () => {
     });
 });
 
+describe('closing the tab on the funding step', () => {
+    /** Whether the page asks the browser to check with the person before the tab goes. */
+    const asksBeforeLeaving = (): boolean => {
+        const e = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(e);
+        return e.defaultPrevented;
+    };
+
+    it('asks-from-the-moment-the-gift-is-made-until-it-is-funded-and-its-link-saved-again', async () => {
+        stubClipboard();
+        app = boot();
+        expect(asksBeforeLeaving()).toBe(false);
+        await createGift(app.root);
+        // Made, link not saved.
+        expect(asksBeforeLeaving()).toBe(true);
+        // Saved, not funded yet: the person is on the way to the wallet.
+        buttonByText(app.root, t('link.copy')).click();
+        await flush();
+        expect(asksBeforeLeaving()).toBe(true);
+        // Funded: the copy made before may no longer be on the clipboard.
+        app.chain.fund(getMade()!.key.address, getMade()!.sats);
+        await flush();
+        expect(asksBeforeLeaving()).toBe(true);
+        // Saved once more, now that the gift is funded: nothing is lost by leaving.
+        const after = app.root.querySelector('.after-funded') as HTMLElement;
+        buttonByText(after, t('link.copy')).click();
+        await flush();
+        expect(asksBeforeLeaving()).toBe(false);
+    });
+
+    it('stops-asking-once-the-person-starts-over', async () => {
+        app = boot();
+        await createGift(app.root);
+        expect(asksBeforeLeaving()).toBe(true);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        buttonByText(app.root, t('created.startover')).click();
+        await flush();
+        expect(getMade()).toBeNull();
+        expect(asksBeforeLeaving()).toBe(false);
+    });
+});
+
 describe('start over always asks', () => {
     it('even-when-the-gift-is-funded-and-the-link-saved', async () => {
         stubClipboard();

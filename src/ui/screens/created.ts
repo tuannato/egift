@@ -105,8 +105,22 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         );
         fundBtns.push(demoBtn);
     }
+    // Closing or reloading the tab erases this page's copy of the link, and the link is the only key to the gift.
+    // So the browser is asked to check with the person before the tab goes: from the moment the gift is made until
+    // it is funded AND its link was saved once more after that (a copy made before funding may have been replaced
+    // on the clipboard on the way to the wallet). Once the person starts over, the gift is no longer this page's.
+    let fundedOk = false;
+    let keptSinceFunded = false;
+    const onLeave = (e: BeforeUnloadEvent): void => {
+        if (getMade() !== made || (fundedOk && keptSinceFunded)) return;
+        e.preventDefault();
+        // Older browsers ask only when this is set.
+        e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onLeave);
     const unlock = () => {
         markSaved();
+        if (fundedOk) keptSinceFunded = true;
         fundBtns.forEach(b => (b.disabled = false));
         fundHint.hidden = true;
     };
@@ -119,7 +133,6 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     // A token gift is not ready when its XEC is in: the token has to arrive too.
     const tokenOnly = made.tokenOnly === true;
     const tokenNext = h('p', { class: 'strong', hidden: true }, t('created.tokenonly.next'));
-    let fundedOk = false;
     let tokenIn = false;
     const paintReady = (): void => {
         afterFunded.hidden = !(fundedOk && (!tokenOnly || tokenIn));
@@ -161,7 +174,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         void paintStamp(s);
         tokenBox.hidden = !(s !== null && s.kind === 'funded');
         void paintToken(s);
-        if (done && !afterFunded.firstChild) afterFunded.append(h('p', { class: 'strong' }, t('created.funded.send')), linkButtons({ link: made!.link, onSaved: markSaved }));
+        if (done && !afterFunded.firstChild) afterFunded.append(h('p', { class: 'strong' }, t('created.funded.send')), linkButtons({ link: made!.link, onSaved: unlock }));
     }
 
     // A token or an NFT beside the XEC. Offered only once the gift holds XEC (a token cannot pay its own
@@ -617,6 +630,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     );
     return () => {
         disposed = true;
+        window.removeEventListener('beforeunload', onLeave);
         unwatch();
         card.destroy();
     };
