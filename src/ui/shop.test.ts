@@ -134,6 +134,23 @@ describe('the shop', () => {
     });
 });
 
+describe("the notice inside another app's browser", () => {
+    it('can be closed by hand, stays closed across a repaint, and keeps nothing', () => {
+        vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone) Mobile Twitter for iPhone');
+        app = boot(undefined, { stay: true });
+        expect(app.root.querySelector('.banner')?.textContent).toContain(t('app.inapp.create'));
+        const close = app.root.querySelector('.banner-close') as HTMLButtonElement;
+        expect(close.getAttribute('aria-label')).toBe(t('app.inapp.close'));
+        close.click();
+        expect(app.root.querySelector('.banner, .banner-wrap')).toBeNull();
+        // Another screen is a repaint: the notice does not come back.
+        (app.root.querySelector('.screen-home .home-go') as HTMLButtonElement).click();
+        expect(app.root.querySelector('.banner')).toBeNull();
+        expect(localStorage.length).toBe(0);
+        expect(sessionStorage.length).toBe(0);
+    });
+});
+
 describe('the riddle lock', () => {
     async function makeLocked(a: Booted, question: string, answer: string): Promise<void> {
         type(a.root.querySelector('#f-amount') as HTMLInputElement, '88');

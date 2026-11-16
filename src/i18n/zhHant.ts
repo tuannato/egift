@@ -15,6 +15,7 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'app.inapp.create': "你正在另一個應用程式的內建瀏覽器裡。請先用 Safari 或 Chrome 開啟本頁面，再建立禮物。",
     'app.inapp.create.copy': "複製本頁網址",
     'app.inapp.created': "你正在另一個應用程式的內建瀏覽器裡。儲存好連結之前，不要離開本頁面。",
+    'app.inapp.close': '關閉',
     'app.footer.1': "不需要帳號，也沒有伺服器保存你的資料。",
     'app.footer.2': "開放原始碼。",
     'app.footer.3': "建構於 eCash 之上。",

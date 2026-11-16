@@ -15,6 +15,7 @@ export const th: Record<keyof typeof vi, string> = {
     'app.inapp.create': "คุณกำลังอยู่ในเบราว์เซอร์ของแอปอื่น โปรดเปิดหน้านี้ใน Safari หรือ Chrome ก่อนสร้างของขวัญ",
     'app.inapp.create.copy': "คัดลอกที่อยู่ของหน้านี้",
     'app.inapp.created': "คุณกำลังอยู่ในเบราว์เซอร์ของแอปอื่น อย่าออกจากหน้านี้จนกว่าจะบันทึกลิงก์แล้ว",
+    'app.inapp.close': 'ปิด',
     'app.footer.1': "ไม่มีบัญชี และไม่มีเซิร์ฟเวอร์ใดเก็บข้อมูลของคุณ",
     'app.footer.2': "โอเพนซอร์ส",
     'app.footer.3': "สร้างบน eCash",

@@ -213,6 +213,8 @@ export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefi
         return h('div', { class: 'langs' }, pick, menu);
     }
 
+    /** The in-app browser notice was closed by hand (the one shown after a gift is created cannot be). */
+    let inAppClosed = false;
     /**
      * Inside another app's browser. On a package: copy the full link and leave
      * (intended). Before creating: leave first; the copy is the page address,
@@ -222,11 +224,26 @@ export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefi
     function inAppBanner(r: Route): HTMLElement | null {
         if (!isInAppBrowser()) return null;
         if (r.kind === 'created') return h('div', { class: 'banner warning', role: 'note' }, h('p', null, t('app.inapp.created')));
+        // Closed by hand: it stays closed for as long as this page is open. Nothing is kept, so a reload shows it again.
+        if (inAppClosed) return null;
         const note = h('span', { class: 'small', role: 'status' });
         const onCreate = r.kind === 'create' || r.kind === 'home';
-        return h(
+        const banner: HTMLElement = h(
             'div',
-            { class: 'banner warning', role: 'note' },
+            { class: 'banner banner--closable warning', role: 'note' },
+            h(
+                'button',
+                {
+                    type: 'button',
+                    class: 'banner-close',
+                    'aria-label': t('app.inapp.close'),
+                    onclick: () => {
+                        inAppClosed = true;
+                        (banner.closest('.banner-wrap') ?? banner).remove();
+                    },
+                },
+                svg('svg', { viewBox: '0 0 24 24', width: '18', height: '18', 'aria-hidden': 'true', focusable: 'false' }, svg('path', { d: 'M6 6l12 12M18 6L6 18' })),
+            ),
             h('p', null, onCreate ? t('app.inapp.create') : t('app.inapp')),
             h(
                 'button',
@@ -243,6 +260,7 @@ export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefi
             ),
             note,
         );
+        return banner;
     }
 
     /**

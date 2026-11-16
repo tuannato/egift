@@ -15,6 +15,7 @@ export const pt: Record<keyof typeof vi, string> = {
     'app.inapp.create': "Você está no navegador de outro aplicativo. Abra esta página no Safari ou no Chrome antes de criar um presente.",
     'app.inapp.create.copy': "Copiar o endereço desta página",
     'app.inapp.created': "Você está no navegador de outro aplicativo. Não saia desta página antes de salvar o link.",
+    'app.inapp.close': 'Fechar',
     'app.footer.1': "Sem conta, e nenhum servidor guarda seus dados.",
     'app.footer.2': "Código aberto.",
     'app.footer.3': "Feito sobre o eCash.",

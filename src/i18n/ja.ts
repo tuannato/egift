@@ -15,6 +15,7 @@ export const ja: Record<keyof typeof vi, string> = {
     'app.inapp.create': "別のアプリ内のブラウザで開いています。ギフトを作る前に、このページを Safari か Chrome で開いてください。",
     'app.inapp.create.copy': "このページのアドレスをコピー",
     'app.inapp.created': "別のアプリ内のブラウザで開いています。リンクを保存するまで、このページを離れないでください。",
+    'app.inapp.close': '閉じる',
     'app.footer.1': "アカウントは不要で、あなたのデータを保管するサーバーもありません。",
     'app.footer.2': "オープンソースです。",
     'app.footer.3': "eCash の上に作られています。",

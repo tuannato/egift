@@ -15,6 +15,7 @@ export const id: Record<keyof typeof vi, string> = {
     'app.inapp.create': "Anda sedang berada di browser milik aplikasi lain. Buka halaman ini di Safari atau Chrome sebelum membuat hadiah.",
     'app.inapp.create.copy': "Salin alamat halaman ini",
     'app.inapp.created': "Anda sedang berada di browser milik aplikasi lain. Jangan tinggalkan halaman ini sebelum tautannya Anda simpan.",
+    'app.inapp.close': 'Tutup',
     'app.footer.1': "Tanpa akun, dan tidak ada server yang menyimpan data Anda.",
     'app.footer.2': "Sumber terbuka.",
     'app.footer.3': "Dibangun di atas eCash.",

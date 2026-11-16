@@ -13,6 +13,7 @@ export const vi = {
     'app.inapp.create': 'Bạn đang ở trong trình duyệt của một ứng dụng khác. Hãy mở trang này bằng Safari hoặc Chrome trước khi tạo quà.',
     'app.inapp.create.copy': 'Chép địa chỉ trang',
     'app.inapp.created': 'Bạn đang ở trong trình duyệt của một ứng dụng khác. Đừng rời trang này cho đến khi đã lưu link.',
+    'app.inapp.close': 'Đóng',
     'app.footer.1': 'Không có tài khoản, không có máy chủ nào giữ dữ liệu của bạn.',
     'app.footer.2': 'Mã nguồn mở.',
     'app.footer.3': 'Xây trên eCash.',

@@ -914,6 +914,13 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
     box-shadow: 0 0 0 5px rgba(244, 241, 234, 0.18), 0 14px 30px -10px rgba(0, 0, 0, 0.85);
 }
 .banner-wrap { width: auto; box-sizing: border-box; }
+/* Its close button: top right, a full-size touch target; the text keeps clear of it. */
+.banner--closable { position: relative; }
+.banner--closable > p { padding-right: 36px; }
+.banner-close { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: #3b3b42; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.banner-close svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.banner-close:active { background: rgba(20, 21, 26, 0.1); }
+.banner-close:focus-visible { outline: 2px solid #14151a; outline-offset: -4px; }
 /* A light capsule is opaque: blurring what is behind it costs a great deal on a phone and shows nothing. */
 :root[data-tone="light"] .capsule.layout-body { -webkit-backdrop-filter: none; backdrop-filter: none; }
 /* Plate: the picker's cases stand on the plate itself, not in a well, so their words take the plate's ink. */

@@ -15,6 +15,7 @@ export const ko: Record<keyof typeof vi, string> = {
     'app.inapp.create': "지금 다른 앱 안의 브라우저에 있어요. 선물을 만들기 전에 이 페이지를 Safari나 Chrome에서 열어 주세요.",
     'app.inapp.create.copy': "이 페이지 주소 복사",
     'app.inapp.created': "지금 다른 앱 안의 브라우저에 있어요. 링크를 저장하기 전에는 이 페이지를 떠나지 마세요.",
+    'app.inapp.close': '닫기',
     'app.footer.1': "계정이 없고, 내 데이터를 보관하는 서버도 없어요.",
     'app.footer.2': "오픈 소스예요.",
     'app.footer.3': "eCash 위에 만들었어요.",
