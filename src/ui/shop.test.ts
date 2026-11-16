@@ -385,6 +385,10 @@ describe('a riddle link that names where the gift is', () => {
             expect(app.root.querySelector('.screen-locked')).not.toBeNull();
             expect(main(app).textContent).toContain(t(title));
             expect(main(app).textContent).toContain(t(next));
+            // The heading is the state itself, said once: a gift that is gone is not called locked.
+            expect(main(app).querySelector('h1')?.textContent).toBe(t(title));
+            expect(main(app).textContent).not.toContain(t('pkg.riddle.title'));
+            expect(main(app).textContent?.split(t(title))).toHaveLength(2);
             expect(main(app).querySelector('.riddle-form, input, button, a')).toBeNull();
             expect(main(app).querySelectorAll('.scam')).toHaveLength(1);
             expect(main(app).textContent).toContain(t('pkg.recovery'));
@@ -406,6 +410,7 @@ describe('a riddle link that names where the gift is', () => {
         await until(() => app!.root.querySelector('.riddle-form') !== null);
         expect(app.root.querySelector('.riddle-gone')).toBeNull();
         expect(main(app).querySelectorAll('.scam')).toHaveLength(1);
+        expect(main(app).querySelector('h1')?.textContent).toBe(t('pkg.riddle.title'));
         await answer(app, 'cat');
         expect(main(app).querySelector('.slide')).not.toBeNull();
     });

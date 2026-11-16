@@ -490,6 +490,10 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 .riddle-msg { display: flex; flex-direction: column; gap: 10px; }
 .riddle-msg > * { margin: 0; }
 .riddle-msg:empty { display: none; }
+/* In place of the question when the gift is not there: one plain line, then the warning. */
+.riddle-slot { display: flex; flex-direction: column; gap: 14px; }
+.riddle-slot > * { margin: 0; }
+.riddle-gone { color: var(--dim); }
 .riddle-note { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 .check--riddle { font-size: 14px; }
 .create-back, .home-back { align-self: flex-start; min-height: 30px; padding: 0; margin: -4px 0 2px; }

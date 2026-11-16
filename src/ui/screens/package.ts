@@ -260,7 +260,10 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         submit,
         msg,
     );
+    const title = h('h1', null, t('pkg.riddle.title'));
     const lead = h('p', { class: 'lead' }, t('pkg.riddle.lead'));
+    /** The lock is shown as it is after its opening. */
+    let standsOpen = false;
     // What stands in place of the question when the gift is not there to be opened: no field, no button, and the
     // warning an empty package always carries.
     const slot = h('div', { class: 'riddle-slot' }, form);
@@ -275,13 +278,25 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         }
         waiting = kind === 'empty';
         lead.hidden = kind !== null;
+        // The heading says what is true now: a gift that is gone is not "locked".
+        title.textContent = t(kind === 'taken' ? 'pkg.taken' : kind === 'empty' ? 'pkg.empty' : 'pkg.riddle.title');
+        // A gift taken home was opened: the lock stands open. Any other state has it closed.
+        if ((kind === 'taken') !== standsOpen) {
+            standsOpen = kind === 'taken';
+            try {
+                if (standsOpen) card.handle?.skip();
+                else card.handle?.seek(0);
+            } catch {
+                /* the stage is optional */
+            }
+        }
         if (kind === null) {
             if (!slot.contains(form)) slot.replaceChildren(form);
             return;
         }
         // The form is taken off the page, not hidden: there is nothing here to press.
         slot.replaceChildren(
-            h('div', { class: 'riddle-gone', role: 'status' }, h('p', { class: 'state-title' }, t(kind === 'taken' ? 'pkg.taken' : 'pkg.empty')), h('p', { class: 'state-next' }, t(kind === 'taken' ? 'pkg.taken.next' : 'pkg.empty.next'))),
+            h('p', { class: 'riddle-gone', role: 'status' }, t(kind === 'taken' ? 'pkg.taken.next' : 'pkg.empty.next')),
             h('p', { class: 'warning danger scam' }, t('pkg.empty.scam')),
         );
     };
@@ -339,7 +354,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             layout({
                 kind: 'locked',
                 plate: plate(card, def),
-                head: [h('h1', null, t('pkg.riddle.title')), lead],
+                head: [title, lead],
                 body: [slot, h('p', { class: 'warning danger recovery' }, t('pkg.recovery'))],
             }),
         ),
