@@ -40,7 +40,7 @@ pnpm test
 pnpm build
 ```
 
-`pnpm build` checks every wrapper picture, type-checks, bundles into `dist/`, and writes one page per wrapper so that a shared link shows that wrapper's card.
+`pnpm build` runs the tests, checks every wrapper picture, type-checks, bundles into `dist/`, and writes one page per wrapper so that a shared link shows that wrapper's card.
 
 ## Layout
 
