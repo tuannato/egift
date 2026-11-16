@@ -3,6 +3,7 @@ import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
 import { dressed } from '../../wrappers/looks';
+import { artUrl } from '../../wrappers/artUrl';
 import type { WrapperDef } from '../../stage';
 import { stageCard, prefersReducedMotion } from '../stageCard';
 import { clear, h, svg } from '../dom';
@@ -343,7 +344,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         for (const l of dressed(wanted, link.recipe).layers) {
             const img = new Image();
             img.decoding = 'async';
-            img.src = `/wrappers/${wanted.id}/${l.art}`;
+            img.src = artUrl(wanted.id, l.art);
             warmed.push(img);
         }
     }

@@ -433,7 +433,8 @@ describe('the wrapper as a still picture for the keepsake file', () => {
             expect(l.css).not.toMatch(/[<>"';]{2}|url\(|expression|@import/i);
         }
         expect(asked.length).toBeGreaterThan(0);
-        expect(asked.every(u => /^\/wrappers\/lixi\/[a-z0-9-]+\.svg$/.test(u))).toBe(true);
+        // Each under its fixed name, with the version the stage asks for it with: one entry in the browser's cache.
+        expect(asked.every(u => /^\/wrappers\/lixi\/[a-z0-9-]+\.svg\?v=[a-f0-9]{8}$/.test(u))).toBe(true);
         for (const c of Object.values(look.colours)) expect(c).toMatch(/^#[0-9a-f]{6}$/i);
     });
 

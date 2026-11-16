@@ -1,5 +1,6 @@
 import { mountStage } from '../stage';
 import type { StageHandle, WrapperDef } from '../stage';
+import { artBase, artQuery } from '../wrappers/artUrl';
 import { h } from './dom';
 import { ribbon } from './ribbon';
 
@@ -31,7 +32,8 @@ export function stageCard(def: WrapperDef | undefined, opts: { onReveal?: () => 
     if (def) {
         try {
             handle = mountStage(host, def, {
-                assetBase: '/wrappers/' + def.id + '/',
+                assetBase: artBase(def.id),
+                assetQuery: artQuery(def.id),
                 reducedMotion: opts.still === true || prefersReducedMotion(),
                 onReveal: opts.onReveal,
             });

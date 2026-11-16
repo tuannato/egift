@@ -286,6 +286,8 @@ export interface StageClock {
 export interface StageOptions {
     /** URL prefix the wrapper's art is loaded from, e.g. `/wrappers/lixi/`. Same origin only. */
     readonly assetBase: string;
+    /** Put after each picture's name, to tell one drawing of the art from the next: `?v=` and a short version, or nothing. */
+    readonly assetQuery?: string;
     /** When true, the opening is a short cross-fade and idle loops do not run. */
     readonly reducedMotion: boolean;
     /** Called once when the opening passes `revealAt` (also on skip and on seek past it). */

@@ -17,6 +17,7 @@ import '../src/styles/fonts.css';
 import type { ThemeDef } from '../src/stage';
 import { applyTheme, themeTokens } from '../src/ui/theme';
 import { WRAPPERS } from '../src/wrappers';
+import { thumbUrl } from '../src/wrappers/artUrl';
 
 interface Look {
     readonly key: string;
@@ -139,7 +140,7 @@ async function accentSheet(): Promise<void> {
         (w.ambient ?? []).forEach((c, i) => row.style.setProperty(`--amb-${i + 1}`, c));
         const thumb = document.createElement('img');
         thumb.className = 'thumb';
-        thumb.src = `/thumbs/${w.id}.jpg`;
+        thumb.src = thumbUrl(w.id);
         thumb.alt = '';
         const who = el('div', 'who');
         who.append(el('p', 'who-name', w.name.en), el('p', 'who-id', w.id), el('p', 'who-kind', `${theme.material} · ${tone}`));
@@ -167,7 +168,7 @@ async function main(): Promise<void> {
         (w.ambient ?? []).forEach((c, i) => row.style.setProperty(`--amb-${i + 1}`, c));
         const thumb = document.createElement('img');
         thumb.className = 'thumb';
-        thumb.src = `/thumbs/${w.id}.jpg`;
+        thumb.src = thumbUrl(w.id);
         thumb.alt = '';
         const who = el('div', 'who');
         who.append(el('p', 'who-name', w.name.en), el('p', 'who-id', w.id), el('p', 'who-kind', `${theme.material} · ${theme.corner} · ${theme.face}`));

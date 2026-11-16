@@ -38,6 +38,10 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
     if (typeof opts.assetBase !== 'string' || /^[a-z][a-z0-9+.-]*:/i.test(opts.assetBase) || opts.assetBase.startsWith('//') || opts.assetBase.includes('\\')) {
         throw new Error('assetBase must be a path on this origin, such as /wrappers/lixi/.');
     }
+    if (opts.assetQuery !== undefined && !/^(\?v=[a-z0-9]{1,16})?$/.test(opts.assetQuery)) {
+        throw new Error('assetQuery must be ?v= and a short version.');
+    }
+    const query = opts.assetQuery ?? '';
     const base = opts.assetBase === '' || opts.assetBase.endsWith('/') ? opts.assetBase : `${opts.assetBase}/`;
 
     const doc = host.ownerDocument;
@@ -77,7 +81,7 @@ export function mountStage(host: HTMLElement, def: WrapperDef, opts: StageOption
         const box = boxes.get(layerId)!;
         const img = doc.createElement('img');
         img.className = cls;
-        img.src = base + arts.get(layerId)!;
+        img.src = base + arts.get(layerId)! + query;
         img.alt = '';
         img.draggable = false;
         img.decoding = 'async';

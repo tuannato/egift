@@ -3,6 +3,7 @@ import type { WrapperDef } from '../../stage';
 import type { Recipe, RecipeFace } from '../../core';
 import { CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatRecipe, formatXec, newSecret, parseRecipe, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
+import { thumbUrl } from '../../wrappers/artUrl';
 import { ACCENTS, COLOURWAYS, accentFor, colourwaysOf, dressed } from '../../wrappers/looks';
 import { plate } from '../plate';
 import { stageCard, prefersReducedMotion, type StageCard } from '../stageCard';
@@ -344,7 +345,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     const fillCase = (c: (typeof cases)[number]): void => {
         if (c.card || disposed) return;
         // A small picture of the wrapper, closed: 24 mounted scenes are more than a phone's browser will hold.
-        c.card = { el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: `/thumbs/${c.def.id}.jpg`, alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })), handle: null, overlay: h('div', null), destroy() {} };
+        c.card = { el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: thumbUrl(c.def.id), alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })), handle: null, overlay: h('div', null), destroy() {} };
         c.art.append(c.card.el);
     };
     const seen =

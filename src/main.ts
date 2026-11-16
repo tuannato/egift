@@ -7,6 +7,7 @@ import { ChainError } from './core/types';
 import type { Chain } from './core/types';
 import { initLang, loadLang } from './i18n';
 import { startApp } from './ui/app';
+import { sparesData } from './ui/thrifty';
 import type { DemoCtx } from './ui/ctx';
 import { setTokenIconSource } from './ui/tokens';
 
@@ -99,10 +100,11 @@ if (root) {
         else startApp(root, d, demo, screens);
     } else {
         // A gift link, or a visit that was on the create step, needs the heavy piece at once: it is fetched while the
-        // page draws. A visit to the shop fetches it a moment later, quietly, so that the next step is ready.
+        // page draws. A visit to the shop fetches it a moment later, quietly, so that the next step is ready: unless the
+        // browser says its person saves data or is on a slow connection, and then it waits until it is needed.
         const needsIt = location.hash.length > 1 || (history.state as { gift?: string } | null)?.gift === 'create';
         if (needsIt) void loadHeavy().catch(() => {});
-        else setTimeout(() => void loadHeavy().catch(() => {}), 1500);
+        else if (!sparesData()) setTimeout(() => void loadHeavy().catch(() => {}), 1500);
         startApp(root, lazyChain(), undefined, loadHeavy);
     }
 }

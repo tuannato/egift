@@ -4,6 +4,7 @@ import { dressed } from '../../wrappers/looks';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
+import { thumbUrl } from '../../wrappers/artUrl';
 import { formatXec } from '../../core/money';
 import type { PackageState } from '../../core';
 import type { WrapperDef } from '../../stage';
@@ -93,7 +94,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     // image, fetched when it nears the view. Only the door that is worn carries the live scene. A shelf of live
     // scenes is more than a phone's browser will hold.
     const still = (def: WrapperDef): StageCard => ({
-        el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: `/thumbs/${def.id}.jpg`, alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })),
+        el: h('div', { class: 'stage-card' }, h('img', { class: 'door-still', src: thumbUrl(def.id), alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' })),
         handle: null,
         overlay: h('div', null),
         destroy() {},

@@ -51,8 +51,9 @@
   Cross-Origin-Resource-Policy: cross-origin
   Cache-Control: public, max-age=86400
 
-# Wrapper art and the small stills: plain pictures under fixed names. A day in the browser's cache; a changed
-# picture is seen the next day at the latest.
+# Wrapper art and the small stills: plain pictures under fixed names. A day in the browser's cache. The page asks
+# for each with the version of the wrapper's pictures (?v=, scripts/art-version.mjs), so a wrapper drawn again is
+# fetched again at once; anything that asks without the version sees a changed picture the next day at the latest.
 /wrappers/*
   Cache-Control: public, max-age=86400
 /thumbs/*

@@ -7,6 +7,7 @@
  *   /dev/preview.html?id=lixi&sheet=8     contact sheet of 8 stills, closed to open
  *   /dev/preview.html?id=lixi&play=1      live: idle loops, click to open
  */
+import { artBase, artQuery } from '../src/wrappers/artUrl';
 import { mountStage, openLength, wrapperProblems, type WrapperDef } from '../src/stage';
 
 const q = new URLSearchParams(location.search);
@@ -25,7 +26,7 @@ function still(def: WrapperDef, ms: number, className: string, caption?: string)
     cell.className = className;
     const host = document.createElement('div');
     cell.append(host);
-    const stage = mountStage(host, def, { assetBase: `/wrappers/${def.id}/`, reducedMotion: false });
+    const stage = mountStage(host, def, { assetBase: artBase(def.id), assetQuery: artQuery(def.id), reducedMotion: false });
     stage.seek(ms);
     if (caption !== undefined) {
         const cap = document.createElement('div');
@@ -62,7 +63,7 @@ async function main(): Promise<void> {
         const host = document.createElement('div');
         cell.append(host);
         root.replaceChildren(cell);
-        const stage = mountStage(host, def, { assetBase: `/wrappers/${def.id}/`, reducedMotion: false });
+        const stage = mountStage(host, def, { assetBase: artBase(def.id), assetQuery: artQuery(def.id), reducedMotion: false });
         cell.addEventListener('click', () => {
             if (stage.state === 'open') stage.seek(0);
             else void stage.open();

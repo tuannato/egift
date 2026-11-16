@@ -1,5 +1,5 @@
 /**
- * Draw the share card of every wrapper (public/og/<id>.jpg, 1200x630) and its small still (public/thumbs/<id>.jpg).
+ * Draw the share card of every wrapper (public/og/<id>.jpg, 1200x630) and its small still (public/thumbs/<id>.webp).
  *
  *   node scripts/og-cards.mjs            every wrapper
  *   node scripts/og-cards.mjs snowbox    one
@@ -9,6 +9,7 @@
  * Run it again after a wrapper's closed picture or English name changes.
  */
 import { execFileSync } from 'node:child_process';
+import { toWebp } from './to-webp.mjs';
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 
 const registry = readFileSync('src/wrappers/index.ts', 'utf8');
@@ -27,11 +28,13 @@ for (const id of ids) {
     execFileSync('node', ['scripts/shot.mjs', `/dev/card.html?id=${id}`, tmp, '1200', '630', '2500', 'calm'], { stdio: 'ignore' });
     execFileSync('sips', ['-z', '630', '1200', '-s', 'format', 'jpeg', '-s', 'formatOptions', '82', tmp, '--out', `public/og/${id}.jpg`], { stdio: 'ignore' });
     rmSync(tmp);
-    // The small still of the closed wrapper, for the shelf and the picker: public/thumbs/<id>.jpg, 320 wide (a door or a case is never drawn wider than about 130 CSS pixels).
+    // The small still of the closed wrapper, for the shelf and the picker: public/thumbs/<id>.webp, 320 wide (a door or a case is never drawn wider than about 130 CSS pixels).
     const [w, hgt] = sizeOf(id);
     const t = `.shots/thumb-${id}.png`;
     execFileSync('node', ['scripts/shot.mjs', `/dev/card.html?id=${id}&thumb`, t, String(w * 2), String(hgt * 2), '2500', 'calm'], { stdio: 'ignore' });
-    execFileSync('sips', ['-z', String(Math.round((320 * hgt) / w)), '320', '-s', 'format', 'jpeg', '-s', 'formatOptions', '72', t, '--out', `public/thumbs/${id}.jpg`], { stdio: 'ignore' });
+    toWebp(t, `public/thumbs/${id}.webp`, 320, Math.round((320 * hgt) / w), 0.82);
     rmSync(t);
     console.log(id);
 }
+// The stills are part of what a wrapper's version is made of: it is written again.
+execFileSync('node', ['scripts/art-version.mjs'], { stdio: 'inherit' });

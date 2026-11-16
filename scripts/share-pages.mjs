@@ -12,8 +12,11 @@
  * Fails the build when a wrapper has no card or no thumbnail: draw it with `node scripts/og-cards.mjs <id>`.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { versions } from './art-version.mjs';
 
 const SITE = 'https://egift.cash';
+// The share card is asked for with the version of the wrapper's pictures, as the page asks for the pictures.
+const VERSION = versions();
 const registry = readFileSync('src/wrappers/index.ts', 'utf8');
 const ids = /WRAPPERS: readonly WrapperDef\[\] = \[([^\]]+)\]/.exec(registry)[1].split(',').map(s => s.trim()).filter(Boolean);
 const html = readFileSync('dist/index.html', 'utf8');
@@ -25,11 +28,11 @@ const swap = (page, prop, value) => {
 const missing = [];
 for (const id of ids) {
     if (!/^[a-z0-9-]{1,24}$/.test(id)) throw new Error(`share-pages: bad wrapper id "${id}"`);
-    if (!existsSync(`public/og/${id}.jpg`) || !existsSync(`public/thumbs/${id}.jpg`)) {
+    if (!existsSync(`public/og/${id}.jpg`) || !existsSync(`public/thumbs/${id}.webp`) || !VERSION[id]) {
         missing.push(id);
         continue;
     }
-    let page = swap(html, 'og:image', `${SITE}/og/${id}.jpg`);
+    let page = swap(html, 'og:image', `${SITE}/og/${id}.jpg?v=${VERSION[id]}`);
     page = swap(page, 'og:url', `${SITE}/${id}/`);
     page = swap(page, 'og:title', 'A gift is waiting inside — eGift');
     page = swap(page, 'og:description', 'Open the link to see it. eCash, wrapped into a link.');

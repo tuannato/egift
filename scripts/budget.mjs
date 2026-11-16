@@ -39,13 +39,13 @@ const files = walk('dist');
 const lines = [`shop code, gzipped: ${check('shop code (gzip)', entry, LIMITS.entryGzip)}`, `_headers rules: ${check('_headers rules', rules, LIMITS.headerRules, 'n')}`, `files: ${check('files in dist', files.length, LIMITS.files, 'n')}`];
 for (const id of readdirSync('dist/wrappers')) {
     // A wrapper that is not on the shelf (the lock of a riddle gift) has art and nothing else.
-    if (!existsSync(`dist/thumbs/${id}.jpg`)) {
+    if (!existsSync(`dist/thumbs/${id}.webp`)) {
         check(`art of ${id}`, walk(`dist/wrappers/${id}`).reduce((s, f) => s + statSync(f).size, 0), LIMITS.art);
         continue;
     }
     const art = walk(`dist/wrappers/${id}`).reduce((s, f) => s + statSync(f).size, 0);
     check(`art of ${id}`, art, LIMITS.art);
-    check(`thumbnail of ${id}`, statSync(`dist/thumbs/${id}.jpg`).size, LIMITS.thumb);
+    check(`thumbnail of ${id}`, statSync(`dist/thumbs/${id}.webp`).size, LIMITS.thumb);
     check(`share card of ${id}`, statSync(`dist/og/${id}.jpg`).size, LIMITS.card);
 }
 console.log('budget: ' + lines.join('; '));

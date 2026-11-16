@@ -97,8 +97,9 @@ async function draw(def: WrapperDef): Promise<Omit<KeepsakeLook, 'colours' | 'ba
             p = (async () => {
                 // The page's own files only: the same origin, under the wrappers' folder.
                 const u = new URL(url, location.origin);
-                if (u.origin !== location.origin || !u.pathname.startsWith('/wrappers/') || !u.pathname.endsWith('.svg')) throw new Error('Not a wrapper picture');
-                const res = await fetch(u.pathname);
+                if (u.origin !== location.origin || !u.pathname.startsWith('/wrappers/') || !u.pathname.endsWith('.svg') || !/^(\?v=[a-z0-9]{1,16})?$/.test(u.search)) throw new Error('Not a wrapper picture');
+                // With its version, as the stage asked for it: the same entry in the browser's cache.
+                const res = await fetch(u.pathname + u.search);
                 if (!res.ok) throw new Error('No picture');
                 return 'data:image/svg+xml;base64,' + toBase64(new Uint8Array(await res.arrayBuffer()));
             })();

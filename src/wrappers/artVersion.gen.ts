@@ -1,0 +1,37 @@
+// Written by scripts/art-version.mjs. Do not edit: the build writes it from the pictures on disk.
+/* eslint-disable */
+
+/** A short hash of each wrapper's pictures: asked for as `?v=`, so that pictures drawn again are fetched again. */
+export const ART_VERSION: Readonly<Record<string, string>> = {
+    archmoon: '688b52cf',
+    basket: '3647b650',
+    bottle: '6e3391a9',
+    bouquet: 'aaab0f61',
+    cake: '90b74423',
+    cloudmoon: '197f7284',
+    cradle: '57e4f87e',
+    crane: '5a7ea976',
+    dawn: 'f49daf16',
+    diploma: '898cda96',
+    dopaper: 'd5dc6808',
+    fireworks: 'b9bac4fc',
+    fold: '0efd3a28',
+    inkwash: '1ed862cd',
+    lace: '9233102c',
+    lantern: '0dfac060',
+    latte: '7be98da8',
+    letter: 'acb3a1f0',
+    lixi: 'f756f394',
+    lock: 'e428a0fb',
+    mecha: 'cf5d6555',
+    orbit: '488c8288',
+    paperbag: 'c41b185f',
+    pumpkin: '7dad2822',
+    rangoli: '6fdef6d8',
+    seeds: '059b661c',
+    signal: '2f3d3362',
+    skyline: '1807fd75',
+    snowbox: 'a46f8079',
+    vinyl: 'b0d61b9c',
+    wreath: '774baa39',
+};
