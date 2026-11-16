@@ -112,6 +112,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         const name = h('span', { class: 'door-name' });
         setUserText(name, inLang(def.name, lang));
         const tag = h('div', { class: 'door-tag', 'aria-hidden': 'true' }, name, h('span', { class: 'door-price' }, price(def)), h('span', { class: 'door-heart' }, heart()));
+        // A name with a very long word is set a little smaller, so that the word is not broken in two.
+        if (inLang(def.name, lang).split(/[\s-]+/).some(word => [...word].length >= 11)) tag.dataset.long = 'yes';
         const btn = h('button', {
             type: 'button',
             class: 'door-btn',

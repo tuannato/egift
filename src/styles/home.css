@@ -51,9 +51,13 @@
     transition: bottom 620ms var(--spring), opacity 260ms linear;
 }
 .door-name { font: 650 12.5px / 1.12 var(--text); letter-spacing: -0.01em; max-width: 100%; text-wrap: balance; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+/* A name with a very long word (home.ts marks the tag): smaller, with less room at the sides, so the word stays whole. */
+.door-tag[data-long] { padding-inline: 5px; }
+.door-tag[data-long] .door-name { font-size: 11px; }
 .door-price { font: 500 8.5px / 1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--th-dim); }
 .door[data-face="tech"] .door-name { font: 700 11.5px / 1 'Tektur', var(--text); letter-spacing: 0.03em; text-transform: uppercase; }
 .door[data-face="mono"] .door-name { font: 500 12px / 1 var(--mono); letter-spacing: -0.04em; }
+.door[data-face="mono"] .door-tag[data-long] .door-name { font-size: 10.5px; }
 .door[data-corner="soft"] .door-tag { border-radius: 4px; }
 .door[data-corner="cut"] .door-tag { border-radius: 0; --t: 7px; clip-path: polygon(var(--t) 0, 100% 0, 100% calc(100% - var(--t)), calc(100% - var(--t)) 100%, 0 100%, 0 var(--t)); }
 .door[data-material="lacquer"] .door-tag {
