@@ -22,7 +22,7 @@ import { cue, score } from '../sound';
 import { track } from '../busy';
 import { destroyCapsules } from '../capsule';
 import { followStep, slideToOpen } from '../slide';
-import { downloadKeepsake, dressOf, isKept, keep, keepableWish, keptId } from '../kept';
+import { autoKeep, downloadKeepsake, dressOf, isKept, keep, keepableWish, keptId, removeKept, setAutoKeep } from '../kept';
 import type { Kept, KeptToken } from '../kept';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
@@ -50,6 +50,8 @@ interface PkgMemory {
     receipt?: Kept;
     /** Nothing is left at the package: the receipt is the whole gift. */
     whole?: boolean;
+    /** The record was written once without a press: not again, so that taking it back out holds. */
+    autoKept?: boolean;
 }
 const memory = new Map<string, PkgMemory>();
 
@@ -816,7 +818,7 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
         return w ? [w, ref] : [ref];
     }
 
-    /** Two ways to keep what came with the gift: a file, and (by the person's own press) this browser. */
+    /** Two ways to keep what came with the gift: a file, and this browser (on its own, unless the person switched that off). */
     function keepBox(): HTMLElement | null {
         const rec = mem.receipt;
         if (!rec || mem.whole !== true) return null;
@@ -845,15 +847,46 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
                 class: 'btn btn-secondary',
                 onclick: () => {
                     said.textContent = t(keep(rec) ? 'kept.saved' : 'kept.save.fail');
+                    paintKept();
+                    if (!undo.hidden) undo.focus();
                 },
             },
             t('kept.save'),
         );
+        // The way back out of a record, whether it was written by a press or on its own.
+        const undo = h(
+            'button',
+            {
+                type: 'button',
+                class: 'btn btn-secondary',
+                onclick: () => {
+                    removeKept(rec.ref);
+                    paintKept();
+                    if (!isKept(rec)) said.textContent = t('keep.undone');
+                    if (!here.hidden) here.focus();
+                },
+            },
+            t('keep.undo'),
+        );
+        const paintKept = (): void => {
+            const kept = isKept(rec);
+            here.hidden = kept;
+            undo.hidden = !kept;
+        };
+        // One chance for a gift, spent whatever the switch says: a record the person took back out stays out, and
+        // a switch turned on later writes nothing behind their back.
+        if (mem.autoKept !== true) {
+            mem.autoKept = true;
+            if (autoKeep()) keep(rec);
+        }
         if (isKept(rec)) said.textContent = t('kept.saved');
+        paintKept();
+        const auto = h('input', { type: 'checkbox', class: 'check-box', checked: autoKeep(), onchange: () => setAutoKeep(auto.checked) }) as HTMLInputElement;
         return h('div', { class: 'stack keep-box' }, h('p', { class: 'label' }, t('kept.title')), h('p', null, t('kept.body')),
             // Said plainly when the words are left out of the record.
             link.wish && rec.wish === undefined ? h('p', { class: 'note' }, t('kept.wish.left')) : null,
-            h('div', { class: 'btn-col' }, file, here), said, fold(t('kept.warn.sum'), { id: 'pkg.kept.warn' }, h('p', { class: 'note' }, t('kept.warn'))));
+            h('div', { class: 'btn-col' }, file, here, undo), said, h('label', { class: 'check' }, auto, h('span', null, t('keep.auto'))),
+            fold(t('kept.warn.sum'), { id: 'pkg.kept.warn' }, h('p', { class: 'note' }, t('kept.warn'))));
     }
 
     function renderFunded(s: PackageState): void {

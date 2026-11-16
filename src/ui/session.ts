@@ -24,6 +24,8 @@ export interface Made {
     /** The giver said the gift will also carry a token. */
     readonly withToken?: boolean;
     saved: boolean;
+    /** The one chance to remember this gift without a press was spent: a record taken back out stays out. */
+    autoSent?: boolean;
 }
 
 let made: Made | null = null;

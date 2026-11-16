@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDemoChain, deriveKey, encodeLink, newSecret, takeFeeEstimate } from '../core';
 import type { DemoChain, PackageKey } from '../core';
-import { t } from '../i18n';
+import { setLang, t } from '../i18n';
 import { getMade } from './session';
 import { isKept, keep, keepableWish, keepsakePage, keptId, loadKept, loadSent, rememberSent } from './kept';
 import type { Kept } from './kept';
@@ -195,8 +195,15 @@ describe('keeping a record of a gift that was taken home', () => {
         return { secret, key, url, chain };
     }
 
-    it('nothing-is-kept-until-the-person-presses, and-the-record-never-holds-the-link-or-the-wallet', async () => {
+    it('the-record-is-kept-on-its-own-once-the-gift-is-home, can-be-taken-back-out, and-never-holds-the-link-or-the-wallet', async () => {
         const { secret, key, url } = await takeIt(WISH);
+        // Kept without a press, and the screen says so, with the way back out in place of the button.
+        expect(loadKept().length).toBe(1);
+        expect(main(app!).textContent).toContain(t('kept.saved'));
+        expect(buttonByText(main(app!), t('kept.save')).hidden).toBe(true);
+        expect((main(app!).querySelector('.keep-box .check-box') as HTMLInputElement).checked).toBe(true);
+        buttonByText(main(app!), t('keep.undo')).click();
+        expect(main(app!).textContent).toContain(t('keep.undone'));
         expect(main(app!).textContent).toContain(t('kept.title'));
         expect(main(app!).textContent).toContain(t('kept.warn'));
         // The long note is behind one line that says the point of it; that line is in view.
@@ -220,6 +227,29 @@ describe('keeping a record of a gift that was taken home', () => {
         // Only the language and the kept gifts are ever in storage.
         expect(Object.keys(localStorage).sort()).toEqual(['gift.kept']);
         expect(sessionStorage.length).toBe(0);
+    });
+
+    it('switched-off, nothing-is-kept-until-the-person-presses, and-the-switch-stores-one-fixed-word', async () => {
+        const first = await takeIt(WISH);
+        const box = main(app!).querySelector('.keep-box .check-box') as HTMLInputElement;
+        box.checked = false;
+        box.dispatchEvent(new Event('change'));
+        expect(localStorage.getItem('gift.auto')).toBe('off');
+        buttonByText(main(app!), t('keep.undo')).click();
+        expect(loadKept()).toEqual([]);
+        app!.stop();
+        // The next gift taken home in this browser is not written down.
+        const second = await takeIt('Another one');
+        expect(second.key.address).not.toBe(first.key.address);
+        expect(loadKept()).toEqual([]);
+        expect(main(app!).textContent).not.toContain(t('kept.saved'));
+        expect((main(app!).querySelector('.keep-box .check-box') as HTMLInputElement).checked).toBe(false);
+        expect(Object.keys(localStorage).sort()).toEqual(['gift.auto']);
+        // Switched back on: the entry goes; nothing but "off" is ever stored under it.
+        const again = main(app!).querySelector('.keep-box .check-box') as HTMLInputElement;
+        again.checked = true;
+        again.dispatchEvent(new Event('change'));
+        expect(localStorage.getItem('gift.auto')).toBeNull();
     });
 
     it('a-wish-that-looks-like-it-carries-a-gift-link-is-left-out-of-the-record', async () => {
@@ -372,11 +402,66 @@ describe('"taken" on one node\'s word', () => {
 });
 
 describe('remembering a gift that was sent', () => {
-    it('nothing is remembered until the giver presses; the record holds the package address and never the link', async () => {
+    it('a gift is remembered on its own once it is seen funded, and can be taken back out for good', async () => {
         stubClipboard();
         app = boot();
         await createGift(app.root, '20', 'For you');
         const made = getMade()!;
+        // Made but not funded: nothing yet.
+        expect(localStorage.getItem('gift.sent')).toBeNull();
+        app.chain.fund(made.key.address, made.sats);
+        await flush();
+        expect(loadSent()[0]).toMatchObject({ address: made.key.address, sats: '2000', wish: 'For you' });
+        expect(app.root.querySelector('.keep-box .fold-state')!.textContent).toContain(t('sent.remembered'));
+        buttonByText(app.root, t('keep.undo')).click();
+        expect(loadSent()).toEqual([]);
+        // A later change at the package does not write it again; nor does the screen being built again.
+        app.chain.fund(made.key.address, 600n);
+        await flush();
+        expect(loadSent()).toEqual([]);
+        await setLang('vi');
+        await flush();
+        expect(loadSent()).toEqual([]);
+        await setLang('en');
+    });
+
+    it('a gift that is short of what was meant is not remembered yet', async () => {
+        stubClipboard();
+        app = boot();
+        await createGift(app.root, '20', 'For you');
+        const made = getMade()!;
+        app.chain.fund(made.key.address, 600n);
+        await flush();
+        expect(localStorage.getItem('gift.sent')).toBeNull();
+        app.chain.fund(made.key.address, made.sats);
+        await flush();
+        expect(loadSent().length).toBe(1);
+    });
+
+    it('a switch turned back on does not write a gift whose chance was already spent', async () => {
+        stubClipboard();
+        localStorage.setItem('gift.auto', 'off');
+        app = boot();
+        await createGift(app.root, '20', 'For you');
+        const made = getMade()!;
+        app.chain.fund(made.key.address, made.sats);
+        await flush();
+        const box = app.root.querySelector('.keep-box .check-box') as HTMLInputElement;
+        box.checked = true;
+        box.dispatchEvent(new Event('change'));
+        app.chain.fund(made.key.address, 600n);
+        await flush();
+        expect(localStorage.getItem('gift.sent')).toBeNull();
+    });
+
+    it('switched off, nothing is remembered until the giver presses; the record holds the package address and never the link', async () => {
+        stubClipboard();
+        localStorage.setItem('gift.auto', 'off');
+        app = boot();
+        await createGift(app.root, '20', 'For you');
+        const made = getMade()!;
+        app.chain.fund(made.key.address, made.sats);
+        await flush();
         expect(localStorage.getItem('gift.sent')).toBeNull();
         buttonByText(app.root, t('sent.remember')).click();
         expect(app.root.textContent).toContain(t('sent.remembered'));

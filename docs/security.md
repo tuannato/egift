@@ -14,8 +14,10 @@ eGift is beta software: use small amounts.
 - The site is static. The fragment never reaches a server. No key exists
   before "Create" is pressed, and no key, link, secret or wallet address is
   written to storage, a request, a title or a log. Browser storage holds the
-  chosen language and, only by the person's own press, a list of favourite
-  wrappers and short records of gifts kept or sent (never a link).
+  chosen language, a list of favourite wrappers, and short records of gifts
+  taken home or funded (never a link). A record is written once the gift is
+  home, or once it is seen funded; the screen says so, with a button that
+  removes it and a switch that stops records being written at all.
 - The chain is read through the public Chronik nodes listed in
   `src/core/chain/chronik.ts`; the Content-Security-Policy allows those hosts
   and one host for token icons, nothing else.
@@ -38,7 +40,7 @@ was sent keeps naming the same address.
 - A gift link's path names its wrapper (`/snowbox/`), so the host and a chat
   app that draws a preview learn which wrapper a link uses. They never see
   the part after `#`.
-- A record you choose to keep in your browser holds the amount, the time and
+- A record kept in your browser holds the amount, the time and
   the gift's address (only part of it for a gift you received), never the link.
 - The link of a riddle gift names the gift's address, so that the page can
   say whether the gift is still there before anyone answers. Whoever has the

@@ -1,9 +1,11 @@
 /**
- * Gifts a person chose to keep a record of, after they were taken home.
+ * Records of gifts, kept after they were taken home.
  *
  * A record is a keepsake, not a key: the sender's words, what arrived, when,
- * and which package it was. It is written only when the person presses the
- * button, and only after the gift is in their wallet. It never holds the
+ * and which package it was. It is written only after the gift is in their
+ * wallet: on its own, unless the person switched that off here (`autoKeep`),
+ * and then only by their press. The screen says so each time, with a way to
+ * take the record back out. It never holds the
  * link, the secret, a private key or the wallet address the gift went to —
  * the record type has no field that could carry one. Not even the package's
  * full address is kept (one look in an explorer leads from it to the wallet
@@ -26,8 +28,10 @@ import { looksLikeXec } from './tokens';
 import type { KeepsakeLook } from './keepsakeArt';
 
 const STORE_KEY = 'gift.kept';
-/** Gifts a giver chose to remember: where the package is, never its link. */
+/** Gifts a giver funded: where the package is, never its link. */
 const SENT_KEY = 'gift.sent';
+/** Whether records are written without a press. Only "off" is ever stored: no entry means they are. */
+const AUTO_KEY = 'gift.auto';
 /** The most records kept; the oldest go first. */
 export const KEPT_MAX = 50;
 const WISH_MAX = 600;
@@ -142,6 +146,25 @@ export function loadKept(): Kept[] {
         .slice(0, KEPT_MAX);
 }
 
+/** Records of gifts received and sent are kept in this browser without a press, unless the person switched it off. */
+export function autoKeep(): boolean {
+    try {
+        return localStorage.getItem(AUTO_KEY) !== 'off';
+    } catch {
+        // A browser that refuses storage keeps nothing either way.
+        return false;
+    }
+}
+
+export function setAutoKeep(on: boolean): void {
+    try {
+        if (on) localStorage.removeItem(AUTO_KEY);
+        else localStorage.setItem(AUTO_KEY, 'off');
+    } catch {
+        /* nothing to store it in: the choice lasts as long as the page */
+    }
+}
+
 function write(key: typeof STORE_KEY | typeof SENT_KEY, list: readonly unknown[]): boolean {
     try {
         if (list.length === 0) localStorage.removeItem(key);
@@ -164,8 +187,9 @@ function readList(key: typeof STORE_KEY | typeof SENT_KEY): unknown[] {
 }
 
 /**
- * A gift its giver chose to remember, to see later whether it was funded and
- * taken. It holds the package ADDRESS (public: it is how the page asks the
+ * A gift its giver remembers, to see later whether it was funded and
+ * taken: written once the gift is seen funded (unless `autoKeep` is off), or
+ * by the giver's press. It holds the package ADDRESS (public: it is how the page asks the
  * network), what was meant to go in, the words and the time. Never the link:
  * a remembered gift cannot be opened, re-sent or taken back from here, and
  * losing the link still loses the gift.

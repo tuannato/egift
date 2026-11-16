@@ -1,7 +1,7 @@
 import { DEFAULT_WRAPPER, DUST_SATS, takeFeeEstimate, entitlement, formatAtoms, giftTokens, licenceOf, formatXec, fundLinks, stampedFundLinks, tokenFundLinks } from '../../core';
 import type { FundLinks, GiftToken, PackageState, TokenMeta } from '../../core';
 import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
-import { dressOf, isSentRemembered, rememberSent } from '../kept';
+import { autoKeep, dressOf, forgetSent, isSentRemembered, rememberSent, setAutoKeep } from '../kept';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
 import { dressed } from '../../wrappers/looks';
 import { DEFAULT_CREDIT } from '../plate';
@@ -168,6 +168,16 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         status.classList.toggle('status--ok', done);
         for (const k of ['waiting', 'unfinal', 'bad']) status.classList.toggle('status--' + k, tone === k);
         fundedOk = done;
+        // Funded as meant: the gift is remembered, unless the giver switched that off. The one chance is spent
+        // either way and is kept with the gift, not with this screen (a change of language builds the screen
+        // again): a record the giver took back out, or a switch turned on later, never writes it behind their back.
+        if (done && made!.autoSent !== true) {
+            made!.autoSent = true;
+            if (autoKeep()) {
+                writeSent();
+                paintRemembered();
+            }
+        }
         if (!(s !== null && s.kind === 'funded' && s.hasToken)) tokenIn = false;
         paintReady();
         paintHold(s, null);
@@ -535,39 +545,70 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         t('created.startover'),
     );
 
-    // Remembering a gift, by the giver's own press: where its package is, never its link.
-    const remembered = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' }, isSentRemembered(made.key.address) ? t('sent.remembered') : '');
+    // Remembering a gift: where its package is, never its link. Written once the gift is seen funded, unless the
+    // giver switched that off; the fold's one line says it is there, and inside is the way to take it back out.
+    const remembered = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
     // Folded, the one line still says whether this gift is remembered.
     const rememberSum = h('span', { class: 'fold-state' });
-    const paintRememberSum = (): void => {
-        rememberSum.textContent = isSentRemembered(made.key.address) ? ' · ' + t('sent.remembered') : '';
-    };
-    paintRememberSum();
+    const writeSent = (): boolean =>
+        rememberSent({
+            address: made.key.address,
+            at: Date.now(),
+            wrapper: made.wrapper,
+            ...(dressOf(made.recipe) !== undefined ? { dress: dressOf(made.recipe)! } : {}),
+            sats: String(made.sats),
+            ...(made.wish ? { wish: made.wish } : {}),
+            ...(made.tokenOnly === true ? { tokenOnly: true } : {}),
+        });
     const remember = h(
         'button',
         {
             type: 'button',
             class: 'btn btn-secondary btn-small',
             onclick: () => {
-                const ok = rememberSent({
-                    address: made.key.address,
-                    at: Date.now(),
-                    wrapper: made.wrapper,
-                    ...(dressOf(made.recipe) !== undefined ? { dress: dressOf(made.recipe)! } : {}),
-                    sats: String(made.sats),
-                    ...(made.wish ? { wish: made.wish } : {}),
-                    ...(made.tokenOnly === true ? { tokenOnly: true } : {}),
-                });
-                remembered.textContent = t(ok ? 'sent.remembered' : 'kept.save.fail');
-                paintRememberSum();
+                const ok = writeSent();
+                paintRemembered();
+                if (!ok) remembered.textContent = t('kept.save.fail');
+                if (!forget.hidden) forget.focus();
             },
         },
         t('sent.remember'),
     );
+    const forget = h(
+        'button',
+        {
+            type: 'button',
+            class: 'btn btn-secondary btn-small',
+            onclick: () => {
+                forgetSent(made.key.address);
+                paintRemembered();
+                if (!isSentRemembered(made.key.address)) remembered.textContent = t('keep.undone');
+                if (!remember.hidden) remember.focus();
+            },
+        },
+        t('keep.undo'),
+    );
+    function paintRemembered(): void {
+        const has = isSentRemembered(made!.key.address);
+        remembered.textContent = has ? t('sent.remembered') : '';
+        rememberSum.textContent = has ? ' · ' + t('sent.remembered') : '';
+        remember.hidden = has;
+        forget.hidden = !has;
+    }
+    paintRemembered();
+    const autoBox = h('input', { type: 'checkbox', class: 'check-box', checked: autoKeep(), onchange: () => setAutoKeep(autoBox.checked) }) as HTMLInputElement;
     const rememberBox = h(
         'div',
         { class: 'keep-box fold-box' },
-        fold([h('span', null, t('sent.title')), rememberSum], { id: 'created.remember:' + made.key.address }, h('p', { class: 'note' }, t('sent.body')), remember, remembered),
+        fold(
+            [h('span', null, t('sent.title')), rememberSum],
+            { id: 'created.remember:' + made.key.address },
+            h('p', { class: 'note' }, t('sent.body')),
+            remember,
+            forget,
+            remembered,
+            h('label', { class: 'check' }, autoBox, h('span', null, t('keep.auto'))),
+        ),
     );
 
     if (made.saved) unlock();
