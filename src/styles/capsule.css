@@ -898,9 +898,6 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 .fold-sum:hover { color: var(--ink); background: var(--fill); }
 .fold-sum:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .fold-body { padding: 4px 0 12px; }
-/* What a closed fold still has to say (a gift already remembered); once open, the body says it. */
-.fold-state { color: var(--mute); }
-.fold[open] > .fold-sum .fold-state { display: none; }
 /* A box that is a fold draws one line above itself, not two. */
 .fold-box > .fold { border-top: 0; }
 .fold-box { padding-top: 0; }

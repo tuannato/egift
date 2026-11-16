@@ -66,6 +66,7 @@ export const es: Record<keyof typeof vi, string> = {
     'sent.page.lead': "Los regalos recordados en este navegador, cada uno con lo que la red dice de él ahora mismo.",
     'sent.title': "Recordar este regalo",
     'sent.body': "Guarda la dirección del paquete, la cantidad y tus palabras en este navegador, para que veas más tarde si el regalo se retiró. El enlace no se guarda: perder el enlace sigue siendo perder el regalo. La dirección de un paquete es pública: quien la tenga puede consultar en la red qué billetera lo depositó y adónde fue el dinero.",
+    'sent.nolink': "Recordar un regalo no guarda su enlace. Si se pierde el enlace, se pierde el regalo.",
     'sent.remember': "Recordar en este navegador",
     'sent.remembered': "Recordado ✓ Míralo en la página de inicio, en «Regalos enviados».",
     'sent.status.reading': "Leyendo su estado…",

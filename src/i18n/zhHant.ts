@@ -66,6 +66,7 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'sent.page.lead': "這個瀏覽器裡記住的禮物，每份都附上網路此刻顯示的狀態。",
     'sent.title': "記住這份禮物",
     'sent.body': "把禮包地址、金額和你的祝福存在這個瀏覽器裡，方便之後查看禮物是否已被領走。連結不會保存：連結不見了，禮物一樣會不見。禮包地址是公開的：拿到它的人可以在網路上查到錢來自哪個錢包、去了哪裡。",
+    'sent.nolink': "記住禮物並不會保存連結。連結不見了，禮物就不見了。",
     'sent.remember': "記在這個瀏覽器裡",
     'sent.remembered': "已記住 ✓ 可在首頁的「送出的禮物」裡查看。",
     'sent.status.reading': "正在讀取狀態…",

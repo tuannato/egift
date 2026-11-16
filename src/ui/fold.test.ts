@@ -143,17 +143,18 @@ describe('no screen folds what must be read', () => {
         expect(tok.open).toBe(false);
         expect(foldedSafety()).toEqual([]);
 
-        // Opened by the person, pressed, then another language: still open, and the one line says it is remembered.
+        // Opened by the person, pressed, then another language: still open. The one line is the title alone:
+        // whether the gift is remembered is said inside, and what stays in view is that the link is not saved.
         press(rem);
         expect(rem.open).toBe(true);
         buttonByText(rem, t('sent.remember')).click();
-        expect(rem.querySelector('summary')!.textContent).toBe(t('sent.title') + ' · ' + t('sent.remembered'));
+        expect(rem.querySelector('summary')!.textContent).toBe(t('sent.title'));
         await switchTo(app, 'vi');
         await flush(12);
         const rem2 = foldBy(main(app), t('sent.title'));
         expect(rem2).not.toBe(rem);
         expect(rem2.open).toBe(true);
-        expect(rem2.querySelector('summary')!.textContent).toBe(t('sent.title') + ' · ' + t('sent.remembered'));
+        expect(rem2.querySelector('summary')!.textContent).toBe(t('sent.title'));
         // The one nobody opened stays closed.
         expect(foldBy(main(app), t('created.tok.title')).open).toBe(false);
         expect(foldedSafety()).toEqual([]);

@@ -66,6 +66,7 @@ export const pt: Record<keyof typeof vi, string> = {
     'sent.page.lead': "Os presentes lembrados neste navegador, cada um com o que a rede diz sobre ele agora.",
     'sent.title': "Lembrar este presente",
     'sent.body': "Guarda o endereço do pacote, o valor e a sua mensagem neste navegador, para você ver depois se o presente foi levado. O link não é guardado: perder o link ainda é perder o presente. O endereço de um pacote é público: quem o tiver pode consultar na rede de qual carteira o dinheiro veio e para onde foi.",
+    'sent.nolink': "Lembrar um presente não guarda o link. Se o link for perdido, o presente é perdido.",
     'sent.remember': "Lembrar neste navegador",
     'sent.remembered': "Lembrado ✓ Veja na página inicial, em “Presentes enviados”.",
     'sent.status.reading': "Lendo o estado…",

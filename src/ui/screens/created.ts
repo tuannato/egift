@@ -546,10 +546,9 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     );
 
     // Remembering a gift: where its package is, never its link. Written once the gift is seen funded, unless the
-    // giver switched that off; the fold's one line says it is there, and inside is the way to take it back out.
+    // giver switched that off. Whether it is there is said inside the fold only, with the way to take it back out;
+    // what is always in view is the warning that a remembered gift is not a saved link.
     const remembered = h('p', { class: 'status', role: 'status', 'aria-live': 'polite' });
-    // Folded, the one line still says whether this gift is remembered.
-    const rememberSum = h('span', { class: 'fold-state' });
     const writeSent = (): boolean =>
         rememberSent({
             address: made.key.address,
@@ -591,7 +590,6 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     function paintRemembered(): void {
         const has = isSentRemembered(made!.key.address);
         remembered.textContent = has ? t('sent.remembered') : '';
-        rememberSum.textContent = has ? ' · ' + t('sent.remembered') : '';
         remember.hidden = has;
         forget.hidden = !has;
     }
@@ -601,7 +599,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         'div',
         { class: 'keep-box fold-box' },
         fold(
-            [h('span', null, t('sent.title')), rememberSum],
+            t('sent.title'),
             { id: 'created.remember:' + made.key.address },
             h('p', { class: 'note' }, t('sent.body')),
             remember,
@@ -609,6 +607,8 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
             remembered,
             h('label', { class: 'check' }, autoBox, h('span', null, t('keep.auto'))),
         ),
+        // A money-loss condition, so it is never folded away.
+        h('p', { class: 'warning' }, t('sent.nolink')),
     );
 
     if (made.saved) unlock();

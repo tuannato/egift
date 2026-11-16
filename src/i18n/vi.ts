@@ -64,6 +64,7 @@ export const vi = {
     'sent.page.lead': 'Những món quà được ghi nhớ trong trình duyệt này, kèm trạng thái đọc từ mạng lưới lúc này.',
     'sent.title': 'Ghi nhớ quà này',
     'sent.body': 'Lưu địa chỉ gói, số tiền và lời chúc vào trình duyệt này để sau xem quà đã được nhận chưa. Không lưu link: mất link vẫn là mất quà. Địa chỉ gói là công khai: ai có nó tra được trên mạng lưới tiền vào từ ví nào và đi đâu.',
+    'sent.nolink': 'Ghi nhớ quà không bao gồm ghi nhớ link. Mất link vẫn là mất quà.',
     'sent.remember': 'Ghi nhớ trong trình duyệt này',
     'sent.remembered': 'Đã ghi nhớ ✓ Xem ở trang chủ, mục "Quà đã gửi".',
     'sent.status.reading': 'Đang đọc trạng thái…',

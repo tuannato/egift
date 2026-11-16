@@ -66,6 +66,7 @@ export const en: Record<keyof typeof vi, string> = {
     'sent.page.lead': 'The gifts remembered in this browser, each with what the network says of it right now.',
     'sent.title': 'Remember this gift',
     'sent.body': 'Keeps the package address, the amount and your words in this browser, so you can see later whether the gift was taken. The link is not kept: losing the link still loses the gift. A package address is public: whoever has it can look up on the network which wallet funded it and where it went.',
+    'sent.nolink': 'Remembering a gift does not save its link. If the link is lost, the gift is lost.',
     'sent.remember': 'Remember in this browser',
     'sent.remembered': 'Remembered ✓ See it on the home page, under "Gifts sent".',
     'sent.status.reading': 'Reading its state…',

@@ -66,6 +66,7 @@ export const de: Record<keyof typeof vi, string> = {
     'sent.page.lead': "Die Geschenke, die du dir in diesem Browser gemerkt hast, jeweils mit dem, was das Netzwerk gerade darüber sagt.",
     'sent.title': "Dieses Geschenk merken",
     'sent.body': "Speichert die Paketadresse, den Betrag und deine Worte in diesem Browser, damit du später siehst, ob das Geschenk geholt wurde. Der Link wird nicht gespeichert: Geht der Link verloren, ist auch das Geschenk verloren. Eine Paketadresse ist öffentlich: Wer sie hat, kann im Netzwerk nachsehen, aus welchem Wallet das Geld kam und wohin es ging.",
+    'sent.nolink': "Ein gemerktes Geschenk speichert nicht den Link. Geht der Link verloren, ist das Geschenk verloren.",
     'sent.remember': "In diesem Browser merken",
     'sent.remembered': "Gemerkt ✓ Du findest es auf der Startseite unter „Verschickte Geschenke“.",
     'sent.status.reading': "Zustand wird gelesen…",

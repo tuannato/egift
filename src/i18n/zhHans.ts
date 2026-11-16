@@ -66,6 +66,7 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'sent.page.lead': "这个浏览器里记住的礼物，每份都附上网络此刻显示的状态。",
     'sent.title': "记住这份礼物",
     'sent.body': "把礼包地址、金额和你的祝福存在这个浏览器里，方便以后查看礼物是否已被领走。链接不会保存：丢了链接，礼物照样丢失。礼包地址是公开的：拿到它的人可以在网络上查到钱来自哪个钱包、去了哪里。",
+    'sent.nolink': "记住礼物并不会保存链接。链接丢了，礼物就丢了。",
     'sent.remember': "记在这个浏览器里",
     'sent.remembered': "已记住 ✓ 可在首页的“送出的礼物”里查看。",
     'sent.status.reading': "正在读取状态…",

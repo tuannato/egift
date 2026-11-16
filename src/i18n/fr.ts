@@ -66,6 +66,7 @@ export const fr: Record<keyof typeof vi, string> = {
     'sent.page.lead': "Les cadeaux retenus dans ce navigateur, chacun avec ce que le réseau en dit en ce moment.",
     'sent.title': "Retenir ce cadeau",
     'sent.body': "Garde l'adresse du colis, le montant et vos mots dans ce navigateur, pour voir plus tard si le cadeau a été récupéré. Le lien n'est pas gardé : perdre le lien, c'est toujours perdre le cadeau. L'adresse d'un colis est publique : qui la possède peut vérifier sur le réseau quel portefeuille l'a alimenté et où l'argent est parti.",
+    'sent.nolink': "Retenir un cadeau n'enregistre pas son lien. Si le lien est perdu, le cadeau est perdu.",
     'sent.remember': "Retenir dans ce navigateur",
     'sent.remembered': "Retenu ✓ À retrouver sur la page d'accueil, sous « Cadeaux envoyés ».",
     'sent.status.reading': "Lecture de son état…",

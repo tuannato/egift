@@ -66,6 +66,7 @@ export const id: Record<keyof typeof vi, string> = {
     'sent.page.lead': "Hadiah yang diingat di browser ini, masing-masing dengan keadaannya menurut jaringan saat ini.",
     'sent.title': "Ingat hadiah ini",
     'sent.body': "Menyimpan alamat paket, jumlah, dan ucapan Anda di browser ini, supaya nanti Anda bisa melihat apakah hadiahnya sudah diambil. Tautannya tidak disimpan: kehilangan tautan tetap berarti kehilangan hadiah. Alamat paket bersifat publik: siapa pun yang memilikinya bisa mencari di jaringan dompet mana yang mengisinya dan ke mana uangnya pergi.",
+    'sent.nolink': "Mengingat hadiah tidak menyimpan tautannya. Jika tautan hilang, hadiahnya hilang.",
     'sent.remember': "Ingat di browser ini",
     'sent.remembered': "Sudah diingat ✓ Lihat di halaman utama, di bagian “Hadiah terkirim”.",
     'sent.status.reading': "Membaca keadaannya…",
