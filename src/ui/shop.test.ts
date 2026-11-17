@@ -407,10 +407,13 @@ describe('a riddle link that names where the gift is', () => {
         app = boot(chain);
         await until(() => read.mock.calls.length > 0);
         await flush();
-        // One look at the address the link names; the question stands, and nothing of the gift is shown.
+        // One look at the address the link names; the question stands. What the address holds is said (it is
+        // public: the link names the address); the giver's words are not.
         expect(read.mock.calls.map(c => c[0])).toEqual([key.address]);
         expect(app.root.querySelector('.screen-locked .riddle-form')).not.toBeNull();
-        expect(main(app).textContent).not.toContain('88.88');
+        const inside = main(app).querySelector('.riddle-amount') as HTMLElement;
+        expect(inside.hidden).toBe(false);
+        expect(inside.textContent).toBe(t('pkg.riddle.amount', { amount: '88.88' }));
         expect(main(app).textContent).not.toContain('chuc mung nam moi');
         expect(main(app).querySelectorAll('.scam')).toHaveLength(1);
         await answer(app, 'dog');

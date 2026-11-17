@@ -338,6 +338,7 @@ export const ru: Record<keyof typeof vi, string> = {
     'created.riddle.body': "Чтобы открыть подарок, другой человек должен ответить на этот вопрос. Не отправляйте ответ там же, где ссылку.",
     'pkg.riddle.title': "Этот подарок закрыт на замок",
     'pkg.riddle.lead': "Даритель задал вопрос. Правильный ответ открывает подарок.",
+    'pkg.riddle.amount': "Внутри: {amount} XEC.",
     'pkg.riddle.q.label': "Вопрос, написанный дарителем",
     'pkg.riddle.a.label': "Ответ",
     'pkg.riddle.submit': "Открыть замок",

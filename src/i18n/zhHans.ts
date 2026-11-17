@@ -338,6 +338,7 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'created.riddle.body': "对方必须答对这个问题才能打开。不要把答案和链接发在同一个地方。",
     'pkg.riddle.title': "这份礼物上了锁",
     'pkg.riddle.lead': "送礼人设了一个问题。答对了，礼物就会打开。",
+    'pkg.riddle.amount': "里面有：{amount} XEC",
     'pkg.riddle.q.label': "问题，由送礼人填写",
     'pkg.riddle.a.label': "答案",
     'pkg.riddle.submit': "解锁",

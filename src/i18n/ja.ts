@@ -338,6 +338,7 @@ export const ja: Record<keyof typeof vi, string> = {
     'created.riddle.body': "相手はこの質問に答えないと開けません。答えをリンクと同じ場所で送らないでください。",
     'pkg.riddle.title': "このギフトには鍵がかかっています",
     'pkg.riddle.lead': "贈り主が質問を設定しました。正しく答えるとギフトが開きます。",
+    'pkg.riddle.amount': "中身：{amount} XEC",
     'pkg.riddle.q.label': "贈り主が書いた質問",
     'pkg.riddle.a.label': "答え",
     'pkg.riddle.submit': "鍵を開ける",

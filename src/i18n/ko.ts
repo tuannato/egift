@@ -338,6 +338,7 @@ export const ko: Record<keyof typeof vi, string> = {
     'created.riddle.body': "상대방은 이 질문에 답해야 열 수 있어요. 정답을 링크와 같은 곳으로 보내지 마세요.",
     'pkg.riddle.title': "이 선물은 잠겨 있어요",
     'pkg.riddle.lead': "보낸 사람이 질문을 정해 두었어요. 정답을 맞히면 선물이 열려요.",
+    'pkg.riddle.amount': "안에 든 금액: {amount} XEC",
     'pkg.riddle.q.label': "보낸 사람이 쓴 질문",
     'pkg.riddle.a.label': "정답",
     'pkg.riddle.submit': "잠금 풀기",
