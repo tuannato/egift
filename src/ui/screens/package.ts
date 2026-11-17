@@ -265,9 +265,6 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
     );
     const title = h('h1', null, t('pkg.riddle.title'));
     const lead = h('p', { class: 'lead' }, t('pkg.riddle.lead'));
-    // What the address the link names holds, said before any answer. Only for a link that names it; only XEC: a
-    // token's name is a stranger's words, and is not shown here.
-    const inside = h('p', { class: 'strong riddle-amount', role: 'status', hidden: true });
     /** The lock is shown as it is after its opening. */
     let standsOpen = false;
     // What stands in place of the question when the gift is not there to be opened: no field, no button, and the
@@ -284,7 +281,6 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         }
         waiting = kind === 'empty';
         lead.hidden = kind !== null;
-        if (kind !== null) inside.hidden = true;
         // The heading says what is true now: a gift that is gone is not "locked".
         title.textContent = t(kind === 'taken' ? 'pkg.taken' : kind === 'empty' ? 'pkg.empty' : 'pkg.riddle.title');
         // A gift taken home was opened: the lock stands open. Any other state has it closed.
@@ -331,8 +327,6 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             return;
         }
         showGone(null);
-        inside.textContent = t('pkg.riddle.amount', { amount: formatXec(state.xecSats, getLang()) });
-        inside.hidden = false;
         const wanted = wrapperById(link.wrapper);
         if (!wanted || warmed.length) return;
         const offer = offerOf(wanted);
@@ -363,7 +357,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             layout({
                 kind: 'locked',
                 plate: plate(card, def),
-                head: [title, lead, inside],
+                head: [title, lead],
                 body: [slot, h('p', { class: 'warning danger recovery' }, t('pkg.recovery'))],
             }),
         ),

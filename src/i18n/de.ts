@@ -338,7 +338,6 @@ export const de: Record<keyof typeof vi, string> = {
     'created.riddle.body': "Die andere Person muss diese Frage beantworten, um es zu öffnen. Schick die Antwort nicht am selben Ort wie den Link.",
     'pkg.riddle.title': "Dieses Geschenk ist verschlossen",
     'pkg.riddle.lead': "Der Absender hat eine Frage gestellt. Die richtige Antwort öffnet das Geschenk.",
-    'pkg.riddle.amount': "Darin: {amount} XEC.",
     'pkg.riddle.q.label': "Frage, vom Absender geschrieben",
     'pkg.riddle.a.label': "Antwort",
     'pkg.riddle.submit': "Aufschließen",

@@ -338,7 +338,6 @@ export const es: Record<keyof typeof vi, string> = {
     'created.riddle.body': "La otra persona debe responder a esta pregunta para abrirlo. No envíes la respuesta por el mismo sitio que el enlace.",
     'pkg.riddle.title': "Este regalo está cerrado",
     'pkg.riddle.lead': "El remitente puso una pregunta. La respuesta correcta abre el regalo.",
-    'pkg.riddle.amount': "Dentro: {amount} XEC.",
     'pkg.riddle.q.label': "Pregunta, escrita por el remitente",
     'pkg.riddle.a.label': "Respuesta",
     'pkg.riddle.submit': "Abrir el cierre",

@@ -336,7 +336,6 @@ export const vi = {
     'created.riddle.body': 'Người nhận phải trả lời đúng câu hỏi này mới mở được. Đừng gửi đáp án cùng chỗ với link.',
     'pkg.riddle.title': 'Quà này có khoá',
     'pkg.riddle.lead': 'Người gửi đặt một câu hỏi. Trả lời đúng thì quà mở.',
-    'pkg.riddle.amount': 'Bên trong: {amount} XEC.',
     'pkg.riddle.q.label': 'Câu hỏi do người gửi viết',
     'pkg.riddle.a.label': 'Đáp án',
     'pkg.riddle.submit': 'Mở khoá',

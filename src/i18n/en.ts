@@ -338,7 +338,6 @@ export const en: Record<keyof typeof vi, string> = {
     'created.riddle.body': 'The other person must answer this question to open it. Do not send the answer in the same place as the link.',
     'pkg.riddle.title': 'This gift is locked',
     'pkg.riddle.lead': 'The giver set a question. The right answer opens the gift.',
-    'pkg.riddle.amount': 'Inside: {amount} XEC.',
     'pkg.riddle.q.label': 'Question, written by the giver',
     'pkg.riddle.a.label': 'Answer',
     'pkg.riddle.submit': 'Unlock',

@@ -338,7 +338,6 @@ export const id: Record<keyof typeof vi, string> = {
     'created.riddle.body': "Orang itu harus menjawab pertanyaan ini untuk membukanya. Jangan kirim jawabannya di tempat yang sama dengan tautan.",
     'pkg.riddle.title': "Hadiah ini dikunci",
     'pkg.riddle.lead': "Pemberi hadiah memasang sebuah pertanyaan. Jawaban yang benar membuka hadiahnya.",
-    'pkg.riddle.amount': "Di dalamnya: {amount} XEC.",
     'pkg.riddle.q.label': "Pertanyaan, ditulis oleh pemberi hadiah",
     'pkg.riddle.a.label': "Jawaban",
     'pkg.riddle.submit': "Buka kunci",

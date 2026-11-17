@@ -338,7 +338,6 @@ export const th: Record<keyof typeof vi, string> = {
     'created.riddle.body': "อีกฝ่ายต้องตอบคำถามนี้จึงจะเปิดได้ อย่าส่งคำตอบไว้ที่เดียวกับลิงก์",
     'pkg.riddle.title': "ของขวัญนี้ล็อกอยู่",
     'pkg.riddle.lead': "ผู้ให้ตั้งคำถามไว้ ตอบถูกแล้วของขวัญจะเปิด",
-    'pkg.riddle.amount': "ข้างใน: {amount} XEC",
     'pkg.riddle.q.label': "คำถามที่ผู้ให้เขียนไว้",
     'pkg.riddle.a.label': "คำตอบ",
     'pkg.riddle.submit': "ปลดล็อก",
