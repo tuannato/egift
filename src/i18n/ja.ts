@@ -328,6 +328,7 @@ export const ja: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "答え",
     'create.riddle.a.hint': "大文字と小文字、アクセント記号、余分なスペースは区別しません。",
     'create.riddle.a.weak': "数字が数桁だけの答えや、とても短い答えは簡単に当てられます。もっと長い言葉やフレーズにしてください。",
+    'create.riddle.a.shown': "メッセージか質問に答えが含まれています。リンクを持つ人は誰でも両方を読めるため、ギフトを開けられます。",
     'create.riddle.limit': "クイズは、たまたまリンクを見た人を止めます。答えが短い、または簡単な場合、機械で当て続ける相手は止められません。ふたりだけが知っていることを選んでください。",
     'create.riddle.forget': "答えはリンクに入っておらず、誰も調べられません。ふたりとも忘れると、ギフトは永久に取り出せなくなります。",
     'create.riddle.over': "質問が長すぎます。短くしてください。",

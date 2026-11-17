@@ -216,6 +216,29 @@ describe('the riddle lock', () => {
             type(app.root.querySelector('#f-riddle-a2') as HTMLInputElement, a);
             expect(weak.hidden, a).toBe(true);
         }
+        // An answer that can be read in the wish or in the question is warned about and never refused:
+        // both ride in the link in plain sight.
+        const shown = app.root.querySelector('#f-riddle-shown') as HTMLElement;
+        const setAnswer = (a: string): void => {
+            type(app!.root.querySelector('#f-riddle-a') as HTMLInputElement, a);
+            type(app!.root.querySelector('#f-riddle-a2') as HTMLInputElement, a);
+        };
+        setAnswer('giang');
+        expect(shown.hidden).toBe(true);
+        type(app.root.querySelector('#f-wish') as HTMLTextAreaElement, 'Hẹn ở quán  GIẢNG nhé');
+        expect(shown.hidden).toBe(false);
+        expect(shown.textContent).toBe(t('create.riddle.a.shown'));
+        expect(shown.classList.contains('warning')).toBe(true);
+        expect(submit.disabled).toBe(false);
+        type(app.root.querySelector('#f-wish') as HTMLTextAreaElement, 'Chúc mừng');
+        expect(shown.hidden).toBe(true);
+        type(app.root.querySelector('#f-riddle-q') as HTMLInputElement, 'Quán Giảng hay quán khác?');
+        expect(shown.hidden).toBe(false);
+        expect(submit.disabled).toBe(false);
+        // A very short answer is in every text: that is the other notice's business.
+        type(app.root.querySelector('#f-riddle-q') as HTMLInputElement, 'Our café?');
+        setAnswer('a');
+        expect(shown.hidden).toBe(true);
         expect(newSecret).not.toHaveBeenCalled();
     });
 

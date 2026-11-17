@@ -328,6 +328,7 @@ export const fr: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "Réponse",
     'create.riddle.a.hint': "Les majuscules, les accents et les espaces en trop ne comptent pas.",
     'create.riddle.a.weak': "Une réponse faite de quelques chiffres seulement, ou très courte, se devine facilement. Utilisez un mot ou une expression plus longue.",
+    'create.riddle.a.shown': "Votre message ou votre question contient la réponse. Toute personne qui a le lien peut lire les deux, et donc ouvrir le cadeau.",
     'create.riddle.limit': "Une énigme arrête quelqu'un qui voit le lien par hasard. Elle n'arrête pas une machine qui essaie sans relâche si la réponse est courte ou facile. Choisissez quelque chose que vous seuls deux connaissez.",
     'create.riddle.forget': "La réponse n'est pas dans le lien et personne ne peut la retrouver. Si vous l'oubliez tous les deux, le cadeau est bloqué pour toujours.",
     'create.riddle.over': "La question est trop longue. Merci de la raccourcir.",

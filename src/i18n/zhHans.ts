@@ -328,6 +328,7 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "答案",
     'create.riddle.a.hint': "大小写、声调符号和多余的空格都不影响。",
     'create.riddle.a.weak': "只有几位数字或很短的答案很容易被猜到。请用更长的词或短语。",
+    'create.riddle.a.shown': "你的祝福语或问题里包含了答案。任何拿到链接的人都能读到这两段文字，也就能打开礼物。",
     'create.riddle.limit': "谜题能拦住偶然看到链接的人。如果答案很短或很好猜，它拦不住不停猜测的机器。请选只有你们两个人知道的事。",
     'create.riddle.forget': "答案不在链接里，谁也查不到。如果你们两个都忘了，礼物就永远卡住。",
     'create.riddle.over': "问题太长了，请缩短一些。",

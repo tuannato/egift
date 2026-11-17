@@ -328,6 +328,7 @@ export const de: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "Antwort",
     'create.riddle.a.hint': "Großschreibung, Akzente und überzählige Leerzeichen spielen keine Rolle.",
     'create.riddle.a.weak': "Eine Antwort aus nur wenigen Ziffern oder eine sehr kurze ist leicht zu erraten. Nimm ein längeres Wort oder eine Wortgruppe.",
+    'create.riddle.a.shown': "Dein Gruß oder deine Frage enthält die Antwort. Wer den Link hat, kann beides lesen und damit das Geschenk öffnen.",
     'create.riddle.limit': "Ein Rätsel hält jemanden auf, der den Link zufällig sieht. Es hält keine Maschine auf, die immer weiter rät, wenn die Antwort kurz oder leicht ist. Nimm etwas, das nur ihr beide wisst.",
     'create.riddle.forget': "Die Antwort steht nicht im Link, und niemand kann sie nachschlagen. Wenn ihr beide sie vergesst, steckt das Geschenk für immer fest.",
     'create.riddle.over': "Die Frage ist zu lang. Bitte kürze sie.",

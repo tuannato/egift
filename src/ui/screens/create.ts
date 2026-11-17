@@ -171,6 +171,15 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         if (a === '') return false;
         return [...a].length <= 3 || (/^\d+$/.test(a) && a.length <= 8);
     };
+    /**
+     * Said, never enforced: the wish and the question ride in the link in plain sight, so an answer written into either
+     * opens the gift for anyone who has the link. Very short answers are left to the notice above: they are in every text.
+     */
+    const answerShown = h('p', { id: 'f-riddle-shown', class: 'warning', 'aria-live': 'polite', hidden: true }, t('create.riddle.a.shown'));
+    const isShownAnswer = (raw: string, ...texts: string[]): boolean => {
+        const a = normaliseAnswer(raw);
+        return [...a.replace(/\s+/g, '')].length >= 3 && texts.some(x => normaliseAnswer(x).includes(a));
+    };
     // The link of a locked gift names the gift's address, so that the page can say "still here" or "already taken"
     // before anyone answers. The giver may leave that out: then nothing is known until the right answer.
     const hideBox = h('input', { id: 'f-riddle-hide', class: 'check-box', type: 'checkbox' });
@@ -181,7 +190,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         'div',
         { class: 'riddle-fields' },
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-q' }, t('create.riddle.q.label')), question, riddleMsg),
-        h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-a' }, t('create.riddle.a.label')), answer, h('p', { id: 'f-riddle-hint', class: 'field-msg' }, t('create.riddle.a.hint')), answerWeak),
+        h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-a' }, t('create.riddle.a.label')), answer, h('p', { id: 'f-riddle-hint', class: 'field-msg' }, t('create.riddle.a.hint')), answerWeak, answerShown),
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-riddle-a2' }, t('create.riddle.a2.label')), answer2, answer2Msg),
         hideRow,
         // Two honest limits, said before the gift exists.
@@ -299,6 +308,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         const mismatch = draft.riddleOn && answer2.value.trim() !== '' && !same;
         answer2Msg.textContent = mismatch ? t('create.riddle.a2.diff') : '';
         answerWeak.hidden = !(draft.riddleOn && isWeakAnswer(answer.value));
+        answerShown.hidden = !(draft.riddleOn && isShownAnswer(answer.value, wish.value, question.value));
         answer2Msg.classList.toggle('field-msg--bad', mismatch);
         for (const f of [question, answer, answer2, riddleBox, hideBox]) f.disabled = working;
         riddleMsg.textContent = draft.riddleOn && qOver ? t('create.riddle.over') : '';

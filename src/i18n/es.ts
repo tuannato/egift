@@ -328,6 +328,7 @@ export const es: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "Respuesta",
     'create.riddle.a.hint': "Las mayúsculas, los acentos y los espacios de más no importan.",
     'create.riddle.a.weak': "Una respuesta de solo unas pocas cifras, o muy corta, es fácil de adivinar. Usa una palabra o frase más larga.",
+    'create.riddle.a.shown': "Tu mensaje o tu pregunta contiene la respuesta. Cualquiera que tenga el enlace puede leer ambos y, por tanto, abrir el regalo.",
     'create.riddle.limit': "Un acertijo detiene a quien ve el enlace por casualidad. No detiene a una máquina que prueba sin parar si la respuesta es corta o fácil. Elige algo que solo tú y la otra persona sepan.",
     'create.riddle.forget': "La respuesta no está en el enlace y nadie puede consultarla. Si los dos la olvidan, el regalo queda atrapado para siempre.",
     'create.riddle.over': "La pregunta es demasiado larga. Acórtala, por favor.",

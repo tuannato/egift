@@ -328,6 +328,7 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "答案",
     'create.riddle.a.hint': "大小寫、聲調符號和多餘的空格都不影響。",
     'create.riddle.a.weak': "只有幾位數字或很短的答案很容易被猜到。請用更長的詞或短語。",
+    'create.riddle.a.shown': "你的祝福語或問題裡包含了答案。任何拿到連結的人都能讀到這兩段文字，也就能打開禮物。",
     'create.riddle.limit': "謎題能擋住碰巧看到連結的人。如果答案很短或很好猜，它擋不住不停猜測的機器。請選只有你們兩個人知道的事。",
     'create.riddle.forget': "答案不在連結裡，誰也查不到。如果你們兩個都忘了，禮物就永遠卡住。",
     'create.riddle.over': "問題太長了，請縮短一些。",

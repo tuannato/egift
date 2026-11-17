@@ -328,6 +328,7 @@ export const id: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "Jawaban",
     'create.riddle.a.hint': "Huruf besar, tanda aksen, dan spasi berlebih tidak berpengaruh.",
     'create.riddle.a.weak': "Jawaban yang hanya beberapa angka, atau sangat pendek, mudah ditebak. Gunakan kata atau frasa yang lebih panjang.",
+    'create.riddle.a.shown': "Ucapan atau pertanyaan Anda memuat jawabannya. Siapa pun yang punya tautan bisa membaca keduanya, jadi bisa membuka hadiah.",
     'create.riddle.limit': "Teka-teki menghalangi orang yang kebetulan melihat tautan. Teka-teki tidak menghalangi mesin yang terus menebak jika jawabannya pendek atau mudah. Pilih sesuatu yang hanya Anda berdua yang tahu.",
     'create.riddle.forget': "Jawabannya tidak ada di dalam tautan dan tidak ada yang bisa mencarinya. Jika Anda berdua lupa, hadiahnya tertahan selamanya.",
     'create.riddle.over': "Pertanyaannya terlalu panjang. Mohon dipersingkat.",

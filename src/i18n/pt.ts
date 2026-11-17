@@ -328,6 +328,7 @@ export const pt: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "Resposta",
     'create.riddle.a.hint': "Maiúsculas, acentos e espaços a mais não fazem diferença.",
     'create.riddle.a.weak': "Uma resposta com apenas alguns dígitos, ou muito curta, é fácil de adivinhar. Use uma palavra ou frase mais longa.",
+    'create.riddle.a.shown': "A sua mensagem ou a sua pergunta contém a resposta. Quem tiver o link pode ler as duas e, assim, abrir o presente.",
     'create.riddle.limit': "Uma charada barra quem vê o link por acaso. Não barra uma máquina que fica tentando, se a resposta for curta ou fácil. Escolha algo que só vocês dois sabem.",
     'create.riddle.forget': "A resposta não está no link e ninguém consegue consultá-la. Se vocês dois esquecerem, o presente fica preso para sempre.",
     'create.riddle.over': "A pergunta está longa demais. Encurte, por favor.",

@@ -326,6 +326,7 @@ export const vi = {
     'create.riddle.a.label': 'Đáp án',
     'create.riddle.a.hint': 'Không phân biệt chữ hoa, dấu tiếng Việt hay khoảng trắng thừa.',
     'create.riddle.a.weak': "Đáp án chỉ gồm vài chữ số hoặc quá ngắn thì rất dễ bị đoán. Hãy dùng một từ hay cụm từ dài hơn.",
+    'create.riddle.a.shown': 'Lời nhắn hoặc câu hỏi của bạn đang chứa đáp án. Ai có link cũng đọc được cả hai, nên cũng mở được quà.',
     'create.riddle.limit': 'Câu đố chặn người tình cờ thấy link, không chặn kẻ cố dò bằng máy nếu đáp án ngắn hay dễ đoán. Hãy chọn điều chỉ hai người biết.',
     'create.riddle.forget': 'Đáp án không nằm trong link và không ai tra lại được. Nếu cả hai cùng quên, quà kẹt mãi mãi.',
     'create.riddle.over': 'Câu hỏi dài quá, hãy rút bớt.',

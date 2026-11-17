@@ -328,6 +328,7 @@ export const ko: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': "정답",
     'create.riddle.a.hint': "대소문자, 악센트 부호, 남는 공백은 구분하지 않아요.",
     'create.riddle.a.weak': "숫자 몇 자리뿐이거나 아주 짧은 답은 쉽게 맞힐 수 있어요. 더 긴 단어나 문구를 쓰세요.",
+    'create.riddle.a.shown': "메시지나 질문에 정답이 들어 있어요. 링크를 가진 사람은 누구나 둘 다 읽을 수 있어서 선물을 열 수 있어요.",
     'create.riddle.limit': "퀴즈는 우연히 링크를 본 사람을 막아요. 정답이 짧거나 쉬우면 기계로 계속 맞혀 보는 사람은 막지 못해요. 두 사람만 아는 것으로 정하세요.",
     'create.riddle.forget': "정답은 링크에 들어 있지 않고 아무도 찾아볼 수 없어요. 두 사람 모두 잊으면 선물은 영원히 묶여서 꺼낼 수 없어요.",
     'create.riddle.over': "질문이 너무 길어요. 줄여 주세요.",

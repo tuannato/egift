@@ -328,6 +328,7 @@ export const en: Record<keyof typeof vi, string> = {
     'create.riddle.a.label': 'Answer',
     'create.riddle.a.hint': 'Capitals, accents and extra spaces do not matter.',
     'create.riddle.a.weak': "An answer of only a few digits, or a very short one, is easy to guess. Use a longer word or phrase.",
+    'create.riddle.a.shown': 'Your wish or your question contains the answer. Anyone who has the link can read both, and so can open the gift.',
     'create.riddle.limit': 'A riddle stops someone who happens to see the link. It does not stop a machine that keeps guessing if the answer is short or easy. Pick something only the two of you know.',
     'create.riddle.forget': 'The answer is not in the link and nobody can look it up. If you both forget it, the gift is stuck forever.',
     'create.riddle.over': 'The question is too long. Please shorten it.',
