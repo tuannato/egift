@@ -21,10 +21,11 @@ const PRICED: Record<string, bigint> = {
     diploma: 500_000n,
     skyline: 500_000n,
     lantern: 500_000n,
+    cylinder: 500_000n,
 };
 
 describe('the price table', () => {
-    it('ten wrappers have a price, paid to the project; every other wrapper is free', () => {
+    it('eleven wrappers have a price, paid to the project; every other wrapper is free', () => {
         for (const w of WRAPPERS) {
             const o = offerOf(w);
             const want = PRICED[w.id];

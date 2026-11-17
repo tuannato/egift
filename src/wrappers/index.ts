@@ -64,6 +64,7 @@ export function wrapperById(id: string): WrapperDef | undefined {
  * Set on 14 November 2026:
  * four wrappers at 10,000 XEC, five at 5,000 XEC, paid to the project's own
  * address. 1 XEC is 100 sats. On 16 November 2026 a fifth at 10,000 XEC (orbit).
+ * On 17 November 2026 a sixth at 5,000 XEC (cylinder).
  */
 const PROJECT_ADDRESS = 'ecash:qr38yephwnwfv5pp0r6w7hxcp25607keg5uratxner';
 const XEC = 100n;
@@ -78,6 +79,7 @@ const PRICES: Readonly<Record<string, bigint>> = {
     diploma: 5_000n * XEC,
     skyline: 5_000n * XEC,
     lantern: 5_000n * XEC,
+    cylinder: 5_000n * XEC,
 };
 const OFFERS = new Map<string, WrapperOffer>(Object.entries(PRICES).map(([id, sats]) => [id, { sats, payTo: PROJECT_ADDRESS }]));
 
