@@ -224,8 +224,10 @@ describe('keeping a record of a gift that was taken home', () => {
         const [k] = loadKept();
         expect(k).toMatchObject({ ref: keptId(key.address), wrapper: 'lixi', wish: WISH, sats: '1797', fee: '203' });
         expect(k!.ref.length).toBe(16);
-        // Only the language and the kept gifts are ever in storage.
-        expect(Object.keys(localStorage).sort()).toEqual(['gift.kept']);
+        // Only the kept gifts and, under its own key, the address the gift went home to are in storage.
+        expect(Object.keys(localStorage).sort()).toEqual(['gift.dest', 'gift.kept']);
+        // The record itself still does not carry that address.
+        expect(localStorage.getItem('gift.kept')).not.toContain(localStorage.getItem('gift.dest')!.slice(6));
         expect(sessionStorage.length).toBe(0);
     });
 
@@ -244,7 +246,7 @@ describe('keeping a record of a gift that was taken home', () => {
         expect(loadKept()).toEqual([]);
         expect(main(app!).textContent).not.toContain(t('kept.saved'));
         expect((main(app!).querySelector('.keep-box .check-box') as HTMLInputElement).checked).toBe(false);
-        expect(Object.keys(localStorage).sort()).toEqual(['gift.auto']);
+        expect(Object.keys(localStorage).sort()).toEqual(['gift.auto', 'gift.dest']);
         // Switched back on: the entry goes; nothing but "off" is ever stored under it.
         const again = main(app!).querySelector('.keep-box .check-box') as HTMLInputElement;
         again.checked = true;

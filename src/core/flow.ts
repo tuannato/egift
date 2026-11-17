@@ -39,7 +39,7 @@ const op = (o: OutPointRef): string => `${o.txid}:${o.outIdx}`;
 
 const extras = (r: Remembered) => ({ ...(r.token === undefined ? {} : { token: r.token }), ...(r.tokenLeft === true ? { tokenLeft: true } : {}) });
 const pending = (r: Remembered): TakeResult => ({ kind: 'pending', txid: r.txid, sentSats: r.sentSats, leftCoins: r.leftCoins, ...extras(r) });
-const done = (r: Remembered): TakeResult => ({ kind: 'done', txid: r.txid, sentSats: r.sentSats, leftCoins: r.leftCoins, ...extras(r) });
+const done = (r: Remembered): TakeResult => ({ kind: 'done', txid: r.txid, sentSats: r.sentSats, leftCoins: r.leftCoins, to: r.to, ...extras(r) });
 
 /** What a sweep is built from: the package as independently run nodes agree it is, where the chain can say. */
 const readForSigning = (chain: Chain, address: string): Promise<PackageState> => (chain.readChecked ? chain.readChecked(address) : chain.read(address));

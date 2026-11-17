@@ -320,7 +320,7 @@ export interface TakenToken {
  */
 export type TakeResult =
     /** `leftCoins` (always set by `takeHome`): XEC coins still at the package after this sweep; > 0 means offer another round. */
-    | { readonly kind: 'done'; readonly txid: string; readonly sentSats: bigint; readonly leftCoins?: number; readonly token?: TakenToken; readonly tokenLeft?: boolean }
+    | { readonly kind: 'done'; readonly txid: string; readonly sentSats: bigint; readonly leftCoins?: number; readonly token?: TakenToken; readonly tokenLeft?: boolean; /** Where the sweep that is done went (the address in its one spelling): not always the address of the latest request. */ readonly to?: string }
     /** Someone else took the package first. */
     | { readonly kind: 'lost' }
     /** Broadcast, but no verdict yet. The UI must say "not sure yet", never "done". */

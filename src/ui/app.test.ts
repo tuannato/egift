@@ -420,6 +420,122 @@ describe('take home', () => {
         expect(main(a).textContent).toContain(t('take.done.body'));
     });
 
+    it('the address a gift arrived at is kept, and offered for the next gift by a press, never typed in', async () => {
+        const home = dest();
+        const a = await openTake(linkFor());
+        expect(main(a).querySelector('.saved-dest')?.hasAttribute('hidden')).toBe(true);
+        // Not yet settled: nothing is kept.
+        vi.mocked(takeHome).mockResolvedValueOnce({ kind: 'pending', txid: 'ab'.repeat(32), sentSats: 8000n, leftCoins: 0 } as TakeResult);
+        type(main(a).querySelector('#th-addr') as HTMLInputElement, home);
+        goBtn(a).click();
+        await flush();
+        expect(localStorage.getItem('gift.dest')).toBeNull();
+        vi.mocked(takeHome).mockResolvedValueOnce({ kind: 'done', txid: 'ab'.repeat(32), sentSats: 8000n, leftCoins: 0, to: home });
+        buttonByText(main(a), t('take.check')).click();
+        await flush();
+        expect(localStorage.getItem('gift.dest')).toBe(home);
+        a.stop();
+
+        // The next gift: the address is shown whole, the box is empty and the button cannot be pressed.
+        vi.mocked(takeHome).mockClear();
+        const b = await openTake(linkFor());
+        const box = main(b).querySelector('.saved-dest') as HTMLElement;
+        const input = main(b).querySelector('#th-addr') as HTMLInputElement;
+        expect(box.hasAttribute('hidden')).toBe(false);
+        expect(box.querySelector('.saved-dest-addr')?.textContent).toBe(home);
+        expect(box.querySelector('.warning')?.textContent).toBe(t('take.saved.warn'));
+        expect(input.value).toBe('');
+        expect(goBtn(b).disabled).toBe(true);
+        // Typing another address puts the offer away; emptying the box brings it back.
+        type(input, 'ecash:q');
+        expect(box.hasAttribute('hidden')).toBe(true);
+        type(input, '');
+        expect(box.hasAttribute('hidden')).toBe(false);
+        buttonByText(box, t('take.saved.use')).click();
+        expect(input.value).toBe(home);
+        expect(goBtn(b).disabled).toBe(false);
+        expect(box.hasAttribute('hidden')).toBe(true);
+        expect(takeHome).not.toHaveBeenCalled();
+    });
+
+    it('what is kept is the address the money went to, as core says it: not what the box holds when the answer comes', async () => {
+        const first = dest();
+        const second = dest();
+        const a = await openTake(linkFor());
+        const input = main(a).querySelector('#th-addr') as HTMLInputElement;
+        // The first press fails on the way back; the form returns and another address is typed.
+        vi.mocked(takeHome).mockResolvedValueOnce({ kind: 'error', code: 'offline', message: '' });
+        type(input, first);
+        goBtn(a).click();
+        await flush();
+        type(input, second);
+        // Core finds the earlier sweep done: it went to the first address.
+        vi.mocked(takeHome).mockResolvedValueOnce({ kind: 'done', txid: 'ab'.repeat(32), sentSats: 8000n, leftCoins: 0, to: first });
+        goBtn(a).click();
+        await flush();
+        expect(main(a).querySelector('.done-mark')).not.toBeNull();
+        expect(localStorage.getItem('gift.dest')).toBe(first);
+        a.stop();
+
+        // A result that does not say where it went keeps nothing, and leaves an older address as it was.
+        const b = await openTake(linkFor());
+        vi.mocked(takeHome).mockResolvedValueOnce({ kind: 'done', txid: 'cd'.repeat(32), sentSats: 8000n, leftCoins: 0 });
+        type(main(b).querySelector('#th-addr') as HTMLInputElement, second);
+        goBtn(b).click();
+        await flush();
+        expect(localStorage.getItem('gift.dest')).toBe(first);
+    });
+
+    it('a kept address can be forgotten, and the switch turned off keeps none', async () => {
+        const home = dest();
+        localStorage.setItem('gift.dest', home);
+        const a = await openTake(linkFor());
+        const box = main(a).querySelector('.saved-dest') as HTMLElement;
+        buttonByText(box, t('take.saved.forget')).click();
+        expect(localStorage.getItem('gift.dest')).toBeNull();
+        expect(box.hasAttribute('hidden')).toBe(true);
+        // Gone for good on this screen: emptying the box does not bring it back.
+        type(main(a).querySelector('#th-addr') as HTMLInputElement, '');
+        expect(box.hasAttribute('hidden')).toBe(true);
+        a.stop();
+
+        localStorage.setItem('gift.dest', home);
+        const b = await openTake(linkFor());
+        const sw = [...main(b).querySelectorAll('label.check')].find(l => l.textContent === t('take.save.auto'))!.querySelector('input') as HTMLInputElement;
+        expect(sw.checked).toBe(true);
+        sw.click();
+        expect(localStorage.getItem('gift.dest')).toBe('off');
+        expect((main(b).querySelector('.saved-dest') as HTMLElement).hasAttribute('hidden')).toBe(true);
+        const went = dest();
+        vi.mocked(takeHome).mockResolvedValueOnce({ kind: 'done', txid: 'ab'.repeat(32), sentSats: 8000n, leftCoins: 0, to: went });
+        type(main(b).querySelector('#th-addr') as HTMLInputElement, went);
+        goBtn(b).click();
+        await flush();
+        expect(localStorage.getItem('gift.dest')).toBe('off');
+    });
+
+    it('a kept address of the right shape that is not a real address cannot be sent to', async () => {
+        const home = dest();
+        // One character changed: the checksum no longer holds.
+        const bad = home.slice(0, -1) + (home.endsWith('q') ? 'p' : 'q');
+        localStorage.setItem('gift.dest', bad);
+        const a = await openTake(linkFor());
+        buttonByText(main(a).querySelector('.saved-dest') as HTMLElement, t('take.saved.use')).click();
+        expect(goBtn(a).disabled).toBe(true);
+        expect(main(a).querySelector('#th-msg')?.textContent).toBe(t('take.addr.bad'));
+    });
+
+    it('anything in storage that is not an address of the kept shape is not offered', async () => {
+        for (const junk of ['ecash:qqqq', 'etoken:' + 'q'.repeat(42), 'javascript:alert(1)', ' ' + dest()]) {
+            resetPage('en');
+            localStorage.setItem('gift.dest', junk);
+            const a = await openTake(linkFor());
+            expect((main(a).querySelector('.saved-dest') as HTMLElement).hasAttribute('hidden'), junk).toBe(true);
+            expect((main(a).querySelector('#th-addr') as HTMLInputElement).value).toBe('');
+            a.stop();
+        }
+    });
+
     it('offers the rest when coins are left after a sweep', async () => {
         const l = linkFor();
         const a = await openTake(l);

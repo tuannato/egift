@@ -12,12 +12,17 @@ eGift is beta software: use small amounts.
   chat app or person the link passed through, and anyone who sees a screenshot
   of it. A lost link is a lost gift.
 - The site is static. The fragment never reaches a server. No key exists
-  before "Create" is pressed, and no key, link, secret or wallet address is
-  written to storage, a request, a title or a log. Browser storage holds the
-  chosen language, a list of favourite wrappers, and short records of gifts
-  taken home or funded (never a link). A record is written once the gift is
-  home, or once it is seen funded; the screen says so, with a button that
-  removes it and a switch that stops records being written at all.
+  before "Create" is pressed, and no key, link or secret is written to
+  storage, a request, a title or a log; a wallet address is never put in a
+  title or a log. Browser storage holds the chosen
+  language, a list of favourite wrappers, and short records of gifts taken
+  home or funded (never a link). A record is written once the gift is home,
+  or once it is seen funded; the screen says so, with a button that removes
+  it and a switch that stops records being written at all. Storage also
+  holds the wallet address a gift was last taken home to, written once that
+  gift has arrived. The page never fills it in: the take-home screen shows
+  it in full, with a button to use it, a button to forget it and a switch
+  that stops it being kept.
 - The chain is read through the public Chronik nodes listed in
   `src/core/chain/chronik.ts`; the Content-Security-Policy allows those hosts
   and one host for token icons, nothing else.

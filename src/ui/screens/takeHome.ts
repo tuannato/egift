@@ -6,6 +6,7 @@ import { getLang, t } from '../../i18n';
 import { amountBlock } from '../amount';
 import { stopwatch, tick } from '../stopwatch';
 import { cue } from '../sound';
+import { forgetDest, keepsDest, rememberDest, savedDest, setKeepsDest } from '../dest';
 
 export const CASHTAB_URL = 'https://cashtab.com';
 
@@ -159,6 +160,9 @@ function run(s: TakeSession, o: TakeHomeOpts, timed: boolean): void {
             s.tokenLeft = r.tokenLeft === true || s.tokenRest > 0 || had.some(x => x.tokenId !== r.token?.tokenId);
             // The carried token is home: another round ("take the rest") is for XEC, or for its own leftovers.
             if (r.token !== undefined && s.tokenRest === 0) s.asked = null;
+            // The address the money really went to (core says which: not always the one in the box now) is kept
+            // for the next gift, unless the person switched that off.
+            if (r.to !== undefined) rememberDest(r.to);
             tick();
             cue.final();
             cur.onDone(r.sentSats, s.left, s.tokenLeft, {
@@ -236,6 +240,8 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
     function validate(): void {
         const to = input.value.trim();
         s.draft = input.value;
+        // The kept address is offered only while the box is empty: it never replaces what the person typed.
+        keptBox.hidden = kept === null || to !== '';
         go.disabled = true;
         goWhy.hidden = false;
         goWhy.textContent = to === '' ? t('take.need.addr') : t('take.need.fix');
@@ -285,6 +291,8 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
                 }
                 navigator.clipboard.readText().then(
                     v => {
+                        // An answer that comes after the press must not change where a sweep in flight is said to go.
+                        if (s.phase !== 'form' && s.phase !== 'error') return;
                         input.value = v.trim();
                         validate();
                     },
@@ -296,6 +304,54 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
         },
         t('take.paste'),
     );
+
+    // An address kept from an earlier gift is shown, never typed in by the page: the person presses to use it.
+    let kept = savedDest();
+    const keptBox = h('div', { class: 'stack saved-dest', hidden: kept === null || s.draft.trim() !== '' });
+    if (kept !== null) {
+        const mine = kept;
+        const use = h(
+            'button',
+            {
+                type: 'button',
+                class: 'btn btn-secondary btn-small',
+                onclick: () => {
+                    if (s.phase !== 'form' && s.phase !== 'error') return;
+                    input.value = mine;
+                    validate();
+                    input.focus();
+                },
+            },
+            t('take.saved.use'),
+        );
+        const forget = h(
+            'button',
+            {
+                type: 'button',
+                class: 'btn btn-quiet btn-small',
+                onclick: () => {
+                    forgetDest();
+                    kept = null;
+                    keptBox.hidden = true;
+                    input.focus();
+                },
+            },
+            t('take.saved.forget'),
+        );
+        keptBox.append(h('p', null, t('take.saved.title')), h('p', { class: 'mono saved-dest-addr' }, mine), h('p', { class: 'warning' }, t('take.saved.warn')), h('div', { class: 'btn-col' }, use, forget));
+    }
+    const keepBox = h('input', {
+        type: 'checkbox',
+        class: 'check-box',
+        checked: keepsDest(),
+        onchange: () => {
+            setKeepsDest(keepBox.checked);
+            if (!keepBox.checked) {
+                kept = null;
+                keptBox.hidden = true;
+            }
+        },
+    }) as HTMLInputElement;
 
     go.addEventListener('click', () => {
         if (go.disabled || s.phase === 'working') return;
@@ -387,7 +443,9 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
             h('li', null, h('p', null, t('take.s2'))),
             h('li', null, h('p', null, t('take.s3'))),
         ),
+        keptBox,
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'th-addr' }, t('take.addr.label')), h('div', { class: 'input-row' }, input, paste), msg),
+        h('label', { class: 'check' }, keepBox, h('span', null, t('take.save.auto'))),
         tokenNote,
         confirm,
         withToken,
