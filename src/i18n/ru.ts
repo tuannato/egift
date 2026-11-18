@@ -157,6 +157,8 @@ export const ru: Record<keyof typeof vi, string> = {
     'created.status.waiting': "Ждём пополнения…",
     'created.status.unfinal': "Пополнение видно. Ждём окончательного подтверждения сети, обычно несколько секунд.",
     'created.status.funded': "Пополнено ✓",
+    'created.status.holds': "В пакете {got} XEC.",
+    'created.status.more': "Сейчас в пакете {got} XEC, больше, чем {want} XEC, которые вы хотели положить. Тот, кто откроет подарок, заберёт всё.",
     'created.status.taken': "Этот пакет уже забрали.",
     'created.status.error': "Пока не удалось связаться с сетью. Страница попробует снова при следующем изменении.",
     'created.status.partial': "Пока в пакете {got} XEC; вы собирались внести {want} XEC.",

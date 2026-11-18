@@ -157,6 +157,8 @@ export const de: Record<keyof typeof vi, string> = {
     'created.status.waiting': "Warte auf die Einzahlung…",
     'created.status.unfinal': "Die Einzahlung ist zu sehen. Warte darauf, dass das Netzwerk sie endgültig macht, meist ein paar Sekunden.",
     'created.status.funded': "Eingezahlt ✓",
+    'created.status.holds': "Im Paket sind {got} XEC.",
+    'created.status.more': "Im Paket sind jetzt {got} XEC, mehr als die {want} XEC, die du geben wolltest. Wer das Geschenk öffnet, nimmt alles mit.",
     'created.status.taken': "Dieses Paket wurde schon geholt.",
     'created.status.error': "Das Netzwerk ist noch nicht erreichbar. Bei der nächsten Änderung wird es erneut versucht.",
     'created.status.partial': "Das Paket enthält bisher {got} XEC; du wolltest {want} XEC einzahlen.",

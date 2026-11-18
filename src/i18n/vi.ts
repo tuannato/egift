@@ -155,6 +155,8 @@ export const vi = {
     'created.status.waiting': 'Đang chờ khoản nạp…',
     'created.status.unfinal': 'Đã thấy khoản nạp. Đang chờ mạng lưới chốt, thường mất vài giây.',
     'created.status.funded': 'Đã nạp ✓',
+    'created.status.holds': 'Gói đang có {got} XEC.',
+    'created.status.more': 'Gói đang có {got} XEC, nhiều hơn {want} XEC bạn định nạp. Người mở quà sẽ mang về tất cả.',
     'created.status.taken': 'Gói này đã có người lấy.',
     'created.status.error': 'Chưa kết nối được mạng. Sẽ thử lại khi có thay đổi.',
     'created.status.partial': 'Gói mới có {got} XEC, bạn định nạp {want} XEC.',

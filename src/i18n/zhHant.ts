@@ -157,6 +157,8 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'created.status.waiting': "正在等待存入…",
     'created.status.unfinal': "已看到存入。正在等待網路最終確認，通常只需幾秒。",
     'created.status.funded': "已存入 ✓",
+    'created.status.holds': "包裹裡有 {got} XEC。",
+    'created.status.more': "包裹裡現在有 {got} XEC，比你打算放入的 {want} XEC 多。打開禮物的人會全部帶走。",
     'created.status.taken': "這個禮包已經被領走。",
     'created.status.error': "暫時連不上網路。下次有變動時會再試。",
     'created.status.partial': "禮包裡目前有 {got} XEC；你打算存入 {want} XEC。",

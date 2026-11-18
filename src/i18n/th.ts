@@ -157,6 +157,8 @@ export const th: Record<keyof typeof vi, string> = {
     'created.status.waiting': "กำลังรอการเติมเงิน…",
     'created.status.unfinal': "เห็นการเติมเงินแล้ว กำลังรอเครือข่ายยืนยันขั้นสุดท้าย ปกติใช้เวลาไม่กี่วินาที",
     'created.status.funded': "เติมเงินแล้ว ✓",
+    'created.status.holds': "ในแพ็กเกจมี {got} XEC",
+    'created.status.more': "ตอนนี้ในแพ็กเกจมี {got} XEC มากกว่า {want} XEC ที่คุณตั้งใจใส่ ผู้ที่เปิดของขวัญจะได้รับทั้งหมด",
     'created.status.taken': "แพ็กเกจนี้มีคนนำไปแล้ว",
     'created.status.error': "ยังเชื่อมต่อเครือข่ายไม่ได้ จะลองอีกครั้งเมื่อมีการเปลี่ยนแปลงครั้งถัดไป",
     'created.status.partial': "ตอนนี้แพ็กเกจมี {got} XEC คุณตั้งใจจะเติม {want} XEC",

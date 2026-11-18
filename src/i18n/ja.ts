@@ -157,6 +157,8 @@ export const ja: Record<keyof typeof vi, string> = {
     'created.status.waiting': "入金を待っています…",
     'created.status.unfinal': "入金を確認しました。ネットワークの確定を待っています。通常は数秒です。",
     'created.status.funded': "入金済み ✓",
+    'created.status.holds': "パッケージには {got} XEC あります。",
+    'created.status.more': "パッケージには現在 {got} XEC あり、予定の {want} XEC より多くなっています。ギフトを開けた人がすべて受け取ります。",
     'created.status.taken': "このパッケージはすでに取り出されています。",
     'created.status.error': "まだネットワークに接続できません。次に変化があったときにもう一度試します。",
     'created.status.partial': "パッケージにはいま {got} XEC あります。入金するつもりだったのは {want} XEC です。",

@@ -157,6 +157,8 @@ export const ko: Record<keyof typeof vi, string> = {
     'created.status.waiting': "입금을 기다리는 중…",
     'created.status.unfinal': "입금이 보여요. 네트워크의 확정을 기다리고 있어요. 보통 몇 초 걸려요.",
     'created.status.funded': "입금 완료 ✓",
+    'created.status.holds': "패키지에 {got} XEC가 있어요.",
+    'created.status.more': "패키지에 지금 {got} XEC가 있어요. 넣으려던 {want} XEC보다 많아요. 선물을 여는 사람이 전부 가져가요.",
     'created.status.taken': "이 꾸러미는 이미 누군가 가져갔어요.",
     'created.status.error': "아직 네트워크에 연결하지 못했어요. 다음 변화가 있을 때 다시 시도해요.",
     'created.status.partial': "꾸러미에 지금 {got} XEC가 있어요. 입금하려던 금액은 {want} XEC예요.",

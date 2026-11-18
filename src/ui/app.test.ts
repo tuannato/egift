@@ -10,7 +10,7 @@ vi.mock('../core', async orig => {
     return { ...real, newSecret: vi.fn(real.newSecret), deriveKey: vi.fn(real.deriveKey), takeHome: vi.fn(real.takeHome) };
 });
 
-import { deriveKey, encodeLink, newSecret, takeHome, createDemoChain } from '../core';
+import { deriveKey, encodeLink, formatXec, newSecret, takeHome, createDemoChain } from '../core';
 import type { TakeResult } from '../core';
 import { getLang, setLang, t, tables_forTest } from '../i18n';
 import type { Key } from '../i18n';
@@ -713,5 +713,46 @@ describe('shell', () => {
         expect(localStorage.length).toBe(1);
         expect(localStorage.getItem('gift.lang')).toBe('vi');
         setLang('en');
+    });
+});
+
+describe('a gift that is funded again before anyone takes it', () => {
+    it('the giver sees everything the package holds, and that all of it goes to whoever opens it', async () => {
+        stubClipboard();
+        app = boot();
+        await createGift(app.root);
+        const made = getMade()!;
+        buttonByText(app.root, t('link.copy')).click();
+        await flush();
+        app.chain.fund(made.key.address, made.sats);
+        await flush();
+        const meant = formatXec(made.sats, 'en');
+        expect(app.root.textContent).toContain(`${t('created.status.funded')} ${t('created.status.holds', { got: meant, want: meant })}`);
+        // Funded a second time: the total, not the first amount.
+        app.chain.fund(made.key.address, 111_100n);
+        await flush();
+        const total = formatXec(made.sats + 111_100n, 'en');
+        expect(app.root.textContent).toContain(t('created.status.more', { got: total, want: meant }));
+        expect(app.root.textContent).not.toContain(t('created.status.holds', { got: meant, want: meant }));
+    });
+
+    it('the one who opens it is shown the whole amount, and takes all of it home', async () => {
+        const l = linkFor();
+        const a = openAt(l.frag);
+        a.chain.fund(l.key.address, 8888n);
+        a.chain.fund(l.key.address, 1112n);
+        await reveal(a);
+        // 88.88 and 11.12 XEC: one amount, 100.00.
+        expect(main(a).querySelector('.amount')?.textContent).toContain('100');
+        buttonByText(main(a), t('pkg.take')).click();
+        await flush();
+        const home = deriveKey(newSecret()).address;
+        type(main(a).querySelector('#th-addr') as HTMLInputElement, home);
+        goBtn(a).click();
+        await flush(40);
+        // Nothing is left behind: both coins went in the one sweep.
+        const after = await a.chain.read(l.key.address);
+        expect(after.kind).toBe('taken');
+        expect(main(a).textContent).not.toContain(t('rest.left', { n: 1 }));
     });
 });

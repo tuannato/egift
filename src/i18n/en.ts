@@ -157,6 +157,8 @@ export const en: Record<keyof typeof vi, string> = {
     'created.status.waiting': 'Waiting for the funding…',
     'created.status.unfinal': 'The funding is seen. Waiting for the network to make it final, usually a few seconds.',
     'created.status.funded': 'Funded ✓',
+    'created.status.holds': 'The package holds {got} XEC.',
+    'created.status.more': 'The package now holds {got} XEC, more than the {want} XEC you meant. Whoever opens the gift takes all of it.',
     'created.status.taken': 'This package has already been taken.',
     'created.status.error': 'Could not reach the network yet. It will try again on the next change.',
     'created.status.partial': 'The package holds {got} XEC so far; you meant to fund {want} XEC.',

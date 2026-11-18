@@ -157,6 +157,8 @@ export const fr: Record<keyof typeof vi, string> = {
     'created.status.waiting': "En attente du versement…",
     'created.status.unfinal': "Le versement est visible. En attente que le réseau le rende définitif, en général quelques secondes.",
     'created.status.funded': "Alimenté ✓",
+    'created.status.holds': "Le paquet contient {got} XEC.",
+    'created.status.more': "Le paquet contient maintenant {got} XEC, plus que les {want} XEC prévus. La personne qui ouvre le cadeau emporte tout.",
     'created.status.taken': "Ce colis a déjà été récupéré.",
     'created.status.error': "Le réseau n'a pas encore pu être joint. Nouvel essai au prochain changement.",
     'created.status.partial': "Le colis contient {got} XEC pour l'instant ; vous comptiez verser {want} XEC.",

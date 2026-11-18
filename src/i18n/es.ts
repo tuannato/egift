@@ -157,6 +157,8 @@ export const es: Record<keyof typeof vi, string> = {
     'created.status.waiting': "Esperando el depósito…",
     'created.status.unfinal': "El depósito ya se ve. Esperando a que la red lo haga definitivo, normalmente unos segundos.",
     'created.status.funded': "Depositado ✓",
+    'created.status.holds': "El paquete tiene {got} XEC.",
+    'created.status.more': "El paquete tiene ahora {got} XEC, más que los {want} XEC que querías poner. Quien abra el regalo se lleva todo.",
     'created.status.taken': "Este paquete ya fue retirado.",
     'created.status.error': "Todavía no se pudo conectar con la red. Se intentará de nuevo con el próximo cambio.",
     'created.status.partial': "El paquete tiene {got} XEC por ahora; pensabas depositar {want} XEC.",

@@ -157,6 +157,8 @@ export const id: Record<keyof typeof vi, string> = {
     'created.status.waiting': "Menunggu pengisian…",
     'created.status.unfinal': "Pengisian sudah terlihat. Menunggu jaringan menjadikannya final, biasanya beberapa detik.",
     'created.status.funded': "Terisi ✓",
+    'created.status.holds': "Paket berisi {got} XEC.",
+    'created.status.more': "Paket sekarang berisi {got} XEC, lebih dari {want} XEC yang Anda maksudkan. Siapa pun yang membuka hadiah membawa pulang semuanya.",
     'created.status.taken': "Paket ini sudah diambil.",
     'created.status.error': "Belum bisa terhubung ke jaringan. Akan dicoba lagi saat ada perubahan berikutnya.",
     'created.status.partial': "Paket baru berisi {got} XEC; Anda ingin mengisi {want} XEC.",

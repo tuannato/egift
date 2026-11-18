@@ -159,6 +159,9 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                 tone = 'unfinal';
             } else {
                 msg = t('created.status.funded');
+                // What is in the package now, all of it. More than was meant (funded again, or topped up while nobody
+                // has taken it): the giver is also told that whoever opens the gift takes all of it.
+                msg += ' ' + t(s.xecSats > made!.sats ? 'created.status.more' : 'created.status.holds', { got: formatXec(s.xecSats, lang), want: amountText });
                 done = true;
                 tone = 'ok';
             }
