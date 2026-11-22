@@ -75,6 +75,62 @@ export function stampScript(wrapper: string, pkh: Uint8Array): Script {
     return Script.fromOps([OP_RETURN, pushBytesOp(strToBytes('EGIF')), pushBytesOp(new Uint8Array([0x00, STAMP_ACTION])), pushBytesOp(strToBytes(wrapper)), pushBytesOp(pkh)]);
 }
 
+/** The action byte of a stamp for several gifts funded and paid for by one transaction. */
+export const BATCH_ACTION = 0x11;
+/** A batch stamp names at least two packages (one is the plain stamp) and at most this many: nine fill the 223 bytes a data output may have. */
+export const BATCH_MAX = 9;
+
+/**
+ * `OP_RETURN <"EGIF"> <0x00 0x11> <wrapper id> <package pkh 1> … <package pkh K>`, K from 2 to 9, no package twice.
+ * One payment of the wrapper's price stamps every package named, when the same transaction also funds it (`isStamp`).
+ */
+export function batchStampScript(wrapper: string, pkhs: readonly Uint8Array[]): Script {
+    if (!Array.isArray(pkhs) || pkhs.length < 2 || pkhs.length > BATCH_MAX) throw new Error('A batch names two to nine packages');
+    for (const pkh of pkhs) checkArgs(wrapper, pkh);
+    if (new Set(pkhs.map(p => toHex(p))).size !== pkhs.length) throw new Error('A package is named twice');
+    return Script.fromOps([OP_RETURN, pushBytesOp(strToBytes('EGIF')), pushBytesOp(new Uint8Array([0x00, BATCH_ACTION])), pushBytesOp(strToBytes(wrapper)), ...pkhs.map(p => pushBytesOp(p))]);
+}
+
+/** The batch stamp as a BIP21 `op_return_raw` value (see `stampOpReturnRaw`). At most 222 bytes: nine packages and a 24-character wrapper id. */
+export function batchOpReturnRaw(wrapper: string, pkhs: readonly Uint8Array[]): string {
+    return toHex(batchStampScript(wrapper, pkhs).bytecode).slice(2);
+}
+
+/** Strict: an even number of hex digits, or it throws. */
+function fromHex(hex: string): Uint8Array {
+    if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/.test(hex)) throw new Error('Not hex');
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    return out;
+}
+
+/**
+ * The packages a data output names, when it is a well-formed batch stamp for `wrapper`: lowercase hex, 40
+ * characters each. Read at fixed places, then written out again and compared as a whole script: nothing that is not
+ * byte for byte what this page would write counts. `null` for anything else.
+ */
+function batchMembers(scriptHex: string, wrapper: string): string[] | null {
+    if (!WRAPPER_RE.test(wrapper) || !/^[0-9a-f]*$/.test(scriptHex)) return null;
+    const head = toHex(Script.fromOps([OP_RETURN, pushBytesOp(strToBytes('EGIF')), pushBytesOp(new Uint8Array([0x00, BATCH_ACTION])), pushBytesOp(strToBytes(wrapper))]).bytecode);
+    if (!scriptHex.startsWith(head)) return null;
+    const rest = scriptHex.slice(head.length);
+    // Each package is one push of twenty bytes: 0x14, then the hash.
+    if (rest.length % 42 !== 0) return null;
+    const k = rest.length / 42;
+    if (k < 2 || k > BATCH_MAX) return null;
+    const members: string[] = [];
+    for (let i = 0; i < k; i++) {
+        const piece = rest.slice(i * 42, i * 42 + 42);
+        if (!piece.startsWith('14')) return null;
+        members.push(piece.slice(2));
+    }
+    try {
+        return toHex(batchStampScript(wrapper, members.map(fromHex)).bytecode) === scriptHex ? members : null;
+    } catch {
+        return null;
+    }
+}
+
 /**
  * The stamp as a BIP21 `op_return_raw` value: the script in lowercase hex
  * WITHOUT its first byte. Cashtab prepends OP_RETURN (6a) itself and refuses
@@ -104,6 +160,12 @@ export { isValidOffer };
  * - none of its inputs spends from the maker's address: a maker's own payment
  *   with change back to the same address would otherwise stamp anyone's gift
  *   for free. Inputs of unknown origin are refused for the same reason.
+ * A stamp for several gifts (`batchStampScript`) counts for this package when,
+ * besides all of the above with its own marker in place of the plain one:
+ * - the package is one of those the marker names;
+ * - ONE output of the same transaction pays the package at least the floor of a
+ *   gift: a batch stamps only what it funds, never a gift it merely names;
+ * - the address that is paid is none of the packages named.
  * The price and the address are the ones asked now, or an earlier pair
  * (`offer.earlier`) when the transaction was in a block by that pair's last
  * height. A transaction not yet in a block is held to what is asked now: a
@@ -126,11 +188,21 @@ function stampOf(tx: TxDetail | null | undefined, wrapper: string, pkh: Uint8Arr
         // One data output, and it is this package's stamp: a transaction carrying several markers (possible if a
         // miner includes it) must not stamp several gifts with one payment.
         const data = tx.outputs.filter(o => lower(o.script).startsWith('6a'));
-        if (data.length !== 1 || lower(data[0]!.script) !== marker) return 'no';
+        if (data.length !== 1) return 'no';
+        const pkg = `76a914${toHex(pkh)}88ac`;
+        // The plain stamp, or a batch stamp that names this package and whose transaction funds it.
+        let named: readonly string[] = [toHex(pkh)];
+        if (lower(data[0]!.script) !== marker) {
+            const members = batchMembers(lower(data[0]!.script), wrapper);
+            if (members === null || !members.includes(toHex(pkh))) return 'no';
+            if (!tx.outputs.some(o => lower(o.script) === pkg && typeof o.sats === 'bigint' && o.sats >= FLOOR_SATS)) return 'no';
+            named = members;
+        }
+        const gifts = new Set(named.map(m => `76a914${m}88ac`));
         const pays = (terms: { readonly sats: bigint; readonly payTo: string }): boolean => {
             const pay = scriptHexOf(terms.payTo);
-            // Paying the package itself is no payment: that money comes straight back to whoever opens the gift.
-            if (pay === null || pay === `76a914${toHex(pkh)}88ac`) return false;
+            // Paying a package the stamp names is no payment: that money comes straight back to whoever opens the gift.
+            if (pay === null || gifts.has(pay)) return false;
             if (tx.inputs.some(i => lower(i) === '' || lower(i) === pay)) return false;
             return tx.outputs.some(o => lower(o.script) === pay && typeof o.sats === 'bigint' && o.sats >= terms.sats);
         };

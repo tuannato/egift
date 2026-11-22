@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { toHex } from 'ecash-lib';
 import { deriveKey } from './keys';
-import { MAX_STAMP_LOOKUPS, entitlement, isOwnedFunding, isStamp, licenceOf, isValidOffer, stampOpReturnRaw, stampScript } from './stamp';
+import { BATCH_MAX, MAX_STAMP_LOOKUPS, batchOpReturnRaw, batchStampScript, entitlement, isOwnedFunding, isStamp, licenceOf, isValidOffer, stampOpReturnRaw, stampScript } from './stamp';
 import type { WrapperOffer } from './stamp';
-import { stampedFundLinks } from './bip21';
+import { batchFundLinks, stampedFundLinks } from './bip21';
+import { parseEcashAddress } from './tx';
 import { createDemoChain } from './chain/demo';
 import type { Coin, TxDetail } from './types';
 
@@ -195,6 +196,197 @@ describe('a price that changed', () => {
         const late = createDemoChain();
         late.fund(pkg.address, 8_888n, { tx: old(900_500), height: 900_500 });
         expect(await entitlement({ chain: late, coins: (await late.read(pkg.address)).coins, wrapper: 'mecha', pkh: pkg.pkh, offer: changed })).toBe('unpaid');
+    });
+});
+
+describe('a stamp for several gifts', () => {
+    const third = deriveKey(new Uint8Array(16).fill(6));
+    const bmarker = (pkhs: Uint8Array[], wrapper = 'mecha') => toHex(batchStampScript(wrapper, pkhs).bytecode);
+    /** One transaction funds the listed gifts and pays the price once: marker, the gifts in order, the maker, the change. */
+    const batch = (o: { pkhs?: Uint8Array[]; funds?: [Uint8Array, bigint][]; price?: bigint; payTo?: Uint8Array; from?: Uint8Array; wrapper?: string; height?: number } = {}): TxDetail => {
+        const pkhs = o.pkhs ?? [pkg.pkh, other.pkh, third.pkh];
+        return {
+            inputs: [p2pkh(o.from ?? giver.pkh)],
+            outputs: [
+                { sats: 0n, script: bmarker(pkhs, o.wrapper) },
+                ...(o.funds ?? pkhs.map((p, i): [Uint8Array, bigint] => [p, 2_000n + BigInt(i)])).map(([p, sats]) => ({ sats, script: p2pkh(p) })),
+                { sats: o.price ?? 50_000n, script: p2pkh(o.payTo ?? maker.pkh) },
+                { sats: 1_234_567n, script: p2pkh(giver.pkh) },
+            ],
+            ...(o.height === undefined ? {} : { height: o.height }),
+        };
+    };
+
+    it('the batch marker is exactly egif 0011 wrapper and the packages; it is what a real wallet sent', () => {
+        expect(bmarker([pkg.pkh, other.pkh])).toBe('6a' + '04' + '45474946' + '02' + '0011' + '05' + '6d65636861' + '14' + toHex(pkg.pkh) + '14' + toHex(other.pkh));
+        // The two markers sent through Cashtab on 23 November 2026 (2 gifts, and 9 gifts with a 24-character id).
+        const real = ['ecash:qrsuvctwx7jp8n2sm52p0trc7x9779phlsx82ut6uy', 'ecash:qq4g4taxf8ghm36450m05ejk04fyjm9z9q4dnau4px', 'ecash:qrpexsn0l8jlx9sx9arjl3cmp93hxevvzu450t79ue', 'ecash:qp3ruv38jx6segkguttr3zl3vztept2ct5w3mllp3f', 'ecash:qz9fgf80awa9shsfsddd8tzfh25yxrwknucaerm0wc', 'ecash:qzama4vz42jfqamdkjm8ceg0ecmfm3gp6ygzg4z4ha', 'ecash:qqjapewku88jdme80qkvw86xf7c6c2kzsynknrx4nd', 'ecash:qpl4knsdsrttqaedj0q2euq6w923z0d7x5va4dnp67', 'ecash:qzyfyeztvdw2a8w8crhu72c3zpffp705tqs4ry2577'].map(a => parseEcashAddress(a)!.hash);
+        expect(batchOpReturnRaw('terminal', real.slice(0, 2))).toBe('0445474946020011087465726d696e616c14e1c6616e37a413cd50dd1417ac78f18bef1437fc142a8aafa649d17dc755a3f6fa66567d52496ca228');
+        const nine = batchOpReturnRaw('x'.repeat(24), real);
+        expect(nine).toBe('04454749460200111878787878787878787878787878787878787878787878787814e1c6616e37a413cd50dd1417ac78f18bef1437fc142a8aafa649d17dc755a3f6fa66567d52496ca22814c393426ff9e5f316062f472fc71b096373658c1714623e322791b50ca2c8e2d6388bf1609790ad585d148a9424efebba585e09835ad3ac49baa8430dd69f14bbbed582aaa490776db4b67c650fce369dc501d11425d0e5d6e1cf26ef27782cc71f464fb1ac2ac281147f5b4e0d80d6b0772d93c0acf01a7155113dbe35148892644b635cae9dc7c0efcf2b11105290f9f458');
+        // Cashtab takes at most 222 bytes of op_return_raw: nine packages and the longest id fill it exactly.
+        expect(nine.length / 2).toBe(222);
+        expect(BATCH_MAX).toBe(9);
+        expect(() => batchStampScript('mecha', [pkg.pkh])).toThrow();
+        expect(() => batchStampScript('mecha', Array.from({ length: 10 }, (_, i) => deriveKey(new Uint8Array(16).fill(40 + i)).pkh))).toThrow();
+        expect(() => batchStampScript('mecha', [pkg.pkh, pkg.pkh])).toThrow();
+        expect(() => batchStampScript('Mecha', [pkg.pkh, other.pkh])).toThrow();
+        expect(() => batchStampScript('mecha', [pkg.pkh, new Uint8Array(19)])).toThrow();
+    });
+
+    it('one price stamps every gift the transaction names and funds', () => {
+        const tx = batch();
+        for (const k of [pkg, other, third]) expect(isStamp(tx, 'mecha', k.pkh, offer)).toBe(true);
+        // A gift it does not name; another wrapper; less than the price; the price to someone else.
+        expect(isStamp(tx, 'mecha', giver.pkh, offer)).toBe(false);
+        expect(isStamp(tx, 'signal', pkg.pkh, offer)).toBe(false);
+        expect(isStamp(batch({ wrapper: 'signal' }), 'mecha', pkg.pkh, offer)).toBe(false);
+        expect(isStamp(batch({ price: 49_999n }), 'mecha', pkg.pkh, offer)).toBe(false);
+        expect(isStamp(batch({ payTo: giver.pkh }), 'mecha', pkg.pkh, offer)).toBe(false);
+        // The maker spending to itself stamps nothing; an input of unknown origin neither.
+        expect(isStamp(batch({ from: maker.pkh }), 'mecha', pkg.pkh, offer)).toBe(false);
+        expect(isStamp({ ...tx, inputs: [''] }, 'mecha', pkg.pkh, offer)).toBe(false);
+    });
+
+    it('a batch stamps only what it funds: a gift that is named but not paid the floor by ONE output is not stamped', () => {
+        // Named, not funded at all.
+        expect(isStamp(batch({ funds: [[other.pkh, 2_000n], [third.pkh, 2_000n]] }), 'mecha', pkg.pkh, offer)).toBe(false);
+        // Dust; and two small outputs that only together reach the floor.
+        expect(isStamp(batch({ funds: [[pkg.pkh, 546n], [other.pkh, 2_000n], [third.pkh, 2_000n]] }), 'mecha', pkg.pkh, offer)).toBe(false);
+        expect(isStamp(batch({ funds: [[pkg.pkh, 546n], [pkg.pkh, 546n], [other.pkh, 2_000n]] }), 'mecha', pkg.pkh, offer)).toBe(false);
+        expect(isStamp(batch({ funds: [[pkg.pkh, 1_000n], [other.pkh, 2_000n]] }), 'mecha', pkg.pkh, offer)).toBe(true);
+        // The others in the same transaction are still stamped.
+        expect(isStamp(batch({ funds: [[pkg.pkh, 546n], [other.pkh, 2_000n], [third.pkh, 2_000n]] }), 'mecha', other.pkh, offer)).toBe(true);
+    });
+
+    it('the price cannot be paid to one of the gifts, and a second data output spoils the stamp', () => {
+        // The "maker" is a gift of the batch: the money would come back to whoever opens it.
+        const self: WrapperOffer = { sats: 1_500n, payTo: other.address };
+        expect(isStamp(batch(), 'mecha', pkg.pkh, self)).toBe(false);
+        expect(isStamp(batch(), 'mecha', other.pkh, self)).toBe(false);
+        const two = batch();
+        expect(isStamp({ ...two, outputs: [...two.outputs, { sats: 0n, script: marker('mecha', pkg.pkh) }] }, 'mecha', pkg.pkh, offer)).toBe(false);
+    });
+
+    it('only a marker written exactly as this page writes it is read', () => {
+        const good = bmarker([pkg.pkh, other.pkh]);
+        const withMarker = (script: string): TxDetail => ({ ...batch({ pkhs: [pkg.pkh, other.pkh] }), outputs: [{ sats: 0n, script }, ...batch({ pkhs: [pkg.pkh, other.pkh] }).outputs.slice(1)] });
+        expect(isStamp(withMarker(good), 'mecha', pkg.pkh, offer)).toBe(true);
+        expect(isStamp(withMarker(good.toUpperCase()), 'mecha', pkg.pkh, offer)).toBe(true);
+        const head = good.slice(0, good.length - 84);
+        const bad = [
+            good + '00', // a byte too many
+            good.slice(0, -2), // a byte short
+            head + '14' + toHex(pkg.pkh), // one package only
+            head + '14' + toHex(pkg.pkh) + '14' + toHex(pkg.pkh), // the same package twice
+            head + '14' + toHex(pkg.pkh) + '13' + toHex(other.pkh).slice(2) + '00', // a push of the wrong size
+            head + '4c14' + toHex(pkg.pkh) + '14' + toHex(other.pkh), // a longer way to write the same push
+            good.replace('0011', '0012'), // another action
+            good.replace('45474946', '45474947'), // another tag
+            head + Array.from({ length: 10 }, (_, i) => '14' + toHex(deriveKey(new Uint8Array(16).fill(60 + i)).pkh)).join('') + '14' + toHex(pkg.pkh), // more than nine
+        ];
+        for (const script of bad) expect(isStamp(withMarker(script), 'mecha', pkg.pkh, offer), script.slice(-50)).toBe(false);
+    });
+
+    it('a batch at an earlier price counts by its block height, like a plain stamp', async () => {
+        const oldMaker = deriveKey(new Uint8Array(16).fill(5));
+        const changed: WrapperOffer = { sats: 80_000n, payTo: maker.address, earlier: [{ sats: 50_000n, payTo: oldMaker.address, until: 900_000 }] };
+        expect(isStamp(batch({ payTo: oldMaker.pkh, height: 900_000 }), 'mecha', other.pkh, changed)).toBe(true);
+        expect(isStamp(batch({ payTo: oldMaker.pkh, height: 900_001 }), 'mecha', other.pkh, changed)).toBe(false);
+        expect(isStamp(batch({ payTo: oldMaker.pkh }), 'mecha', other.pkh, changed)).toBe(false);
+        // An earlier address that is a gift of the batch pays nothing either.
+        const selfBefore: WrapperOffer = { sats: 80_000n, payTo: maker.address, earlier: [{ sats: 1_500n, payTo: third.address, until: 900_000 }] };
+        expect(isStamp(batch({ price: 1n, height: 5 }), 'mecha', pkg.pkh, selfBefore)).toBe(false);
+        // In no block yet: neither paid nor unpaid.
+        const chain = createDemoChain();
+        chain.fund(other.address, 2_001n, { tx: batch({ payTo: oldMaker.pkh }) });
+        expect(await entitlement({ chain, coins: (await chain.read(other.address)).coins, wrapper: 'mecha', pkh: other.pkh, offer: changed })).toBe('unknown');
+    });
+
+    it('each gift of a batch read from the chain is paid; a gift only named is not', async () => {
+        const chain = createDemoChain();
+        const tx = batch({ funds: [[pkg.pkh, 2_000n], [other.pkh, 2_001n]] });
+        chain.fund(pkg.address, 2_000n, { tx });
+        chain.fund(other.address, 2_001n, { tx });
+        // The third is named by the marker but funded by a plain transaction later.
+        chain.fund(third.address, 2_002n);
+        for (const k of [pkg, other]) expect(await entitlement({ chain, coins: (await chain.read(k.address)).coins, wrapper: 'mecha', pkh: k.pkh, offer })).toBe('paid');
+        expect(await entitlement({ chain, coins: (await chain.read(third.address)).coins, wrapper: 'mecha', pkh: third.pkh, offer })).toBe('unpaid');
+    });
+
+    it('what the fund-all link asks a wallet for is a stamp for every gift, at two gifts and at nine', () => {
+        /** The transaction a wallet makes of a BIP21 URI: marker first, each output in order, its change last. */
+        const sent = (bip21: string): TxDetail => {
+            const [first, query] = bip21.split('?') as [string, string];
+            const outputs: { sats: bigint; script: string }[] = [];
+            let to = first;
+            for (const part of query.split('&')) {
+                const [key, value] = part.split('=') as [string, string];
+                if (key === 'op_return_raw') outputs.unshift({ sats: 0n, script: '6a' + value });
+                else if (key === 'addr') to = value;
+                else if (key === 'amount') outputs.push({ sats: BigInt(value.replace('.', '')), script: (h => (parseEcashAddress(to)!.type === 'p2pkh' ? `76a914${h}88ac` : `a914${h}87`))(toHex(parseEcashAddress(to)!.hash)) });
+                else throw new Error('unexpected ' + key);
+            }
+            return { inputs: [p2pkh(giver.pkh)], outputs: [...outputs, { sats: 9_999n, script: p2pkh(giver.pkh) }] };
+        };
+        for (const [n, wrapper] of [[2, 'mecha'], [9, 'x'.repeat(24)]] as const) {
+            const keys = Array.from({ length: n }, (_, i) => deriveKey(new Uint8Array(16).fill(100 + i)));
+            const tx = sent(batchFundLinks({ gifts: keys.map((k, i) => ({ address: k.address, sats: 1_000n + BigInt(i) })), paid: { wrapper, offer } }).bip21);
+            expect(tx.outputs.length).toBe(n + 3);
+            for (const k of keys) expect(isStamp(tx, wrapper, k.pkh, offer), `${n}`).toBe(true);
+            expect(isStamp(tx, wrapper, giver.pkh, offer)).toBe(false);
+        }
+        // A maker paid at a script address (P2SH) works the same.
+        const p2sh: WrapperOffer = { sats: 50_000n, payTo: 'ecash:prfhcnyqnl5cgrnmlfmms675w93ld7mvvqd0y8lz07' };
+        expect(isValidOffer(p2sh)).toBe(true);
+        const tx = sent(batchFundLinks({ gifts: [pkg, other].map(k => ({ address: k.address, sats: 2_000n })), paid: { wrapper: 'mecha', offer: p2sh } }).bip21);
+        expect(isStamp(tx, 'mecha', pkg.pkh, p2sh)).toBe(true);
+    });
+
+    it('more ways a marker or a funding is refused', () => {
+        const tenth = Array.from({ length: 10 }, (_, i) => deriveKey(new Uint8Array(16).fill(120 + i)).pkh);
+        const head = bmarker([pkg.pkh, other.pkh]).slice(0, -84);
+        const withMarker = (script: string): TxDetail => ({ ...batch({ pkhs: [pkg.pkh, other.pkh] }), outputs: [{ sats: 0n, script }, ...batch({ pkhs: [pkg.pkh, other.pkh] }).outputs.slice(1)] });
+        const ten = head + tenth.map(p => '14' + toHex(p)).join('');
+        expect(isStamp({ ...withMarker(ten), outputs: [...withMarker(ten).outputs, { sats: 2_000n, script: p2pkh(tenth[0]!) }] }, 'mecha', tenth[0]!, offer)).toBe(false);
+        for (const script of [head, head + '1', bmarker([pkg.pkh, other.pkh]).slice(0, -1) + 'g', marker('mecha', pkg.pkh) + '14' + toHex(other.pkh)]) expect(isStamp(withMarker(script), 'mecha', pkg.pkh, offer), script.slice(-30)).toBe(false);
+        // A wrapper whose name begins another's is another wrapper.
+        expect(isStamp(batch({ wrapper: 'mecha' }), 'me', pkg.pkh, offer)).toBe(false);
+        expect(isStamp(batch({ wrapper: 'me' }), 'mecha', pkg.pkh, offer)).toBe(false);
+        // One sat under the floor; an amount that is not a number of sats.
+        expect(isStamp(batch({ funds: [[pkg.pkh, 999n], [other.pkh, 2_000n]] }), 'mecha', pkg.pkh, offer)).toBe(false);
+        const odd = batch();
+        expect(isStamp({ ...odd, outputs: odd.outputs.map(o => (o.script === p2pkh(pkg.pkh) ? { ...o, sats: 2000 as unknown as bigint } : o)) }, 'mecha', pkg.pkh, offer)).toBe(false);
+        // Several inputs, one of them the maker's, or one of unknown origin.
+        expect(isStamp({ ...batch(), inputs: [p2pkh(giver.pkh), p2pkh(maker.pkh)] }, 'mecha', pkg.pkh, offer)).toBe(false);
+        expect(isStamp({ ...batch(), inputs: [p2pkh(giver.pkh), ''] }, 'mecha', pkg.pkh, offer)).toBe(false);
+    });
+
+    it('the fund-all link: the first gift, the marker, the other gifts in order, the price last', () => {
+        const gifts = [pkg, other, third].map((k, i) => ({ address: k.address, sats: 2_000n + BigInt(i) }));
+        const l = batchFundLinks({ gifts, paid: { wrapper: 'mecha', offer } });
+        expect(l.bip21).toBe(`${pkg.address}?amount=20.00&op_return_raw=${batchOpReturnRaw('mecha', [pkg.pkh, other.pkh, third.pkh])}&addr=${other.address}&amount=20.01&addr=${third.address}&amount=20.02&addr=${maker.address}&amount=500.00`);
+        expect(l.web).toBe(`https://cashtab.com/#/send?bip21=${l.bip21}`);
+        expect(l.app).toBe(`https://pay.e.cash/?bip21=${l.bip21}`);
+        expect(l.appBack).toBe(`https://pay.e.cash/?bip21=${l.bip21}&b=1`);
+        expect(l.bip21).toMatch(/^[a-z0-9:?=.&_]+$/);
+        // A free wrapper (or one the wallet owns): no marker, no price.
+        expect(batchFundLinks({ gifts }).bip21).toBe(`${pkg.address}?amount=20.00&addr=${other.address}&amount=20.01&addr=${third.address}&amount=20.02`);
+        // What it refuses.
+        expect(() => batchFundLinks({ gifts: gifts.slice(0, 1) })).toThrow();
+        expect(() => batchFundLinks({ gifts: Array.from({ length: 10 }, (_, i) => ({ address: deriveKey(new Uint8Array(16).fill(80 + i)).address, sats: 2_000n })) })).toThrow();
+        expect(() => batchFundLinks({ gifts: [gifts[0]!, gifts[0]!] })).toThrow();
+        expect(() => batchFundLinks({ gifts: [gifts[0]!, { address: other.address, sats: 999n }] })).toThrow();
+        expect(() => batchFundLinks({ gifts: [gifts[0]!, { address: 'ecash:nope', sats: 2_000n }] })).toThrow();
+        expect(batchFundLinks({ gifts }).bip21).not.toContain('op_return_raw');
+        // The same package spelled another way is still the same package; a script address is no package; the cap.
+        expect(() => batchFundLinks({ gifts: [gifts[0]!, { address: pkg.address.slice(6), sats: 2_000n }] })).toThrow();
+        expect(() => batchFundLinks({ gifts: [gifts[0]!, { address: 'ecash:prfhcnyqnl5cgrnmlfmms675w93ld7mvvqd0y8lz07', sats: 2_000n }] })).toThrow();
+        expect(() => batchFundLinks({ gifts: [{ address: pkg.address, sats: 2_100_000_000_000_000n }, { address: other.address, sats: 1_000n }] })).toThrow();
+        expect(() => batchFundLinks({ gifts: [{ address: pkg.address, sats: 2_100_000_000_000_001n }, { address: other.address, sats: 1_000n }] })).toThrow();
+        expect(() => batchFundLinks({ gifts, paid: { wrapper: 'mecha', offer: { sats: 50_000n, payTo: other.address } } })).toThrow();
+        expect(() => batchFundLinks({ gifts, paid: { wrapper: 'Mecha', offer } })).toThrow();
+        expect(() => batchFundLinks({ gifts, paid: { wrapper: 'mecha', offer: { sats: 1n, payTo: maker.address } } })).toThrow();
     });
 });
 

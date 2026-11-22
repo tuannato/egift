@@ -1,6 +1,6 @@
 import type { FundLinks } from './types';
 import { CAP_SATS, DUST_SATS, FLOOR_SATS } from './limits';
-import { isValidOffer, stampOpReturnRaw } from './stamp';
+import { BATCH_MAX, batchOpReturnRaw, isValidOffer, stampOpReturnRaw } from './stamp';
 import type { WrapperOffer } from './stamp';
 import { parseEcashAddress } from './tx';
 
@@ -58,6 +58,41 @@ export function stampedFundLinks(p: { address: string; sats: bigint; wrapper: st
     if (maker === null || !isValidOffer(p.offer)) throw new Error('Not a valid offer');
     const bip21 = `${parsed.address}?amount=${bip21Amount(p.sats)}&op_return_raw=${stampOpReturnRaw(p.wrapper, parsed.hash)}&addr=${maker.address}&amount=${bip21Amount(p.offer.sats)}`;
     return roads(bip21);
+}
+
+/**
+ * The roads for funding several packages with ONE transaction, and (with `paid`) stamping all of them with one
+ * payment of the wrapper's price:
+ * `ecash:<package 1>?amount=<gift 1>[&op_return_raw=<batch marker>]&addr=<package 2>&amount=<gift 2>…[&addr=<maker>&amount=<price>]`.
+ * The order is the one a real Cashtab wallet was seen to keep: the marker, the gifts as listed, the price, its change.
+ *
+ * Two to nine gifts, no address twice, each at least the floor of a gift. Without `paid` there is no marker and
+ * no price: a free wrapper, or one the giver's wallet owns.
+ */
+export function batchFundLinks(p: { gifts: readonly { readonly address: string; readonly sats: bigint }[]; paid?: { readonly wrapper: string; readonly offer: WrapperOffer } }): FundLinks {
+    if (!Array.isArray(p.gifts) || p.gifts.length < 2 || p.gifts.length > BATCH_MAX) throw new Error('A batch is two to nine gifts');
+    const gifts = p.gifts.map(g => {
+        const parsed = parseEcashAddress(g.address);
+        if (parsed === null || parsed.type !== 'p2pkh') throw new Error('Not a valid ecash: P2PKH address');
+        if (typeof g.sats !== 'bigint' || g.sats < FLOOR_SATS) throw new Error('The amount is under the floor');
+        if (g.sats > CAP_SATS) throw new Error('The amount is over the cap');
+        return { address: parsed.address, hash: parsed.hash, sats: g.sats };
+    });
+    if (new Set(gifts.map(g => g.address)).size !== gifts.length) throw new Error('A package is listed twice');
+    // Nine gifts at the cap would be more than there is: the whole batch is held to the cap of one gift.
+    if (gifts.reduce((sum, g) => sum + g.sats, 0n) > CAP_SATS) throw new Error('The batch is over the cap');
+    const pair = (address: string, sats: bigint): string => `&addr=${address}&amount=${bip21Amount(sats)}`;
+    let tail = '';
+    let marker = '';
+    if (p.paid !== undefined) {
+        const maker = parseEcashAddress(p.paid.offer.payTo);
+        if (maker === null || !isValidOffer(p.paid.offer)) throw new Error('Not a valid offer');
+        if (gifts.some(g => g.address === maker.address)) throw new Error('The price cannot be paid to a package');
+        marker = `&op_return_raw=${batchOpReturnRaw(p.paid.wrapper, gifts.map(g => g.hash))}`;
+        tail = pair(maker.address, p.paid.offer.sats);
+    }
+    const [first, ...rest] = gifts;
+    return roads(`${first!.address}?amount=${bip21Amount(first!.sats)}${marker}${rest.map(g => pair(g.address, g.sats)).join('')}${tail}`);
 }
 
 /**
