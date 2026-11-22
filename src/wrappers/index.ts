@@ -44,6 +44,14 @@ import { lotus } from './lotus';
 import { keys } from './keys';
 import { domino } from './domino';
 import { chest } from './chest';
+import { aurora } from './aurora';
+import { pop } from './pop';
+import { flap } from './flap';
+import { drone } from './drone';
+import { stars } from './stars';
+import { umbrella } from './umbrella';
+import { starship } from './starship';
+import { terminal } from './terminal';
 
 /** The built-in wrappers, in the order the picker shows them. */
 import { lock } from './lock';
@@ -55,7 +63,7 @@ import { lock } from './lock';
  */
 export const LOCK_WRAPPER: WrapperDef = lock;
 
-export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit, curtain, medal, neon, sakura, compass, cylinder, airmail, beacon, lotus, keys, domino, chest];
+export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit, curtain, medal, neon, sakura, compass, cylinder, airmail, beacon, lotus, keys, domino, chest, aurora, pop, flap, drone, stars, umbrella, starship, terminal];
 
 export function wrapperById(id: string): WrapperDef | undefined {
     return WRAPPERS.find(w => w.id === id);

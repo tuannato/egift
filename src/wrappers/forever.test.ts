@@ -22,6 +22,7 @@ const SHIPPED = [
     'vinyl', 'bottle', 'seeds', 'crane', 'cradle', 'orbit',
     'curtain', 'medal', 'neon', 'sakura', 'compass', 'cylinder',
     'airmail', 'beacon', 'lotus', 'keys', 'domino', 'chest',
+    'aurora', 'pop', 'flap', 'drone', 'stars', 'umbrella', 'starship', 'terminal',
 ] as const;
 
 describe('links are forever', () => {
