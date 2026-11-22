@@ -27,13 +27,20 @@ const PRICED: Record<string, bigint> = {
     keys: 500_000n,
 };
 
+/**
+ * Earlier prices that are still honoured, by wrapper: what was paid (sats), to whom, and the last block height at
+ * which paying it counted. A line is added when a price changes and is never edited or removed afterwards: gifts
+ * paid for on those terms would lose their wrapper.
+ */
+const EARLIER: Record<string, readonly { sats: bigint; payTo: string; until: number }[]> = {};
+
 describe('the price table', () => {
     it('fourteen wrappers have a price, paid to the project; every other wrapper is free', () => {
         for (const w of WRAPPERS) {
             const o = offerOf(w);
             const want = PRICED[w.id];
             if (want === undefined) expect(o, w.id).toEqual({ kind: 'free' });
-            else expect(o, w.id).toEqual({ kind: 'paid', sats: want, payTo: PROJECT });
+            else expect(o, w.id).toEqual({ kind: 'paid', sats: want, payTo: PROJECT, ...(EARLIER[w.id] ? { earlier: EARLIER[w.id] } : {}) });
         }
         expect(Object.keys(PRICED).every(id => WRAPPERS.some(w => w.id === id))).toBe(true);
     });
@@ -43,6 +50,19 @@ describe('the price table', () => {
         for (const w of WRAPPERS) {
             const o = offerOf(w);
             if (o.kind === 'paid') expect(isValidOffer(o), w.id).toBe(true);
+        }
+    });
+
+    it('an earlier price belongs to a wrapper that still has a price, and is one a wallet could send', () => {
+        for (const [id, list] of Object.entries(EARLIER)) {
+            expect(PRICED[id], id).toBeDefined();
+            expect(list.length, id).toBeGreaterThan(0);
+            for (const t of list) {
+                expect(isValidOffer({ sats: t.sats, payTo: t.payTo, earlier: [t] }), id).toBe(true);
+                // A real block height of these years: a digit too many would honour the old price for ever, one too few would strip paid gifts.
+                expect(t.until, id).toBeGreaterThan(900_000);
+                expect(t.until, id).toBeLessThan(2_000_000);
+            }
         }
     });
 

@@ -37,6 +37,19 @@ export interface WrapperOffer {
      * funding link and pays nothing more (`isOwnedFunding`).
      */
     readonly licence?: { readonly tokenId: string; readonly buyAt?: string };
+    /**
+     * What the wrapper cost before, kept so that a gift paid for then keeps
+     * its wrapper after a price or the paid address changes. An entry counts
+     * only for a payment that was in a block no later than `until`.
+     */
+    readonly earlier?: readonly PastTerms[];
+}
+
+/** A price that is no longer asked: what was paid, to whom, and the last block height at which paying it counted. */
+export interface PastTerms {
+    readonly sats: bigint;
+    readonly payTo: string;
+    readonly until: number;
 }
 
 const TOKEN_ID_RE = /^[0-9a-f]{64}$/;
@@ -91,25 +104,44 @@ export { isValidOffer };
  * - none of its inputs spends from the maker's address: a maker's own payment
  *   with change back to the same address would otherwise stamp anyone's gift
  *   for free. Inputs of unknown origin are refused for the same reason.
+ * The price and the address are the ones asked now, or an earlier pair
+ * (`offer.earlier`) when the transaction was in a block by that pair's last
+ * height. A transaction not yet in a block is held to what is asked now: a
+ * payment at an old price cannot be made after the fact.
  * Never throws: anything malformed is simply not a stamp.
  */
 export function isStamp(tx: TxDetail | null | undefined, wrapper: string, pkh: Uint8Array, offer: WrapperOffer): boolean {
+    return stampOf(tx, wrapper, pkh, offer) === 'yes';
+}
+
+/**
+ * `yes`: a stamp. `waiting`: it would be one under an earlier price, but it
+ * is in no block yet, so whether it counts is not known. `no`: neither.
+ */
+function stampOf(tx: TxDetail | null | undefined, wrapper: string, pkh: Uint8Array, offer: WrapperOffer): 'yes' | 'waiting' | 'no' {
     try {
-        if (!tx || !Array.isArray(tx.outputs) || !Array.isArray(tx.inputs) || tx.inputs.length === 0 || !isValidOffer(offer)) return false;
+        if (!tx || !Array.isArray(tx.outputs) || !Array.isArray(tx.inputs) || tx.inputs.length === 0 || !isValidOffer(offer)) return 'no';
         const marker = toHex(stampScript(wrapper, pkh).bytecode);
-        const pay = scriptHexOf(offer.payTo)!;
-        // Paying the package itself is no payment: that money comes straight back to whoever opens the gift.
-        if (pay === `76a914${toHex(pkh)}88ac`) return false;
         const lower = (v: unknown): string => (typeof v === 'string' ? v.toLowerCase() : '');
-        if (tx.inputs.some(i => lower(i) === '' || lower(i) === pay)) return false;
         // One data output, and it is this package's stamp: a transaction carrying several markers (possible if a
         // miner includes it) must not stamp several gifts with one payment.
         const data = tx.outputs.filter(o => lower(o.script).startsWith('6a'));
-        const marked = data.length === 1 && lower(data[0]!.script) === marker;
-        const paid = tx.outputs.some(o => lower(o.script) === pay && typeof o.sats === 'bigint' && o.sats >= offer.sats);
-        return marked && paid;
+        if (data.length !== 1 || lower(data[0]!.script) !== marker) return 'no';
+        const pays = (terms: { readonly sats: bigint; readonly payTo: string }): boolean => {
+            const pay = scriptHexOf(terms.payTo);
+            // Paying the package itself is no payment: that money comes straight back to whoever opens the gift.
+            if (pay === null || pay === `76a914${toHex(pkh)}88ac`) return false;
+            if (tx.inputs.some(i => lower(i) === '' || lower(i) === pay)) return false;
+            return tx.outputs.some(o => lower(o.script) === pay && typeof o.sats === 'bigint' && o.sats >= terms.sats);
+        };
+        if (pays(offer)) return 'yes';
+        const earlier = offer.earlier ?? [];
+        const at = tx.height;
+        if (at === undefined) return earlier.some(pays) ? 'waiting' : 'no';
+        if (typeof at !== 'number' || !Number.isSafeInteger(at) || at < 0) return 'no';
+        return earlier.some(t => at <= t.until && pays(t)) ? 'yes' : 'no';
     } catch {
-        return false;
+        return 'no';
     }
 }
 
@@ -215,7 +247,10 @@ async function look(p: { chain: Pick<Chain, 'detail' | 'holders'>; coins: readon
     if (first !== undefined) {
         const tx = await read(first);
         if (tx !== undefined) {
-            if (isStamp(tx, p.wrapper, p.pkh, p.offer)) return 'paid';
+            const stamp = stampOf(tx, p.wrapper, p.pkh, p.offer);
+            if (stamp === 'yes') return 'paid';
+            // Paid at an earlier price and in no block yet: not a verdict either way, so the page asks again.
+            if (stamp === 'waiting') failed = true;
             if (first === funding && licence !== null && p.chain.holders !== undefined && tx !== null) {
                 try {
                     if (isOwnedFunding(tx, p.pkh, await p.chain.holders(licence))) return 'owned';
@@ -229,8 +264,9 @@ async function look(p: { chain: Pick<Chain, 'detail' | 'holders'>; coins: readon
     // coins in the same block must not be able to push it out of sight cheaply.
     for (let i = 1; i < list.length; i += STAMP_BATCH) {
         if (!alive()) return 'unknown';
-        const txs = await Promise.all(list.slice(i, i + STAMP_BATCH).map(read));
-        if (txs.some(tx => tx !== undefined && isStamp(tx, p.wrapper, p.pkh, p.offer))) return 'paid';
+        const stamps = (await Promise.all(list.slice(i, i + STAMP_BATCH).map(read))).map(tx => (tx === undefined ? 'no' : stampOf(tx, p.wrapper, p.pkh, p.offer)));
+        if (stamps.includes('yes')) return 'paid';
+        if (stamps.includes('waiting')) failed = true;
     }
     return failed ? 'unknown' : 'unpaid';
 }

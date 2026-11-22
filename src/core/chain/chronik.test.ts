@@ -209,6 +209,24 @@ describe('broadcast', () => {
     });
 });
 
+describe('a transaction read for a wrapper payment', () => {
+    it('carries the height of its block, and none while it is in no block or the node gave no usable one', async () => {
+        const f = fake();
+        const out = [{ sats: 1_000n, outputScript: '76A914' + '11'.repeat(20) + '88AC' }];
+        f.st.txs.set(txid, chronikTx(txid, true, { outputs: out, block: { timestamp: 1_760_000_000, height: 900_123 } }));
+        expect(await f.chain.detail!(txid)).toEqual({ inputs: [''], outputs: [{ sats: 1_000n, script: '76a914' + '11'.repeat(20) + '88ac' }], height: 900_123 });
+        f.st.txs.set(otherTxid, chronikTx(otherTxid, false, { outputs: out }));
+        expect('height' in (await f.chain.detail!(otherTxid))!).toBe(false);
+        // The history of an address is read the same way.
+        f.st.history = { txs: [chronikTx(txid, true, { outputs: out, block: { timestamp: 1_760_000_000, height: 900_123 } }), chronikTx(otherTxid, false, { outputs: out })], numTxs: 2 };
+        expect((await f.chain.past!(key.address)).map(t => t.height)).toEqual([900_123, undefined]);
+        for (const height of [-1, 1.5, Number.NaN]) {
+            f.st.txs.set(otherTxid, chronikTx(otherTxid, true, { outputs: out, block: { timestamp: 1, height } }));
+            expect('height' in (await f.chain.detail!(otherTxid))!, String(height)).toBe(false);
+        }
+    });
+});
+
 describe('settle', () => {
     it('resolves final on TX_FINALIZED for our txid, after opening and subscribing once', async () => {
         const f = fake();

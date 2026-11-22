@@ -108,6 +108,95 @@ describe('the stamp', () => {
     });
 });
 
+describe('a price that changed', () => {
+    const oldMaker = deriveKey(new Uint8Array(16).fill(5));
+    /** Now 80,000 sats to the maker; before, 50,000 sats to another address, for payments in a block up to 900,000. */
+    const changed: WrapperOffer = { sats: 80_000n, payTo: maker.address, earlier: [{ sats: 50_000n, payTo: oldMaker.address, until: 900_000 }] };
+    const old = (height?: number, price = 50_000n): TxDetail => ({ ...funding({ price, payTo: oldMaker.pkh }), ...(height === undefined ? {} : { height }) });
+
+    it('a payment at the earlier price counts when it was in a block by the last height, and not after', () => {
+        expect(isStamp(old(899_999), 'mecha', pkg.pkh, changed)).toBe(true);
+        expect(isStamp(old(900_000), 'mecha', pkg.pkh, changed)).toBe(true);
+        expect(isStamp(old(900_001), 'mecha', pkg.pkh, changed)).toBe(false);
+    });
+
+    it('a payment at the earlier price that is not in a block yet does not count', () => {
+        expect(isStamp(old(), 'mecha', pkg.pkh, changed)).toBe(false);
+        for (const h of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) expect(isStamp(old(h), 'mecha', pkg.pkh, changed), String(h)).toBe(false);
+        expect(isStamp({ ...old(), height: '5' as unknown as number }, 'mecha', pkg.pkh, changed)).toBe(false);
+    });
+
+    it('the price asked now counts at any height and with none', () => {
+        const now = (height?: number): TxDetail => ({ ...funding({ price: 80_000n }), ...(height === undefined ? {} : { height }) });
+        expect(isStamp(now(), 'mecha', pkg.pkh, changed)).toBe(true);
+        expect(isStamp(now(1), 'mecha', pkg.pkh, changed)).toBe(true);
+        expect(isStamp(now(2_000_000), 'mecha', pkg.pkh, changed)).toBe(true);
+    });
+
+    it('an earlier pair is held to its own price and its own address', () => {
+        // Less than the earlier price, to the earlier address.
+        expect(isStamp(old(100, 49_999n), 'mecha', pkg.pkh, changed)).toBe(false);
+        // The earlier price, to the address asked now: that address asks the price of now.
+        expect(isStamp({ ...funding({ price: 50_000n }), height: 100 }, 'mecha', pkg.pkh, changed)).toBe(false);
+        // The earlier address spending to itself stamps nothing.
+        expect(isStamp({ ...funding({ price: 50_000n, payTo: oldMaker.pkh, from: oldMaker.pkh }), height: 100 }, 'mecha', pkg.pkh, changed)).toBe(false);
+        // Another wrapper's or another package's marker stays no stamp.
+        expect(isStamp({ ...funding({ price: 50_000n, payTo: oldMaker.pkh, wrapper: 'signal' }), height: 100 }, 'mecha', pkg.pkh, changed)).toBe(false);
+        expect(isStamp({ ...funding({ price: 50_000n, payTo: oldMaker.pkh, pkh: other.pkh }), height: 100 }, 'mecha', pkg.pkh, changed)).toBe(false);
+    });
+
+    it('the common change: the same address, a higher price now, a lower one before', () => {
+        const raised: WrapperOffer = { sats: 80_000n, payTo: maker.address, earlier: [{ sats: 50_000n, payTo: maker.address, until: 900_000 }] };
+        expect(isStamp({ ...funding({ price: 50_000n }), height: 900_000 }, 'mecha', pkg.pkh, raised)).toBe(true);
+        expect(isStamp({ ...funding({ price: 50_000n }), height: 900_001 }, 'mecha', pkg.pkh, raised)).toBe(false);
+        expect(isStamp(funding({ price: 50_000n }), 'mecha', pkg.pkh, raised)).toBe(false);
+        expect(isStamp({ ...funding({ price: 50_000n }), height: 0 }, 'mecha', pkg.pkh, raised)).toBe(true);
+    });
+
+    it('several earlier pairs: each counts up to its own height', () => {
+        const twice: WrapperOffer = { sats: 90_000n, payTo: maker.address, earlier: [{ sats: 50_000n, payTo: maker.address, until: 900_000 }, { sats: 70_000n, payTo: maker.address, until: 950_000 }] };
+        expect(isStamp({ ...funding({ price: 50_000n }), height: 900_000 }, 'mecha', pkg.pkh, twice)).toBe(true);
+        expect(isStamp({ ...funding({ price: 50_000n }), height: 940_000 }, 'mecha', pkg.pkh, twice)).toBe(false);
+        expect(isStamp({ ...funding({ price: 70_000n }), height: 940_000 }, 'mecha', pkg.pkh, twice)).toBe(true);
+        expect(isStamp({ ...funding({ price: 70_000n }), height: 950_001 }, 'mecha', pkg.pkh, twice)).toBe(false);
+    });
+
+    it('an earlier address that is the package itself pays nothing; spending from the address of now does not spoil an earlier payment', () => {
+        const self: WrapperOffer = { sats: 80_000n, payTo: maker.address, earlier: [{ sats: 5_000n, payTo: pkg.address, until: 900_000 }] };
+        expect(isStamp({ ...funding({ price: 1n }), height: 1 }, 'mecha', pkg.pkh, self)).toBe(false);
+        expect(isStamp({ ...old(100), inputs: [p2pkh(maker.pkh)] }, 'mecha', pkg.pkh, changed)).toBe(true);
+    });
+
+    it('a payment at an earlier price that is in no block yet is neither paid nor unpaid', async () => {
+        const chain = createDemoChain();
+        chain.fund(pkg.address, 8_888n, { tx: old() });
+        expect(await entitlement({ chain, coins: (await chain.read(pkg.address)).coins, wrapper: 'mecha', pkh: pkg.pkh, offer: changed })).toBe('unknown');
+    });
+
+    it('an offer with a malformed earlier pair is no offer at all', () => {
+        const bad = (earlier: unknown): WrapperOffer => ({ sats: 80_000n, payTo: maker.address, earlier: earlier as WrapperOffer['earlier'] });
+        expect(isValidOffer(changed)).toBe(true);
+        expect(isValidOffer(bad([{ sats: 50_000n, payTo: 'ecash:nope', until: 1 }]))).toBe(false);
+        expect(isValidOffer(bad([{ sats: 1n, payTo: oldMaker.address, until: 1 }]))).toBe(false);
+        expect(isValidOffer(bad([{ sats: 50_000n, payTo: oldMaker.address, until: -1 }]))).toBe(false);
+        expect(isValidOffer(bad([{ sats: 50_000n, payTo: oldMaker.address, until: 1.5 }]))).toBe(false);
+        expect(isValidOffer(bad([{ sats: 50_000n, payTo: oldMaker.address }]))).toBe(false);
+        expect(isValidOffer(bad('x'))).toBe(false);
+        expect(isValidOffer(bad([null]))).toBe(false);
+        expect(isStamp(funding({ price: 80_000n }), 'mecha', pkg.pkh, bad([{ sats: 1n, payTo: oldMaker.address, until: 1 }]))).toBe(false);
+    });
+
+    it('a package read from the chain keeps a wrapper paid for at the earlier price', async () => {
+        const chain = createDemoChain();
+        chain.fund(pkg.address, 8_888n, { tx: old(899_000), height: 899_000 });
+        const coins = (await chain.read(pkg.address)).coins;
+        expect(await entitlement({ chain, coins, wrapper: 'mecha', pkh: pkg.pkh, offer: changed })).toBe('paid');
+        const late = createDemoChain();
+        late.fund(pkg.address, 8_888n, { tx: old(900_500), height: 900_500 });
+        expect(await entitlement({ chain: late, coins: (await late.read(pkg.address)).coins, wrapper: 'mecha', pkh: pkg.pkh, offer: changed })).toBe('unpaid');
+    });
+});
+
 describe('entitlement', () => {
     const ask = (chain: ReturnType<typeof createDemoChain>, coins: readonly Coin[]) => entitlement({ chain, coins, wrapper: 'mecha', pkh: pkg.pkh, offer });
 

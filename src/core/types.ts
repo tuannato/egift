@@ -83,6 +83,8 @@ export interface TxDetail {
     /** The scripts the inputs spend FROM (the previous outputs' scripts); '' when unknown. */
     readonly inputs: readonly string[];
     readonly outputs: readonly { readonly sats: bigint; readonly script: string }[];
+    /** The height of the block that holds it; absent while it is not in a block (or when the node did not say). */
+    readonly height?: number;
 }
 
 /**

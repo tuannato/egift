@@ -72,7 +72,7 @@ export interface ChronikTxLike {
     readonly txid: string;
     readonly isFinal: boolean;
     readonly timeFirstSeen: number;
-    readonly block?: { readonly timestamp: number };
+    readonly block?: { readonly timestamp: number; readonly height?: number };
     readonly inputs: readonly { readonly prevOut: { readonly txid: string; readonly outIdx: number }; readonly outputScript?: string }[];
     readonly outputs: readonly { readonly spentBy?: { readonly txid: string }; readonly sats?: bigint; readonly outputScript?: string }[];
 }
@@ -384,6 +384,8 @@ export function createChronikChain(opts: { client?: ChronikLike; peers?: readonl
     const toDetail = (tx: ChronikTxLike): TxDetail => ({
         inputs: tx.inputs.map(i => (typeof i.outputScript === 'string' ? i.outputScript.toLowerCase() : '')),
         outputs: tx.outputs.map(o => ({ sats: typeof o.sats === 'bigint' ? o.sats : 0n, script: typeof o.outputScript === 'string' ? o.outputScript.toLowerCase() : '' })),
+        // Kept for prices that have changed: an earlier price counts only for a payment already in a block by then (`core/stamp.ts`).
+        ...(typeof tx.block?.height === 'number' && Number.isSafeInteger(tx.block.height) && tx.block.height >= 0 ? { height: tx.block.height } : {}),
     });
 
     /** The newest transactions at an address (one page). A package has a handful: its funding, perhaps a late payment, its sweep. */

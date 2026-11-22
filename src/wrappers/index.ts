@@ -1,7 +1,7 @@
 import type { WrapperDef } from '../stage/format';
 import { DEFAULT_WRAPPER } from '../core/limits';
 import { isValidOffer } from '../core/offer';
-import type { WrapperOffer } from '../core';
+import type { PastTerms, WrapperOffer } from '../core';
 import { lixi } from './lixi';
 import { mecha } from './mecha';
 import { signal } from './signal';
@@ -99,7 +99,21 @@ const PRICES: Readonly<Record<string, bigint>> = {
     airmail: 5_000n * XEC,
     keys: 5_000n * XEC,
 };
-const OFFERS = new Map<string, WrapperOffer>(Object.entries(PRICES).map(([id, sats]) => [id, { sats, payTo: PROJECT_ADDRESS }]));
+/**
+ * What a wrapper cost before its price (or the address that is paid) changed, so that gifts paid for then keep
+ * their wrapper. To change a price: move the old line here with the last block height at which it counts (about a
+ * week after the change, so that pages still open in someone's browser sell correctly meanwhile; the height of
+ * the change itself when an address is given up because its key may be known to someone else), then set the
+ * new price above. A line here is never edited or removed (`prices.test.ts`). A wrapper that went out free stays
+ * free: gifts made while it was free carry no payment to look for.
+ */
+const EARLIER: Readonly<Record<string, readonly PastTerms[]>> = {};
+const OFFERS = new Map<string, WrapperOffer>(
+    Object.entries(PRICES).map(([id, sats]) => {
+        const earlier = EARLIER[id];
+        return [id, { sats, payTo: PROJECT_ADDRESS, ...(earlier !== undefined && earlier.length > 0 ? { earlier } : {}) }];
+    }),
+);
 
 export type Offer = { readonly kind: 'free' } | ({ readonly kind: 'paid' } & WrapperOffer);
 
