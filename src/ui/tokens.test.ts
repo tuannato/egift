@@ -436,6 +436,10 @@ describe('adding a token to a gift', () => {
         type(box.querySelector('#f-tok-qty') as HTMLInputElement, '12.5');
         buttonByText(box, t('created.tok.open')).click();
         expect(opened).toEqual([tokenFundLinks({ address: made.key.address, tokenId: ID, qty: '12.5' }).web]);
+        // The same request for the Cashtab app: the same link, on the app's road; a bad id opens nothing there either.
+        buttonByText(box, t('created.fund.app')).click();
+        expect(opened[1]).toBe(tokenFundLinks({ address: made.key.address, tokenId: ID, qty: '12.5' }).app);
+        opened.length = 1;
         // The token arrives from the wallet that funded the XEC: recognised. Said in view even if the step was closed.
         tokSum.click();
         expect(tokFold.open).toBe(false);

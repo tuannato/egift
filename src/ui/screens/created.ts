@@ -298,6 +298,26 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         },
         t('created.tok.open'),
     );
+    // The same request for the Cashtab app, as the gift's own funding offers it.
+    const tokOpenApp = h(
+        'button',
+        {
+            type: 'button',
+            class: 'btn btn-secondary btn-small',
+            onclick: () => {
+                if (!made.saved) return;
+                tokMsg.textContent = '';
+                const send = tokLinks();
+                if (send === null) {
+                    tokMsg.textContent = t('created.tok.bad');
+                    tokMsg.classList.add('field-msg--bad');
+                    return;
+                }
+                openOut(send.app);
+            },
+        },
+        t('created.fund.app'),
+    );
     const tokCopy = h(
         'button',
         {
@@ -327,6 +347,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-tok-qty' }, t('created.tok.qty')), tokQty, tokMsg),
         tokQrHost,
         tokOpen,
+        tokOpenApp,
         h('div', { class: 'btn-row btn-row--equal' }, tokCopy, tokQrBtn),
         tokSeen,
     ];
@@ -435,6 +456,19 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         },
         t('created.stamp.later'),
     );
+    // The same payment through the Cashtab app.
+    const stampLaterApp = h(
+        'button',
+        {
+            type: 'button',
+            class: 'btn btn-secondary btn-small',
+            hidden: true,
+            onclick: () => {
+                if (made.saved) openOut(stamped(DUST_SATS).app);
+            },
+        },
+        t('created.fund.app'),
+    );
     const way = (mine: boolean, label: string): HTMLButtonElement => {
         const b = h(
             'button',
@@ -484,6 +518,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                   waysRow,
                   h('p', { class: 'status stamp-status', role: 'status', 'aria-live': 'polite' }, stampText),
                   stampLater,
+                  stampLaterApp,
               )
             : null;
     let stampSeq = 0;
@@ -493,12 +528,14 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         if (!s || s.kind !== 'funded') {
             stampText.textContent = '';
             stampLater.hidden = true;
+            stampLaterApp.hidden = true;
             return;
         }
         const e = await entitlement({ chain: ctx.chain, coins: s.coins, wrapper: def.id, pkh: made!.key.pkh, offer });
         if (disposed || mine !== stampSeq) return;
         stampText.textContent = e === 'paid' ? t('created.stamp.paid') : e === 'owned' ? t('created.stamp.owned') : e === 'unpaid' ? t(owns ? 'created.stamp.notowned' : 'created.stamp.unpaid') : '';
         stampLater.hidden = e !== 'unpaid';
+        stampLaterApp.hidden = stampLater.hidden;
     }
 
     let disposed = false;

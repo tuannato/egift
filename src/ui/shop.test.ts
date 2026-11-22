@@ -743,11 +743,18 @@ describe('buying a wrapper', () => {
         expect(later.hidden).toBe(false);
         later.click();
         expect(opened[1]).toBe(stampedFundLinks({ address: made.key.address, sats: 546n, wrapper: 'mecha', offer }).web);
+        // The same small payment through the Cashtab app.
+        const laterApp = later.nextElementSibling as HTMLButtonElement;
+        expect(laterApp.textContent).toBe(t('created.fund.app'));
+        expect(laterApp.hidden).toBe(false);
+        laterApp.click();
+        expect(opened[2]).toBe(stampedFundLinks({ address: made.key.address, sats: 546n, wrapper: 'mecha', offer }).app);
         // The small stamp arrives: paid, and the extra coin is not reported as a wrong amount.
         app.chain.fund(made.key.address, 546n, stamped(made.key.pkh));
         await flush(12);
         expect(main(app).textContent).toContain(t('created.stamp.paid'));
         expect(buttonByText(main(app), t('created.stamp.later')).hidden).toBe(true);
+        expect(laterApp.hidden).toBe(true);
         expect(main(app).textContent).toContain(t('created.status.funded'));
         expect(main(app).textContent).not.toContain('expected');
     });
