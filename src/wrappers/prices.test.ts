@@ -25,6 +25,8 @@ const PRICED: Record<string, bigint> = {
     beacon: 1_000_000n,
     airmail: 500_000n,
     keys: 500_000n,
+    pop: 1_000_000n,
+    terminal: 500_000n,
 };
 
 /**
@@ -35,7 +37,7 @@ const PRICED: Record<string, bigint> = {
 const EARLIER: Record<string, readonly { sats: bigint; payTo: string; until: number }[]> = {};
 
 describe('the price table', () => {
-    it('fourteen wrappers have a price, paid to the project; every other wrapper is free', () => {
+    it('sixteen wrappers have a price, paid to the project; every other wrapper is free', () => {
         for (const w of WRAPPERS) {
             const o = offerOf(w);
             const want = PRICED[w.id];

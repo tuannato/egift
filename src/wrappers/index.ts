@@ -80,6 +80,7 @@ export function wrapperById(id: string): WrapperDef | undefined {
  * address. 1 XEC is 100 sats. On 16 November 2026 a fifth at 10,000 XEC (orbit).
  * On 17 November 2026 a sixth at 5,000 XEC (cylinder), then
  * one more at 10,000 XEC (beacon) and two more at 5,000 XEC (airmail, keys).
+ * On 22 November 2026 one more at 10,000 XEC (pop) and one at 5,000 XEC (terminal).
  */
 const PROJECT_ADDRESS = 'ecash:qr38yephwnwfv5pp0r6w7hxcp25607keg5uratxner';
 const XEC = 100n;
@@ -90,6 +91,7 @@ const PRICES: Readonly<Record<string, bigint>> = {
     dopaper: 10_000n * XEC,
     orbit: 10_000n * XEC,
     beacon: 10_000n * XEC,
+    pop: 10_000n * XEC,
     basket: 5_000n * XEC,
     paperbag: 5_000n * XEC,
     diploma: 5_000n * XEC,
@@ -98,6 +100,7 @@ const PRICES: Readonly<Record<string, bigint>> = {
     cylinder: 5_000n * XEC,
     airmail: 5_000n * XEC,
     keys: 5_000n * XEC,
+    terminal: 5_000n * XEC,
 };
 /**
  * What a wrapper cost before its price (or the address that is paid) changed, so that gifts paid for then keep
@@ -116,6 +119,15 @@ const OFFERS = new Map<string, WrapperOffer>(
 );
 
 export type Offer = { readonly kind: 'free' } | ({ readonly kind: 'paid' } & WrapperOffer);
+
+/**
+ * The wrappers made for a holiday (new year and Tet, mid-autumn, Eid, Diwali, Halloween, Christmas). The shelf can
+ * be narrowed to them; nothing else reads this.
+ */
+const HOLIDAY: ReadonlySet<string> = new Set(['lixi', 'dopaper', 'fireworks', 'lantern', 'archmoon', 'rangoli', 'pumpkin', 'snowbox']);
+export function isHoliday(def: Pick<WrapperDef, 'id'>): boolean {
+    return HOLIDAY.has(def.id);
+}
 
 /** The default wrapper is always free: it is what a gift falls back to when a paid wrapper was not paid for. */
 export function offerOf(def: Pick<WrapperDef, 'id'>): Offer {

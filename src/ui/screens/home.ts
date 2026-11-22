@@ -3,7 +3,7 @@ import { downloadKeepsake, forgetSent, keptRef, keptTokenText, keptWhen, loadKep
 import { dressed } from '../../wrappers/looks';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
-import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
+import { WRAPPERS, isHoliday, offerOf, wrapperById, inLang } from '../../wrappers';
 import { doorUrl, thumbUrl } from '../../wrappers/artUrl';
 import { formatXec } from '../../core/money';
 import type { PackageState } from '../../core';
@@ -86,8 +86,24 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     // ---- Favourites: a heart on the wrapper that is worn, and a filter that leaves only the hearts on the shelf ----
     const heart = (): SVGElement =>
         svg('svg', { viewBox: '0 0 24 24', width: 18, height: 18, class: 'heart', 'aria-hidden': 'true', focusable: 'false' }, svg('path', { d: 'M12 20.4s-7.6-4.7-7.6-10.1A4.3 4.3 0 0 1 12 7.5a4.3 4.3 0 0 1 7.6 2.8c0 5.4-7.6 10.1-7.6 10.1z' }));
-    /** Only favourites are on the shelf. Not kept anywhere: a fresh visit shows everything. */
-    let favOnly = false;
+    /**
+     * What the shelf is narrowed to. Each part narrows on its own: hearts only, holiday wrappers only, and free
+     * or paid. Not kept anywhere: a fresh visit shows everything.
+     */
+    type Price = 'all' | 'free' | 'paid';
+    interface Narrow {
+        readonly fav: boolean;
+        readonly holiday: boolean;
+        readonly price: Price;
+    }
+    let narrow: Narrow = { fav: false, holiday: false, price: 'all' };
+    const narrowed = (f: Narrow = narrow): boolean => f.fav || f.holiday || f.price !== 'all';
+    const fits = (def: WrapperDef, f: Narrow, favs: ReadonlySet<string>): boolean =>
+        (!f.fav || favs.has(def.id)) && (!f.holiday || isHoliday(def)) && (f.price === 'all' || (offerOf(def).kind === 'free') === (f.price === 'free'));
+    const countOf = (f: Narrow): number => {
+        const favs = new Set(loadFavs());
+        return WRAPPERS.filter(def => fits(def, f, favs)).length;
+    };
 
     // ---- The doors ----
     // A door at rest is a small picture of its wrapper, closed (public/thumbs, drawn by scripts/og-cards.mjs): one
@@ -162,9 +178,11 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     doorsEl.addEventListener('scroll', ends, { passive: true });
     doorsEl.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-        const at = doors.findIndex(d => d.btn === document.activeElement);
+        // Only the doors that are on the shelf now: a filter takes some off.
+        const inView = doors.filter(d => !d.el.hidden);
+        const at = inView.findIndex(d => d.btn === document.activeElement);
         if (at < 0) return;
-        const to = doors[at + (e.key === 'ArrowRight' ? 1 : -1)];
+        const to = inView[at + (e.key === 'ArrowRight' ? 1 : -1)];
         if (!to) return;
         e.preventDefault();
         to.btn.focus({ preventScroll: true });
@@ -270,23 +288,48 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         b.addEventListener('click', () => {
             toggleFav(def.id);
             cue.touch();
-            // The last heart taken off ends the filter: an empty shelf helps nobody.
-            if (loadFavs().length === 0) favOnly = false;
+            // A heart taken off under the hearts-only filter may leave nothing: an empty shelf helps nobody.
+            if (narrow.fav && countOf(narrow) === 0) narrow = { ...narrow, fav: false };
             sync();
         });
         return b;
     }
-    /** "Favourites (3)": pressed, the shelf shows only those. Not offered until there is one. */
-    function favFilter(): HTMLElement | null {
-        const count = loadFavs().filter(id => wrapperById(id) !== undefined).length;
-        if (count === 0) return null;
-        const b = h('button', { type: 'button', class: 'chip home-fav-only', 'aria-pressed': String(favOnly) }, heart(), h('span', null, t('home.fav.only', { n: String(count) })));
-        b.addEventListener('click', () => {
-            favOnly = !favOnly;
+    /**
+     * The filter: one closed line under the main button, for whoever wants it. Opened, it offers hearts only
+     * (not offered until there is a heart), holiday wrappers only, and free or paid. A choice that would leave
+     * the shelf empty cannot be pressed.
+     */
+    function shelfFilter(): HTMLElement {
+        const set = (next: Narrow): void => {
+            narrow = next;
             cue.touch();
             sync();
-        });
-        return b;
+        };
+        const chip = (label: Node | string, on: boolean, next: Narrow, cls = ''): HTMLButtonElement => {
+            const b = h('button', { type: 'button', class: `chip home-filter-chip${cls}`, 'aria-pressed': String(on) }, label);
+            // Pressing what is already on (for a switch) always works; anything else must leave a wrapper on the shelf.
+            b.disabled = !on && countOf(next) === 0;
+            b.addEventListener('click', () => set(next));
+            return b;
+        };
+        const hearts = loadFavs().filter(id => wrapperById(id) !== undefined).length;
+        const favChip =
+            hearts === 0
+                ? null
+                : chip(h('span', { class: 'home-filter-fav' }, heart(), h('span', null, t('home.fav.only', { n: String(hearts) }))), narrow.fav, { ...narrow, fav: !narrow.fav }, ' home-fav-only');
+        const price = (p: Price, key: Key): HTMLButtonElement => chip(t(key), narrow.price === p, { ...narrow, price: p });
+        const on = narrowed();
+        const names = [narrow.fav ? t('home.fav.only', { n: String(hearts) }) : '', narrow.holiday ? t('home.filter.holiday') : '', narrow.price === 'free' ? t('home.price.free') : narrow.price === 'paid' ? t('home.filter.paid') : ''].filter(x => x !== '');
+        const clear = h('button', { type: 'button', class: 'chip home-filter-clear', onclick: () => set({ fav: false, holiday: false, price: 'all' }) }, t('home.filter.clear'));
+        const el = fold(
+            on ? [t('home.filter'), h('span', { class: 'home-filter-on' }, names.join(', '))] : t('home.filter'),
+            { id: 'home.filter' },
+            h('div', { class: 'chips home-filter-row' }, favChip, chip(t('home.filter.holiday'), narrow.holiday, { ...narrow, holiday: !narrow.holiday })),
+            h('div', { class: 'chips home-filter-row', role: 'group', 'aria-label': t('home.filter.price') }, price('all', 'home.filter.any'), price('free', 'home.price.free'), price('paid', 'home.filter.paid')),
+            h('div', { class: 'home-filter-foot', hidden: !on }, h('p', { class: 'note home-filter-shown' }, t('home.filter.shown', { n: String(countOf(narrow)), total: String(WRAPPERS.length) })), clear),
+        );
+        el.classList.add('home-filter');
+        return el;
     }
 
     function shelf(): Node[] {
@@ -297,7 +340,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 h('p', { class: 'lead' }, t('home.lead')),
                 h('p', { class: 'guide home-hint' }, ribbon('bow'), h('span', null, t('home.hint'))),
                 h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.go')),
-                ...[favFilter()].filter((x): x is HTMLElement => x !== null),
+                shelfFilter(),
                 cards(),
             ];
         }
@@ -325,12 +368,13 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             play.textContent = previewing ? t('home.preview.reset') : t('home.preview.play');
         });
         return [
-            h('p', { class: 'label home-kicker' }, h('span', null, t('home.index', { n, total: WRAPPERS.length })), h('span', { class: 'home-kicker-end' }, favButton(def), h('span', { class: 'home-price' }, price(def)))),
+            // The number is the wrapper's place on the whole shelf: it is left out while the shelf is narrowed.
+            h('p', { class: 'label home-kicker' }, h('span', null, narrowed() ? '' : t('home.index', { n, total: WRAPPERS.length })), h('span', { class: 'home-kicker-end' }, favButton(def), h('span', { class: 'home-price' }, price(def)))),
             name,
             def.blurb ? blurb : null,
             h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.use')),
             h('div', { class: 'home-row' }, play, h('button', { type: 'button', class: 'btn btn-quiet home-all', onclick: () => wear(null) }, t('home.all')), by),
-            favFilter(),
+            shelfFilter(),
             cards(),
         ].filter((x): x is HTMLElement => x !== null);
     }
@@ -578,14 +622,17 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         const def = worn ? wrapperById(worn) : undefined;
         doorsEl.dataset.worn = worn ? 'yes' : 'no';
         const favs = new Set(loadFavs());
-        doorsEl.dataset.favOnly = favOnly ? 'yes' : 'no';
+        const some = narrowed();
+        doorsEl.dataset.narrowed = some ? 'yes' : 'no';
+        // The door that stands for wrappers to come is not one of any kind.
+        soon.hidden = some;
         for (const d of doors) {
             const on = d.def.id === worn;
             d.el.dataset.state = worn === null ? 'even' : on ? 'open' : 'spine';
             const fav = favs.has(d.def.id);
             d.el.dataset.fav = fav ? 'yes' : 'no';
-            // Under the filter only the hearts stay on the shelf, and the wrapper that is worn whatever it is.
-            d.el.hidden = favOnly && !fav && !on;
+            // Under a filter only what fits stays on the shelf, and the wrapper that is worn whatever it is.
+            d.el.hidden = some && !on && !fits(d.def, narrow, favs);
             d.btn.setAttribute('aria-pressed', String(on));
             // The door that is worn is always mounted: its scene is what "see it open" plays.
             if (on && !d.live) remount(d);

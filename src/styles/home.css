@@ -214,6 +214,15 @@
 .home-fav-only { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; width: max-content; }
 .home-fav-only .heart { width: 16px; height: 16px; color: #d6344a; fill: currentColor; }
 .home-fav-only[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+/* The filter: one closed line; opened, two rows of switches. A switch that is on wears the accent. */
+.home-filter-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-filter-fav { display: inline-flex; align-items: center; gap: 8px; }
+.home-filter-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.home-filter-chip:disabled { opacity: 0.4; }
+.home-filter-on { margin-left: 8px; color: var(--ink); font-weight: 600; }
+.home-filter-shown { margin: 0; }
+.home-filter-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.home-filter-clear { min-height: 32px; padding: 0 12px; }
 /* A favourite door carries a small heart on its tag. */
 .door-heart { display: none; color: #ff6b7d; }
 .door-heart .heart { width: 12px; height: 12px; fill: currentColor; stroke: none; }

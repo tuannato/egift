@@ -272,7 +272,7 @@ describe('no screen folds what must be read', () => {
         expect(foldedSafety()).toEqual([]);
     });
 
-    it('the shop and its two lists: one folded note under each list, nothing else', async () => {
+    it('the shop and its two lists: the shelf filter on the shop, one folded note under each list, nothing else', async () => {
         const key = deriveKey(newSecret());
         expect(rememberSent({ address: key.address, at: Date.now(), wrapper: 'lixi', sats: '2000' })).toBe(true);
         // A kept gift, by the page's own way of keeping one.
@@ -290,7 +290,8 @@ describe('no screen folds what must be read', () => {
         history.replaceState(null, '', '/');
         app = boot(undefined, { stay: true });
         await flush();
-        expect(app.root.querySelector('details')).toBeNull();
+        // The shop folds one thing: the switches that narrow the shelf.
+        expect([...app.root.querySelectorAll('details')].map(d => d.className)).toEqual(['fold home-filter']);
         expect(foldedSafety()).toEqual([]);
 
         buttonByText(app.root, t('kept.nav')).click();

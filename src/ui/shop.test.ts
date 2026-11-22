@@ -13,7 +13,7 @@ vi.mock('../core', async orig => {
 import { createDemoChain, decodeFragment, deriveKey, encodeLink, newSecret, unlockKey } from '../core';
 import type { DemoChain } from '../core';
 import { t } from '../i18n';
-import { WRAPPERS, offerOf, setOfferForDev } from '../wrappers';
+import { WRAPPERS, isHoliday, offerOf, setOfferForDev } from '../wrappers';
 import { fundLinks, stampOpReturnRaw, stampedFundLinks } from '../core';
 import { createGift, stubClipboard } from './testkit';
 import { getMade } from './session';
@@ -634,6 +634,75 @@ describe('buying a wrapper', () => {
         expect(localStorage.getItem('gift.fav')).toBeNull();
         expect(door(app, 'lixi').hidden).toBe(false);
         expect(app.root.querySelector('.home-fav-only')).toBeNull();
+    });
+
+    it('the shelf filter: holiday wrappers, free or paid, each narrowing on its own; nothing is stored', () => {
+        setOfferForDev('lixi', { sats: 50_000n, payTo: deriveKey(newSecret()).address });
+        app = boot(undefined, { stay: true });
+        const before = Object.keys(localStorage).sort();
+        const panel = (): HTMLDetailsElement => app!.root.querySelector('details.home-filter') as HTMLDetailsElement;
+        const chip = (label: string): HTMLButtonElement => buttonByText(panel(), label);
+        const shown = (): string[] => [...app!.root.querySelectorAll<HTMLElement>('.door[data-id]')].filter(d => !d.hidden).map(d => d.dataset.id!);
+        const soon = (): HTMLElement => app!.root.querySelector('.door--soon') as HTMLElement;
+        // Closed until asked for; everything is on the shelf.
+        expect(panel().open).toBe(false);
+        expect(shown().length).toBe(WRAPPERS.length);
+        expect(soon().hidden).toBe(false);
+        expect(chip(t('home.filter.any')).getAttribute('aria-pressed')).toBe('true');
+
+        chip(t('home.filter.holiday')).click();
+        expect(shown()).toEqual(WRAPPERS.filter(isHoliday).map(w => w.id));
+        expect(shown()).toContain('lixi');
+        expect(shown()).toContain('snowbox');
+        expect(shown()).not.toContain('mecha');
+        // The door for wrappers to come is no wrapper of any kind.
+        expect(soon().hidden).toBe(true);
+        expect(panel().querySelector('.home-filter-shown')!.textContent).toBe(t('home.filter.shown', { n: String(shown().length), total: String(WRAPPERS.length) }));
+
+        // Holiday and paid: the one holiday wrapper with a price.
+        chip(t('home.filter.paid')).click();
+        expect(shown()).toEqual(['lixi']);
+        // Holiday and free: the others.
+        chip(t('home.price.free')).click();
+        expect(shown()).toEqual(WRAPPERS.filter(w => isHoliday(w) && w.id !== 'lixi').map(w => w.id));
+        // Free alone.
+        chip(t('home.filter.holiday')).click();
+        expect(shown()).toEqual(WRAPPERS.filter(w => w.id !== 'lixi').map(w => w.id));
+
+        // A wrapper that is worn stays on the shelf whatever the filter, and its number on the shelf is left out.
+        chip(t('home.filter.paid')).click();
+        expect(shown()).toEqual(['lixi']);
+        (door(app, 'lixi').querySelector('.door-btn') as HTMLButtonElement).click();
+        buttonByText(app.root, t('home.all')).click();
+        chip(t('home.price.free')).click();
+        (door(app, 'mecha').querySelector('.door-btn') as HTMLButtonElement).click();
+        chip(t('home.filter.paid')).click();
+        expect(shown().sort()).toEqual(['lixi', 'mecha']);
+        expect(app.root.querySelector('.home-kicker')!.textContent).not.toContain('/');
+
+        buttonByText(panel(), t('home.filter.clear')).click();
+        expect(shown().length).toBe(WRAPPERS.length);
+        expect(soon().hidden).toBe(false);
+        expect(Object.keys(localStorage).sort()).toEqual(before);
+    });
+
+    it('the shelf filter never offers an empty shelf, and takes hearts as one more switch', () => {
+        app = boot(undefined, { stay: true });
+        const panel = (): HTMLDetailsElement => app!.root.querySelector('details.home-filter') as HTMLDetailsElement;
+        const shown = (): string[] => [...app!.root.querySelectorAll<HTMLElement>('.door[data-id]')].filter(d => !d.hidden).map(d => d.dataset.id!);
+        // No wrapper has a price here (the test took them off): "paid" cannot be pressed.
+        expect(buttonByText(panel(), t('home.filter.paid')).disabled).toBe(true);
+        expect(buttonByText(panel(), t('home.price.free')).disabled).toBe(false);
+        // A heart on a wrapper that is no holiday one: hearts and holidays together would be empty.
+        (door(app, 'mecha').querySelector('.door-btn') as HTMLButtonElement).click();
+        (app.root.querySelector('.home-fav') as HTMLButtonElement).click();
+        (panel().querySelector('.home-fav-only') as HTMLButtonElement).click();
+        expect(shown()).toEqual(['mecha']);
+        expect(buttonByText(panel(), t('home.filter.holiday')).disabled).toBe(true);
+        // The heart taken off under the hearts-only switch: the switch goes off, the shelf is whole again.
+        (app.root.querySelector('.home-fav') as HTMLButtonElement).click();
+        expect(shown().length).toBe(WRAPPERS.length);
+        expect(panel().querySelector('.home-fav-only')).toBeNull();
     });
 
     it('the mark goes home: at once from the shop, after a question from a gift', async () => {
