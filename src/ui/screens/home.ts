@@ -325,7 +325,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         const inView = doors.filter(d => !d.el.hidden).length;
         const el = fold(
             on ? [t('home.filter'), h('span', { class: 'home-filter-on' }, names.join(', '))] : t('home.filter'),
-            { id: 'home.filter' },
+            { id: 'home.filter', still: true },
             h('div', { class: 'chips home-filter-row' }, favChip, chip('holiday', t('home.filter.holiday'), narrow.holiday, { ...narrow, holiday: !narrow.holiday })),
             h('div', { class: 'chips home-filter-row', role: 'group', 'aria-label': t('home.filter.price') }, price('all', 'home.filter.any'), price('free', 'home.price.free'), price('paid', 'home.filter.paid')),
             h('div', { class: 'home-filter-foot', hidden: !on }, h('p', { class: 'note home-filter-shown', 'aria-live': 'polite' }, t('home.filter.shown', { n: String(inView), total: String(WRAPPERS.length) })), clear),

@@ -646,6 +646,12 @@ describe('buying a wrapper', () => {
         const soon = (): HTMLElement => app!.root.querySelector('.door--soon') as HTMLElement;
         // Closed until asked for; everything is on the shelf.
         expect(panel().open).toBe(false);
+        // Opening it leaves the capsule as it is: the shelf behind it is what the filter is about.
+        let grew = 0;
+        app.root.addEventListener('cap:show', () => grew++);
+        panel().open = true;
+        panel().dispatchEvent(new Event('toggle'));
+        expect(grew).toBe(0);
         expect(shown().length).toBe(WRAPPERS.length);
         expect(soon().hidden).toBe(false);
         expect(chip(t('home.filter.any')).getAttribute('aria-pressed')).toBe('true');

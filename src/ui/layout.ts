@@ -58,6 +58,11 @@ export interface FoldOpts {
     id?: string;
     /** Open from the start, unless the person closed it. */
     open?: boolean;
+    /**
+     * Opening it does not make the capsule grow: what stands behind the capsule (the shelf of wrappers) is what
+     * this fold is about, and must stay in view. The fold is only brought into view inside the capsule.
+     */
+    still?: boolean;
 }
 
 /**
@@ -81,7 +86,9 @@ export function fold(summary: Child | Child[], opts: FoldOpts | null, ...childre
         if (id !== undefined) foldOpen.set(id, now);
         const quiet = byPage.delete(el);
         // Opened by the person: there is more to read, so the capsule makes room and brings it into view.
-        if (now && !quiet && el.isConnected) el.dispatchEvent(new CustomEvent('cap:show', { bubbles: true }));
+        if (!now || quiet || !el.isConnected) return;
+        if (opts?.still !== true) el.dispatchEvent(new CustomEvent('cap:show', { bubbles: true }));
+        else if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'nearest', behavior: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     });
     return el;
 }
