@@ -248,7 +248,8 @@ describe('no screen folds what must be read', () => {
         await new Promise(r => setTimeout(r, 60));
         await flush(12);
         expect(main(app!).textContent).toContain(t('kept.title'));
-        expect(folds(main(app!)).length).toBe(1);
+        // The take-home form, with its own fold about the kept address, is put away once the gift is home.
+        expect(folds(main(app!)).filter(f => f.closest('[hidden]') === null).length).toBe(1);
         const warn = foldBy(main(app!), t('kept.warn.sum'));
         expect(warn.open).toBe(false);
         expect(warn.querySelector('.fold-body')!.textContent).toBe(t('kept.warn'));

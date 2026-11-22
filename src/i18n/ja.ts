@@ -225,6 +225,7 @@ export const ja: Record<keyof typeof vi, string> = {
     'take.paste': "貼り付け",
     'take.paste.fail': "貼り付けできませんでした。入力欄に手動で貼り付けてください。",
     'take.saved.title': "このブラウザに保存されたアドレス：",
+    'take.saved.sum': "ウォレットのアドレスをこのブラウザに保存する",
     'take.saved.warn': "ご自身のウォレットである場合だけ使ってください。間違ったアドレスに送ったギフトは取り戻せません。",
     'take.saved.use': "このアドレスを使う",
     'take.saved.forget': "このアドレスを消す",

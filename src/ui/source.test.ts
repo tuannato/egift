@@ -68,11 +68,21 @@ describe('source hygiene', () => {
         expect(/location|\.hash\b|secret\b|\.sk\b|decodeFragment|encodeLink|\.link\b|sats|wrapper|wish/i.test(s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).toBe(false);
     });
 
-    it('no source file writes to storage except the language, the kept gifts, the favourites, the saved looks and the take-home address, and none uses style attributes', () => {
+    it('the file that keeps the giver\'s fee choice writes one named key and one fixed word', () => {
+        const f = sources.find(x => x.endsWith('ui/prefs.ts'))!;
+        const s = readFileSync(f, 'utf8');
+        expect(s).toContain("const COVER_KEY = 'gift.cover';");
+        expect(s.match(/localStorage\.\w+\(([^,)]+)/g)?.every(c => c.endsWith('(COVER_KEY'))).toBe(true);
+        expect(s.match(/localStorage\.setItem\(/g)?.length).toBe(1);
+        expect(s).toContain("localStorage.setItem(COVER_KEY, 'off');");
+        expect(/location|\.hash\b|secret\b|\.sk\b|decodeFragment|encodeLink|\.link\b|address|sats|wrapper|wish/i.test(s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).toBe(false);
+    });
+
+    it('no source file writes to storage except the language, the kept gifts, the favourites, the saved looks, the take-home address and the giver\'s fee choice, and none uses style attributes', () => {
         for (const f of sources) {
             const s = readFileSync(f, 'utf8');
             expect(/sessionStorage|indexedDB|document\.cookie/.test(s), f).toBe(false);
-            if (!f.endsWith('i18n/index.ts') && !f.endsWith('ui/kept.ts') && !f.endsWith('ui/fav.ts') && !f.endsWith('ui/looks.ts') && !f.endsWith('ui/dest.ts')) expect(/localStorage/.test(s), f).toBe(false);
+            if (!f.endsWith('i18n/index.ts') && !f.endsWith('ui/kept.ts') && !f.endsWith('ui/fav.ts') && !f.endsWith('ui/looks.ts') && !f.endsWith('ui/dest.ts') && !f.endsWith('ui/prefs.ts')) expect(/localStorage/.test(s), f).toBe(false);
             expect(/cssText|\bstyle:\s*['"`]|setAttribute\(\s*['"]style/.test(s), f).toBe(false);
             expect(/console\./.test(s), f).toBe(false);
         }

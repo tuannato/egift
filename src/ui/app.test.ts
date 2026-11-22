@@ -443,7 +443,13 @@ describe('take home', () => {
         const input = main(b).querySelector('#th-addr') as HTMLInputElement;
         expect(box.hasAttribute('hidden')).toBe(false);
         expect(box.querySelector('.saved-dest-addr')?.textContent).toBe(home);
-        expect(box.querySelector('.warning')?.textContent).toBe(t('take.saved.warn'));
+        // What to check before using it sits under one line with the switch, folded; no warning box in a fold.
+        const notes = [...main(b).querySelectorAll('details.fold')].find(d => d.querySelector('summary')?.textContent === t('take.saved.sum')) as HTMLDetailsElement;
+        expect(notes.open).toBe(false);
+        expect(notes.querySelector('.fold-body p.strong')?.textContent).toBe(t('take.saved.warn'));
+        expect(notes.querySelector('.warning')).toBeNull();
+        expect(box.querySelector('.warning')).toBeNull();
+        expect(notes.querySelector('label.check')?.textContent).toBe(t('take.save.auto'));
         expect(input.value).toBe('');
         expect(goBtn(b).disabled).toBe(true);
         // Typing another address puts the offer away; emptying the box brings it back.
@@ -491,7 +497,10 @@ describe('take home', () => {
         localStorage.setItem('gift.dest', home);
         const a = await openTake(linkFor());
         const box = main(a).querySelector('.saved-dest') as HTMLElement;
-        buttonByText(box, t('take.saved.forget')).click();
+        const forget = buttonByText(main(a), t('take.saved.forget'));
+        expect(forget.closest('details.fold')).not.toBeNull();
+        forget.click();
+        expect(forget.hidden).toBe(true);
         expect(localStorage.getItem('gift.dest')).toBeNull();
         expect(box.hasAttribute('hidden')).toBe(true);
         // Gone for good on this screen: emptying the box does not bring it back.

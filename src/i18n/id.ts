@@ -225,6 +225,7 @@ export const id: Record<keyof typeof vi, string> = {
     'take.paste': "Tempel",
     'take.paste.fail': "Tidak bisa menempel. Tempel secara manual ke dalam kotak.",
     'take.saved.title': "Alamat yang disimpan di browser ini:",
+    'take.saved.sum': "Menyimpan alamat dompet Anda di browser ini",
     'take.saved.warn': "Gunakan hanya jika ini dompet Anda sendiri. Hadiah yang terkirim ke alamat yang salah tidak bisa diambil kembali.",
     'take.saved.use': "Gunakan alamat ini",
     'take.saved.forget': "Lupakan alamat ini",

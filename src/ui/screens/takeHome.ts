@@ -1,6 +1,7 @@
 import { buildGiftSweep, buildSweep, formatXec, holdings, isValidDestination, takeHome } from '../../core';
 import type { Chain, PackageKey, PackageState, SweepErrorCode, ChainErrorCode, TakeResult } from '../../core';
 import { clear, h, openOut } from '../dom';
+import { fold } from '../layout';
 import { track } from '../busy';
 import { getLang, t } from '../../i18n';
 import { amountBlock } from '../amount';
@@ -308,6 +309,26 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
     // An address kept from an earlier gift is shown, never typed in by the page: the person presses to use it.
     let kept = savedDest();
     const keptBox = h('div', { class: 'stack saved-dest', hidden: kept === null || s.draft.trim() !== '' });
+    // What goes with keeping an address (what to check before using one, forgetting it, the switch) is folded
+    // away under one line: the address and its button stay in view.
+    const keptWarn = h('p', { class: 'strong', hidden: kept === null }, t('take.saved.warn'));
+    const forget = h(
+        'button',
+        {
+            type: 'button',
+            class: 'btn btn-quiet btn-small',
+            hidden: kept === null,
+            onclick: () => {
+                forgetDest();
+                kept = null;
+                keptBox.hidden = true;
+                keptWarn.hidden = true;
+                forget.hidden = true;
+                input.focus();
+            },
+        },
+        t('take.saved.forget'),
+    );
     if (kept !== null) {
         const mine = kept;
         const use = h(
@@ -324,21 +345,7 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
             },
             t('take.saved.use'),
         );
-        const forget = h(
-            'button',
-            {
-                type: 'button',
-                class: 'btn btn-quiet btn-small',
-                onclick: () => {
-                    forgetDest();
-                    kept = null;
-                    keptBox.hidden = true;
-                    input.focus();
-                },
-            },
-            t('take.saved.forget'),
-        );
-        keptBox.append(h('p', null, t('take.saved.title')), h('p', { class: 'mono saved-dest-addr' }, mine), h('p', { class: 'warning' }, t('take.saved.warn')), h('div', { class: 'btn-col' }, use, forget));
+        keptBox.append(h('p', null, t('take.saved.title')), h('p', { class: 'mono saved-dest-addr' }, mine), use);
     }
     const keepBox = h('input', {
         type: 'checkbox',
@@ -349,9 +356,12 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
             if (!keepBox.checked) {
                 kept = null;
                 keptBox.hidden = true;
+                keptWarn.hidden = true;
+                forget.hidden = true;
             }
         },
     }) as HTMLInputElement;
+    const keptFold = fold(t('take.saved.sum'), { id: 'take-saved' }, keptWarn, h('label', { class: 'check' }, keepBox, h('span', null, t('take.save.auto'))), forget);
 
     go.addEventListener('click', () => {
         if (go.disabled || s.phase === 'working') return;
@@ -445,7 +455,7 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
         ),
         keptBox,
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'th-addr' }, t('take.addr.label')), h('div', { class: 'input-row' }, input, paste), msg),
-        h('label', { class: 'check' }, keepBox, h('span', null, t('take.save.auto'))),
+        keptFold,
         tokenNote,
         confirm,
         withToken,

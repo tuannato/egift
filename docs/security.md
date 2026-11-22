@@ -22,7 +22,8 @@ eGift is beta software: use small amounts.
   holds the wallet address a gift was last taken home to, written once that
   gift has arrived. The page never fills it in: the take-home screen shows
   it in full, with a button to use it, a button to forget it and a switch
-  that stops it being kept.
+  that stops it being kept. One more word may be stored: that the giver
+  switched off paying the recipient's network fee.
 - The chain is read through the public Chronik nodes listed in
   `src/core/chain/chronik.ts`; the Content-Security-Policy allows those hosts
   and one host for token icons, nothing else.

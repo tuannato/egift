@@ -225,6 +225,7 @@ export const de: Record<keyof typeof vi, string> = {
     'take.paste': "Einfügen",
     'take.paste.fail': "Einfügen hat nicht geklappt. Füge sie von Hand in das Feld ein.",
     'take.saved.title': "In diesem Browser gespeicherte Adresse:",
+    'take.saved.sum': "Wallet-Adresse in diesem Browser speichern",
     'take.saved.warn': "Nutze sie nur, wenn das dein eigenes Wallet ist. Ein Geschenk an die falsche Adresse lässt sich nicht zurückholen.",
     'take.saved.use': "Diese Adresse verwenden",
     'take.saved.forget': "Diese Adresse vergessen",

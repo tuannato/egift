@@ -1,6 +1,7 @@
 import { applyTheme } from '../theme';
 import type { WrapperDef } from '../../stage';
 import type { Recipe, RecipeFace } from '../../core';
+import { coversFee, setCoversFee } from '../prefs';
 import { CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatRecipe, formatXec, newSecret, parseRecipe, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
 import { thumbUrl } from '../../wrappers/artUrl';
@@ -139,6 +140,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     const feeRow = h('label', { class: 'check check--fee', for: 'f-fee', hidden: true }, feeBox, feeLabel);
     feeBox.addEventListener('change', () => {
         draft.coverFee = feeBox.checked;
+        // The choice is the giver's standing one: the next gift starts with it.
+        setCoversFee(feeBox.checked);
         validate();
     });
     /** What the giver funds: the gift, plus the recipient's fee when the giver pays it. */
@@ -774,9 +777,9 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         }
         working = false;
         draft.amount = '';
-    draft.tokenOnly = false;
-    draft.coverFee = false;
-    draft.withToken = false;
+        draft.tokenOnly = false;
+        draft.coverFee = coversFee();
+        draft.withToken = false;
         draft.wish = '';
         draft.riddleOn = false;
         draft.riddleHide = false;

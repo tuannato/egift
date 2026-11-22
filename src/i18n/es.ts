@@ -225,6 +225,7 @@ export const es: Record<keyof typeof vi, string> = {
     'take.paste': "Pegar",
     'take.paste.fail': "No se pudo pegar. Pégala a mano en la casilla.",
     'take.saved.title': "Dirección guardada en este navegador:",
+    'take.saved.sum': "Guardar la dirección de tu billetera en este navegador",
     'take.saved.warn': "Úsala solo si es tu propia billetera. Un regalo enviado a una dirección equivocada no se puede recuperar.",
     'take.saved.use': "Usar esta dirección",
     'take.saved.forget': "Olvidar esta dirección",

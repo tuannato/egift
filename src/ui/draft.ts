@@ -1,11 +1,13 @@
 import { DEFAULT_WRAPPER } from '../core/limits';
 import { WRAPPERS } from '../wrappers';
+import { coversFee } from './prefs';
 
 /**
  * What the person has typed on the create step, kept so a language switch does not empty the form. Never the secret.
+ * `coverFee` starts as the giver last left it (`prefs.ts`): on, unless they switched it off.
  * `recipe` is how they dressed the chosen wrapper (`core/recipe.ts`), in its one spelling; empty for the wrapper as it is.
  */
-export const draft = { amount: '', wish: '', wrapper: '', riddleOn: false, riddleHide: false, question: '', answer: '', tokenOnly: false, coverFee: false, withToken: false, recipe: '' };
+export const draft = { amount: '', wish: '', wrapper: '', riddleOn: false, riddleHide: false, question: '', answer: '', tokenOnly: false, coverFee: coversFee(), withToken: false, recipe: '' };
 
 /** The wrapper the shop handed over (or the last one picked on the create step). */
 export function chooseWrapper(id: string): void {

@@ -223,6 +223,7 @@ export const vi = {
     'take.paste': 'Dán',
     'take.paste.fail': 'Không dán được. Hãy dán bằng tay vào ô.',
     'take.saved.title': 'Địa chỉ đã lưu trên trình duyệt này:',
+    'take.saved.sum': 'Lưu địa chỉ ví trên trình duyệt này',
     'take.saved.warn': 'Chỉ dùng nếu đây đúng là ví của bạn. Quà gửi nhầm địa chỉ thì không lấy lại được.',
     'take.saved.use': 'Dùng địa chỉ này',
     'take.saved.forget': 'Quên địa chỉ này',

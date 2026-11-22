@@ -225,6 +225,7 @@ export const fr: Record<keyof typeof vi, string> = {
     'take.paste': "Coller",
     'take.paste.fail': "Le collage n'a pas marché. Collez-la à la main dans le champ.",
     'take.saved.title': "Adresse gardée dans ce navigateur :",
+    'take.saved.sum': "Garder l'adresse de votre portefeuille dans ce navigateur",
     'take.saved.warn': "Ne l'utilisez que si c'est bien votre portefeuille. Un cadeau envoyé à la mauvaise adresse ne peut pas être récupéré.",
     'take.saved.use': "Utiliser cette adresse",
     'take.saved.forget': "Oublier cette adresse",

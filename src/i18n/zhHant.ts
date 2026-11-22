@@ -225,6 +225,7 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'take.paste': "貼上",
     'take.paste.fail': "無法貼上。請手動貼到方框裡。",
     'take.saved.title': "此瀏覽器中儲存的地址：",
+    'take.saved.sum': "在此瀏覽器中儲存錢包地址",
     'take.saved.warn': "僅當這是你自己的錢包時才使用。送到錯誤地址的禮物無法取回。",
     'take.saved.use': "使用此地址",
     'take.saved.forget': "忘記此地址",

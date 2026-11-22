@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDemoChain, deriveKey, encodeLink, newSecret, takeFeeEstimate } from '../core';
 import type { DemoChain, PackageKey } from '../core';
 import { setLang, t } from '../i18n';
-import { getMade } from './session';
+import { clearMade, getMade } from './session';
+import { draft } from './draft';
+import { coversFee } from './prefs';
 import { isKept, keep, keepableWish, keepsakePage, keptId, loadKept, loadSent, rememberSent } from './kept';
 import type { Kept } from './kept';
 import { holdButton } from './hold';
@@ -69,6 +71,40 @@ describe('the network fee, for the giver', () => {
         expect(made.sats).toBe(2_203n);
         expect(made.feeCovered).toBe(203n);
         expect(main(app).textContent).toContain(t('created.step2.body.fee', { amount: '22.03', gift: '20', fee: '2.03' }));
+    });
+
+    it('paying the recipient\'s fee is the giver\'s standing choice: on unless switched off, and kept for the next gift', async () => {
+        stubClipboard();
+        // A page opened fresh: the form starts from what is kept, and nothing kept means "on".
+        expect(coversFee()).toBe(true);
+        draft.coverFee = coversFee();
+        app = boot();
+        type(main(app).querySelector('#f-amount') as HTMLInputElement, '20');
+        const box = main(app).querySelector('#f-fee') as HTMLInputElement;
+        expect(box.checked).toBe(true);
+        expect((main(app).querySelector('.fee-note') as HTMLElement).textContent).toBe(t('create.fee.on', { total: '22.03', amount: '20', fee: '2.03' }));
+        expect(localStorage.getItem('gift.cover')).toBeNull();
+        // Switched off: one fixed word is stored, and this gift is funded with the amount alone.
+        box.checked = false;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(localStorage.getItem('gift.cover')).toBe('off');
+        (main(app).querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await flush();
+        expect(getMade()!.sats).toBe(2_000n);
+        expect(getMade()!.feeCovered).toBeUndefined();
+        // The next gift starts the way the last one was left.
+        expect(draft.coverFee).toBe(false);
+        app.stop();
+        clearMade();
+        app = boot();
+        type(main(app).querySelector('#f-amount') as HTMLInputElement, '20');
+        const next = main(app).querySelector('#f-fee') as HTMLInputElement;
+        expect(next.checked).toBe(false);
+        // Switched back on: the entry goes; nothing but "off" is ever stored under it.
+        next.checked = true;
+        next.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(localStorage.getItem('gift.cover')).toBeNull();
+        expect(coversFee()).toBe(true);
     });
 
     it('a gift that will carry a token: the giver can pay that larger fee too', async () => {

@@ -225,6 +225,7 @@ export const ko: Record<keyof typeof vi, string> = {
     'take.paste': "붙여넣기",
     'take.paste.fail': "붙여 넣지 못했어요. 입력 칸에 직접 붙여 넣어 주세요.",
     'take.saved.title': "이 브라우저에 저장된 주소:",
+    'take.saved.sum': "지갑 주소를 이 브라우저에 저장하기",
     'take.saved.warn': "본인 지갑이 맞을 때만 사용하세요. 잘못된 주소로 보낸 선물은 되찾을 수 없어요.",
     'take.saved.use': "이 주소 사용",
     'take.saved.forget': "이 주소 지우기",
