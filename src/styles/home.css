@@ -218,6 +218,9 @@
 .home-filter-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .home-filter-fav { display: inline-flex; align-items: center; gap: 8px; }
 .home-filter-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+/* The plate frame repaints every chip; a switch that is on keeps the accent there too. Its heart takes the chip's own ink. */
+:root[data-material="plate"] .home-filter-chip[aria-pressed="true"], :root[data-material="plate"] .home-filter-chip[aria-pressed="true"]:hover { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.home-filter-chip[aria-pressed="true"] .heart { color: currentColor; }
 .home-filter-chip:disabled { opacity: 0.4; }
 .home-filter-on { margin-left: 8px; color: var(--ink); font-weight: 600; }
 .home-filter-shown { margin: 0; }

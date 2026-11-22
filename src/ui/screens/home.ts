@@ -100,10 +100,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     const narrowed = (f: Narrow = narrow): boolean => f.fav || f.holiday || f.price !== 'all';
     const fits = (def: WrapperDef, f: Narrow, favs: ReadonlySet<string>): boolean =>
         (!f.fav || favs.has(def.id)) && (!f.holiday || isHoliday(def)) && (f.price === 'all' || (offerOf(def).kind === 'free') === (f.price === 'free'));
-    const countOf = (f: Narrow): number => {
-        const favs = new Set(loadFavs());
-        return WRAPPERS.filter(def => fits(def, f, favs)).length;
-    };
+    const countOf = (f: Narrow, favs: ReadonlySet<string> = new Set(loadFavs())): number => WRAPPERS.filter(def => fits(def, f, favs)).length;
 
     // ---- The doors ----
     // A door at rest is a small picture of its wrapper, closed (public/thumbs, drawn by scripts/og-cards.mjs): one
@@ -300,33 +297,38 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
      * the shelf empty cannot be pressed.
      */
     function shelfFilter(): HTMLElement {
-        const set = (next: Narrow): void => {
+        const favs: ReadonlySet<string> = new Set(loadFavs());
+        // The panel is built again on every press: the switch that was pressed gets the focus back, by its name.
+        const set = (next: Narrow, name: string): void => {
             narrow = next;
             cue.touch();
             sync();
+            body.querySelector<HTMLElement>(`[data-switch="${name}"]`)?.focus({ preventScroll: true });
         };
-        const chip = (label: Node | string, on: boolean, next: Narrow, cls = ''): HTMLButtonElement => {
-            const b = h('button', { type: 'button', class: `chip home-filter-chip${cls}`, 'aria-pressed': String(on) }, label);
+        const chip = (name: string, label: Node | string, on: boolean, next: Narrow, cls = ''): HTMLButtonElement => {
+            const b = h('button', { type: 'button', class: `chip home-filter-chip${cls}`, 'aria-pressed': String(on), 'data-switch': name }, label);
             // Pressing what is already on (for a switch) always works; anything else must leave a wrapper on the shelf.
-            b.disabled = !on && countOf(next) === 0;
-            b.addEventListener('click', () => set(next));
+            b.disabled = !on && countOf(next, favs) === 0;
+            b.addEventListener('click', () => set(next, name));
             return b;
         };
         const hearts = loadFavs().filter(id => wrapperById(id) !== undefined).length;
         const favChip =
             hearts === 0
                 ? null
-                : chip(h('span', { class: 'home-filter-fav' }, heart(), h('span', null, t('home.fav.only', { n: String(hearts) }))), narrow.fav, { ...narrow, fav: !narrow.fav }, ' home-fav-only');
-        const price = (p: Price, key: Key): HTMLButtonElement => chip(t(key), narrow.price === p, { ...narrow, price: p });
+                : chip('fav', h('span', { class: 'home-filter-fav' }, heart(), h('span', null, t('home.fav.only', { n: String(hearts) }))), narrow.fav, { ...narrow, fav: !narrow.fav }, ' home-fav-only');
+        const price = (p: Price, key: Key): HTMLButtonElement => chip(p, t(key), narrow.price === p, { ...narrow, price: p });
         const on = narrowed();
         const names = [narrow.fav ? t('home.fav.only', { n: String(hearts) }) : '', narrow.holiday ? t('home.filter.holiday') : '', narrow.price === 'free' ? t('home.price.free') : narrow.price === 'paid' ? t('home.filter.paid') : ''].filter(x => x !== '');
-        const clear = h('button', { type: 'button', class: 'chip home-filter-clear', onclick: () => set({ fav: false, holiday: false, price: 'all' }) }, t('home.filter.clear'));
+        const clear = h('button', { type: 'button', class: 'chip home-filter-clear', onclick: () => set({ fav: false, holiday: false, price: 'all' }, 'all') }, t('home.filter.clear'));
+        // What is on the shelf now: what fits, and the wrapper that is worn even when it does not.
+        const inView = doors.filter(d => !d.el.hidden).length;
         const el = fold(
             on ? [t('home.filter'), h('span', { class: 'home-filter-on' }, names.join(', '))] : t('home.filter'),
             { id: 'home.filter' },
-            h('div', { class: 'chips home-filter-row' }, favChip, chip(t('home.filter.holiday'), narrow.holiday, { ...narrow, holiday: !narrow.holiday })),
+            h('div', { class: 'chips home-filter-row' }, favChip, chip('holiday', t('home.filter.holiday'), narrow.holiday, { ...narrow, holiday: !narrow.holiday })),
             h('div', { class: 'chips home-filter-row', role: 'group', 'aria-label': t('home.filter.price') }, price('all', 'home.filter.any'), price('free', 'home.price.free'), price('paid', 'home.filter.paid')),
-            h('div', { class: 'home-filter-foot', hidden: !on }, h('p', { class: 'note home-filter-shown' }, t('home.filter.shown', { n: String(countOf(narrow)), total: String(WRAPPERS.length) })), clear),
+            h('div', { class: 'home-filter-foot', hidden: !on }, h('p', { class: 'note home-filter-shown', 'aria-live': 'polite' }, t('home.filter.shown', { n: String(inView), total: String(WRAPPERS.length) })), clear),
         );
         el.classList.add('home-filter');
         return el;
@@ -373,7 +375,19 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             name,
             def.blurb ? blurb : null,
             h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.use')),
-            h('div', { class: 'home-row' }, play, h('button', { type: 'button', class: 'btn btn-quiet home-all', onclick: () => wear(null) }, t('home.all')), by),
+            h('div', { class: 'home-row' }, play, h(
+                    'button',
+                    {
+                        type: 'button',
+                        class: 'btn btn-quiet home-all',
+                        // The whole shelf is the whole shelf: a filter that is on goes off with it.
+                        onclick: () => {
+                            narrow = { fav: false, holiday: false, price: 'all' };
+                            wear(null);
+                        },
+                    },
+                    t('home.all'),
+                ), by),
             shelfFilter(),
             cards(),
         ].filter((x): x is HTMLElement => x !== null);

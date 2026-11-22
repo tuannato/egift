@@ -679,6 +679,15 @@ describe('buying a wrapper', () => {
         chip(t('home.filter.paid')).click();
         expect(shown().sort()).toEqual(['lixi', 'mecha']);
         expect(app.root.querySelector('.home-kicker')!.textContent).not.toContain('/');
+        // The line counts what is on the shelf, the worn wrapper with it; the switch that was pressed keeps the focus.
+        expect(panel().querySelector('.home-filter-shown')!.textContent).toBe(t('home.filter.shown', { n: '2', total: String(WRAPPERS.length) }));
+        expect(document.activeElement).toBe(chip(t('home.filter.paid')));
+        expect([...panel().querySelectorAll<HTMLButtonElement>('button')].some(b => b.disabled && b.getAttribute('aria-pressed') === 'true')).toBe(false);
+        // "See the whole shelf" means all of it: the filter goes off.
+        buttonByText(app.root, t('home.all')).click();
+        expect(shown().length).toBe(WRAPPERS.length);
+        chip(t('home.filter.paid')).click();
+        expect(shown()).toEqual(['lixi']);
 
         buttonByText(panel(), t('home.filter.clear')).click();
         expect(shown().length).toBe(WRAPPERS.length);
