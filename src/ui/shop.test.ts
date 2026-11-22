@@ -43,6 +43,20 @@ async function until(fn: () => boolean, ms = 8000): Promise<void> {
     }
 }
 
+describe('the road to the Cashtab app', () => {
+    it('asks the app to come back to the browser only on Android; anywhere else the link carries no b', async () => {
+        const { appRoad } = await import('./inapp');
+        const l = fundLinks(deriveKey(newSecret()).address, 8_888n);
+        const android = appRoad(l, 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126.0 Mobile Safari/537.36');
+        expect(android).toBe(l.appBack);
+        expect(android.endsWith('&b=1')).toBe(true);
+        for (const ua of ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/126.0 Mobile/15E148 Safari/604.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15', '']) {
+            expect(appRoad(l, ua), ua).toBe(l.app);
+            expect(appRoad(l, ua), ua).not.toMatch(/[?&]b=/);
+        }
+    });
+});
+
 describe('the shop', () => {
     it('the-page-opens-on-the-shop-and-wears-nothing', () => {
         app = boot(undefined, { stay: true });

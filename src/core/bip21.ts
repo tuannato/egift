@@ -16,6 +16,12 @@ export function bip21Amount(sats: bigint): string {
     return `${whole.toString()}.${cents.toString().padStart(2, '0')}`;
 }
 
+/** The roads into Cashtab for one BIP21 URI. `b=1` (go back to the browser afterwards) is a separate road: see `FundLinks`. */
+function roads(bip21: string): FundLinks {
+    const app = `https://pay.e.cash/?bip21=${bip21}`;
+    return { bip21, web: `https://cashtab.com/#/send?bip21=${bip21}`, app, appBack: `${app}&b=1` };
+}
+
 /**
  * The Cashtab roads for paying `sats` to `address`.
  *
@@ -31,11 +37,7 @@ export function fundLinks(address: string, sats: bigint): FundLinks {
     if (typeof sats !== 'bigint' || sats < FLOOR_SATS) throw new Error('The amount is under the floor');
     if (sats > CAP_SATS) throw new Error('The amount is over the cap');
     const bip21 = `${parsed.address}?amount=${bip21Amount(sats)}`;
-    return {
-        bip21,
-        web: `https://cashtab.com/#/send?bip21=${bip21}`,
-        app: `https://pay.e.cash/?bip21=${bip21}&b=1`,
-    };
+    return roads(bip21);
 }
 
 /**
@@ -55,11 +57,7 @@ export function stampedFundLinks(p: { address: string; sats: bigint; wrapper: st
     const maker = parseEcashAddress(p.offer.payTo);
     if (maker === null || !isValidOffer(p.offer)) throw new Error('Not a valid offer');
     const bip21 = `${parsed.address}?amount=${bip21Amount(p.sats)}&op_return_raw=${stampOpReturnRaw(p.wrapper, parsed.hash)}&addr=${maker.address}&amount=${bip21Amount(p.offer.sats)}`;
-    return {
-        bip21,
-        web: `https://cashtab.com/#/send?bip21=${bip21}`,
-        app: `https://pay.e.cash/?bip21=${bip21}&b=1`,
-    };
+    return roads(bip21);
 }
 
 /**
@@ -76,9 +74,5 @@ export function tokenFundLinks(p: { address: string; tokenId: string; qty: strin
     if (typeof p.tokenId !== 'string' || !/^[0-9a-f]{64}$/.test(p.tokenId)) throw new Error('Not a token id');
     if (typeof p.qty !== 'string' || p.qty.length > 30 || !/^\d+(\.\d+)?$/.test(p.qty) || /^[0.]+$/.test(p.qty)) throw new Error('Not a quantity');
     const bip21 = `${parsed.address}?token_id=${p.tokenId}&token_decimalized_qty=${p.qty}`;
-    return {
-        bip21,
-        web: `https://cashtab.com/#/send?bip21=${bip21}`,
-        app: `https://pay.e.cash/?bip21=${bip21}&b=1`,
-    };
+    return roads(bip21);
 }

@@ -46,7 +46,8 @@ describe('the stamp', () => {
         const links = stampedFundLinks({ address: pkg.address, sats: 8_888n, wrapper: 'mecha', offer });
         expect(links.bip21).toBe(`${pkg.address}?amount=88.88&op_return_raw=${stampOpReturnRaw('mecha', pkg.pkh)}&addr=${maker.address}&amount=500.00`);
         expect(links.web).toBe(`https://cashtab.com/#/send?bip21=${links.bip21}`);
-        expect(links.app).toBe(`https://pay.e.cash/?bip21=${links.bip21}&b=1`);
+        expect(links.app).toBe(`https://pay.e.cash/?bip21=${links.bip21}`);
+        expect(links.appBack).toBe(`https://pay.e.cash/?bip21=${links.bip21}&b=1`);
         // "Pay for the wrapper later": the least a node relays goes to the gift, so the stamp has a coin to be found by.
         expect(stampedFundLinks({ address: pkg.address, sats: 546n, wrapper: 'mecha', offer }).bip21).toContain('?amount=5.46&op_return_raw=');
         expect(() => stampedFundLinks({ address: pkg.address, sats: 545n, wrapper: 'mecha', offer })).toThrow();

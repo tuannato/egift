@@ -3,6 +3,7 @@ import type { FundLinks, GiftToken, PackageState, TokenMeta } from '../../core';
 import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
 import { autoKeep, dressOf, forgetSent, isSentRemembered, rememberSent, setAutoKeep } from '../kept';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
+import { appRoad } from '../inapp';
 import { dressed } from '../../wrappers/looks';
 import { DEFAULT_CREDIT } from '../plate';
 import { stageCard } from '../stageCard';
@@ -53,7 +54,8 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                 onclick: () => {
                     if (!made.saved) return;
                     // Synchronous: iOS blocks window.open after an await.
-                    openOut(links(made.sats)[pick]);
+                    const l = links(made.sats);
+                    openOut(pick === 'app' ? appRoad(l) : l.web);
                 },
             },
             label,
@@ -313,7 +315,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                     tokMsg.classList.add('field-msg--bad');
                     return;
                 }
-                openOut(send.app);
+                openOut(appRoad(send));
             },
         },
         t('created.fund.app'),
@@ -464,7 +466,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
             class: 'btn btn-secondary btn-small',
             hidden: true,
             onclick: () => {
-                if (made.saved) openOut(stamped(DUST_SATS).app);
+                if (made.saved) openOut(appRoad(stamped(DUST_SATS)));
             },
         },
         t('created.fund.app'),

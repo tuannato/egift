@@ -39,15 +39,23 @@ describe('fundLinks', () => {
             expect(l.web).toBe(`https://cashtab.com/#/send?bip21=${l.bip21}`);
             expect(l.web).not.toMatch(/[?&]b=/);
             expect(l.web).not.toContain('%');
-            expect(l.app).toBe(`https://pay.e.cash/?bip21=${l.bip21}&b=1`);
+            // Without `b`: where the app is not installed, pay.e.cash hands every trailing parameter on to Cashtab Web,
+            // and Cashtab Web refuses `b`.
+            expect(l.app).toBe(`https://pay.e.cash/?bip21=${l.bip21}`);
+            expect(l.app).not.toMatch(/[?&]b=/);
+            // With it, for a device that has the app: it comes back to the browser afterwards.
+            expect(l.appBack).toBe(`https://pay.e.cash/?bip21=${l.bip21}&b=1`);
             // What the Cashtab app does with it (cashtab/src/deeplinks/index.ts):
             // split on "bip21=", parse with new URL(), drop b.
-            const inner = new URL(new URL(l.app).search.split('bip21=', 2)[1]!);
+            const inner = new URL(new URL(l.appBack).search.split('bip21=', 2)[1]!);
             expect(inner.protocol + inner.pathname).toBe(address);
             expect(inner.searchParams.get('amount')).toBe(bip21Amount(sats));
             expect(inner.searchParams.get('b')).toBe('1');
-            // What pay.e.cash/script.js does: URLSearchParams on the query.
-            expect(new URL(l.app).searchParams.get('bip21')).toBe(l.bip21);
+            // What pay.e.cash/script.js does: the `bip21` value, with every other parameter of the query put back
+            // after it. Without `b` that is the payment itself.
+            const q = new URL(l.app).searchParams;
+            const rest = [...q.entries()].filter(([k]) => k !== 'bip21').map(([k, v]) => `${k}=${v}`);
+            expect(q.get('bip21') + (rest.length ? '&' + rest.join('&') : '')).toBe(l.bip21);
             // What Cashtab Web does: everything after "bip21=" in the hash.
             const hash = new URL(l.web).hash;
             expect(hash.slice(hash.indexOf('?') + 1).slice('bip21='.length)).toBe(l.bip21);

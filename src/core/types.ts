@@ -300,8 +300,17 @@ export type SweepMarker = 'home' | 'rekey' | null;
 export interface FundLinks {
     /** `https://cashtab.com/#/send?bip21=…` — works everywhere, carries no `b`. */
     readonly web: string;
-    /** `https://pay.e.cash/?bip21=…&b=1` — opens the Cashtab app on Android. */
+    /**
+     * `https://pay.e.cash/?bip21=…` — opens the Cashtab app where it is installed. Where it is not, pay.e.cash shows
+     * a page that hands the same payment to Cashtab Web, and Cashtab Web refuses a payment that carries `b`: so
+     * this road carries none.
+     */
     readonly app: string;
+    /**
+     * The same with `&b=1`: the app goes back to the browser once the payment is sent or refused. Only for a
+     * device where the app can be (Android): anywhere else the `b` ends up in Cashtab Web, which refuses it.
+     */
+    readonly appBack: string;
     /** The bare BIP21 URI, for a QR a wallet can scan. */
     readonly bip21: string;
 }
