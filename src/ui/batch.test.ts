@@ -286,6 +286,11 @@ describe('several gifts on the created step', () => {
         const b = getBatch()!;
         const web = buttonByText(app!.root, t('created.fund.web'));
         expect(web.disabled).toBe(true);
+        // A row's link can be shown as a QR; none is drawn until asked for.
+        expect(app!.root.querySelector('.batch-row .qr-svg')).toBeNull();
+        buttonByText(all<HTMLDetailsElement>('.batch-row')[1]!, t('link.qr.show')).click();
+        expect(all<HTMLDetailsElement>('.batch-row')[1]!.querySelector('.qr-svg')).not.toBeNull();
+        expect(all<HTMLDetailsElement>('.batch-row')[0]!.querySelector('.qr-svg')).toBeNull();
         // One row's own copy: that link went to the clipboard, the batch is not saved.
         const row = all<HTMLDetailsElement>('.batch-row')[0]!;
         buttonByText(row, t('link.copy')).click();

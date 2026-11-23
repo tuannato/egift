@@ -334,7 +334,18 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             const markSent = (): void => {
                 sent.textContent = t('batch.row.copied');
             };
-            body.append(box, linkButtons({ link: g.link, onSaved: markSent }), sent);
+            // The link as a QR, for handing a gift over face to face: drawn only when asked for.
+            const qrHost = h('div', { class: 'qr-host' });
+            let qrShown = false;
+            const link = g.link;
+            const qr = h('button', { type: 'button', class: 'btn btn-quiet', 'aria-expanded': 'false' }, t('link.qr.show'));
+            qr.addEventListener('click', () => {
+                qrShown = !qrShown;
+                qr.setAttribute('aria-expanded', String(qrShown));
+                qr.textContent = t(qrShown ? 'link.qr.hide' : 'link.qr.show');
+                qrHost.replaceChildren(...(qrShown ? [qrPanel({ text: link, title: t('qr.title.link'), warning: t('link.qr.warn') })] : []));
+            });
+            body.append(box, linkButtons({ link: g.link, onSaved: markSent }), sent, qr, qrHost);
         } else {
             body.append(h('p', { class: 'note' }, t('batch.row.answer')));
         }
