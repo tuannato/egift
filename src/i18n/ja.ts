@@ -268,7 +268,7 @@ export const ja: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash を、ひとつのリンクに包んで。",
     'home.lead': "ラッピングを選び、XEC を入れ、リンクを送ります。開いた人は数秒でお金をウォレットに移せます。",
-    'home.hint': "扉をタップすると、ページ全体がそのラッピングを試着します。",
+    'home.hint': "ラッピングをタップすると試せます。棚には{n}種類あります。横にスワイプして他も見てください。",
     'home.shelf.label': "ラッピングの棚",
     'home.shelf.prev': "前のラッピング",
     'home.shelf.next': "次のラッピング",

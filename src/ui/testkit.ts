@@ -1,5 +1,5 @@
 /** Helpers for the UI tests. Not part of the app: nothing imports this but tests. */
-import { createDemoChain, forgetSweeps } from '../core';
+import { createDemoChain, forgetSweeps, setAbsentWaitForTests } from '../core';
 import { forgetTakes } from './screens/takeHome';
 import { forgetPackages } from './screens/package';
 import { resetCreate } from './screens/create';
@@ -44,6 +44,7 @@ export function resetPage(lang: Lang = 'en'): void {
     resetHome();
     resetSound();
     forgetSweeps();
+    setAbsentWaitForTests(0);
     resetBusy();
     resetFolds();
     history.replaceState(null, '', '/');

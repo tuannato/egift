@@ -268,7 +268,7 @@ export const fr: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash, emballé dans un lien.",
     'home.lead': "Choisissez un emballage, mettez-y des XEC, envoyez le lien. La personne qui l'ouvre récupère l'argent dans son portefeuille en quelques secondes.",
-    'home.hint': "Touchez une porte et toute la page essaie cet emballage.",
+    'home.hint': "Touchez un emballage pour l’essayer. L’étagère en compte {n} : faites glisser sur le côté pour en voir plus.",
     'home.shelf.label': "L'étagère des emballages",
     'home.shelf.prev': "Emballages précédents",
     'home.shelf.next': "Emballages suivants",

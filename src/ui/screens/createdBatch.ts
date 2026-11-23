@@ -75,7 +75,10 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     const fundHint = h('p', { class: 'btn-reason' }, t('batch.step2.locked'));
     const fundBtns: HTMLButtonElement[] = [];
     let keptSinceFunded = false;
+    // What reloading costs matters once there is something to press: said with the funding controls, when they open.
+    const keepOpen = h('p', { class: 'warning', hidden: batch.saved !== true }, t('created.keepopen'));
     const unlock = (): void => {
+        keepOpen.hidden = false;
         batch.saved = true;
         download.classList.replace('btn-primary', 'btn-secondary');
         if (fundedCount() > 0) keptSinceFunded = true;
@@ -165,7 +168,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     );
     const saveStep =
         batch.kind === 'answers'
-            ? [h('p', null, t('batch.one.body', { n })), linkBox({ link: batch.link!, onSaved: unlock })]
+            ? [h('p', null, t('batch.one.body', { n })), linkBox({ link: batch.link!, onSaved: unlock, primary: batch.saved !== true })]
             : [h('p', null, t('batch.save.body', { n })), h('p', { class: 'warning' }, t('batch.save.warn', { n })), h('div', { class: 'btn-row btn-row--equal' }, download, copyAll), saveMsg, allBox, manual];
 
     // ---- Step 2: one request for all ----
@@ -659,7 +662,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                         2,
                         t('batch.step2.title'),
                         h('p', null, t('batch.step2.body', { n, total: formatXec(total, lang) })),
-                        h('p', { class: 'warning' }, t('created.keepopen')),
+                        keepOpen,
                         webBtn,
                         fundHint,
                         h('div', { class: 'btn-row btn-row--equal' }, appBtn, qrBtn),

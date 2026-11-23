@@ -268,7 +268,7 @@ export const id: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash, dibungkus menjadi sebuah tautan.",
     'home.lead': "Pilih bungkus, masukkan XEC, kirim tautannya. Siapa pun yang membukanya membawa uangnya ke dompet dalam hitungan detik.",
-    'home.hint': "Ketuk sebuah pintu dan seluruh halaman mencoba bungkus itu.",
+    'home.hint': "Ketuk satu bungkus untuk mencobanya. Ada {n} di rak: geser ke samping untuk melihat lainnya.",
     'home.shelf.label': "Rak bungkus",
     'home.shelf.prev': "Bungkus sebelumnya",
     'home.shelf.next': "Bungkus berikutnya",

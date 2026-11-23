@@ -66,7 +66,9 @@ describe('the shop', () => {
             expect(door(app, w.id).textContent).toContain(w.name.en);
             // Each door says what its wrapper costs: free, or its price from the table that ships with the page.
             const o = offerOf(w);
-            expect(door(app, w.id).textContent).toContain(o.kind === 'free' ? t('home.price.free') : 'XEC');
+            // A price is said only where there is one: a free wrapper's door carries its name alone.
+            if (o.kind === 'free') expect(door(app, w.id).querySelector('.door-price')).toBeNull();
+            else expect(door(app, w.id).textContent).toContain('XEC');
             expect(door(app, w.id).dataset.state).toBe('even');
         }
         expect(app.root.querySelector('.door--soon')!.textContent).toContain(t('home.soon'));

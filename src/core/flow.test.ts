@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toHex } from 'ecash-lib';
-import { forgetSweeps, takeHome } from './flow';
+import { forgetSweeps, setAbsentWaitForTests, takeHome } from './flow';
 import { createDemoChain } from './chain/demo';
 import { deriveKey } from './keys';
 import { decodeFragment, encodeLink, newSecret } from './link';
@@ -32,7 +32,10 @@ function spy(chain: Chain, over: Partial<Chain> = {}) {
 /** settle with a short timeout, so "unknown" comes fast. */
 const quick = (demo: Chain) => ({ settle: (t: string, a: string, o?: Parameters<Chain['settle']>[2]) => demo.settle(t, a, { ...o, timeoutMs: 30 }) });
 
-beforeEach(() => forgetSweeps());
+beforeEach(() => {
+    forgetSweeps();
+    setAbsentWaitForTests(0);
+});
 
 describe('takeHome', () => {
     it('taken-home-is-shown-only-after-finalization', async () => {
@@ -141,6 +144,77 @@ describe('takeHome', () => {
         expect(r2.kind).not.toBe('lost');
         expect(r2.kind).not.toBe('error');
         expect(broadcasts).toBe(1);
+    });
+
+    it('a node that has not heard of our transaction yet is not believed at once: nothing new is signed', async () => {
+        // The transaction went out and the answer was lost. The node asked next has not heard of it: "absent", with
+        // the coins still unspent as far as it knows. A moment later it has.
+        const demo = createDemoChain({ delayMs: 5 });
+        const key = freshKey();
+        demo.fund(key.address, 10000n);
+        setAbsentWaitForTests(40);
+        let lookups = 0;
+        let reads = 0;
+        const before = await demo.read(key.address);
+        const c = spy(demo, {
+            broadcast: async r => {
+                await demo.broadcast(r);
+                throw new ChainError('offline');
+            },
+            lookup: txid => (++lookups === 1 ? Promise.resolve('absent' as const) : demo.lookup!(txid)),
+            // The lagging node still shows the coins on its first answer after the broadcast.
+            read: a => (++reads === 2 ? Promise.resolve(before) : demo.read(a)),
+        });
+        const first = await takeHome({ chain: c.chain, key, to, marker: null });
+        expect(first.kind).not.toBe('error');
+        expect(first.kind).not.toBe('lost');
+        expect(lookups).toBeGreaterThanOrEqual(2);
+        // Another destination now: still nothing new is signed, and the money is where the first press sent it.
+        const second = await takeHome({ chain: c.chain, key, to: to2, marker: null });
+        expect(second.kind).not.toBe('error');
+        expect(c.raws.length).toBe(1);
+    });
+
+    it('two "absent" in a row, the coins unspent both times, is believed: the package can be tried again', async () => {
+        const demo = createDemoChain({ delayMs: 5 });
+        const key = freshKey();
+        demo.fund(key.address, 10000n);
+        setAbsentWaitForTests(30);
+        const c = spy(demo, { broadcast: () => Promise.reject(new ChainError('offline')) });
+        const t0 = Date.now();
+        expect(await takeHome({ chain: c.chain, key, to, marker: null })).toMatchObject({ kind: 'error', code: 'offline' });
+        expect(Date.now() - t0).toBeGreaterThanOrEqual(28);
+        expect(c.calls.lookup).toBe(2);
+    });
+
+    it('the second look decides: a node that can no longer say "absent", or coins that are gone by then, sign nothing new', async () => {
+        // (a) "absent", then the node cannot say: the sweep stays remembered and pending.
+        const demo = createDemoChain({ delayMs: 5 });
+        const k1 = freshKey();
+        demo.fund(k1.address, 10000n);
+        setAbsentWaitForTests(10);
+        let n1 = 0;
+        const a = spy(demo, { broadcast: () => Promise.reject(new ChainError('offline')), lookup: () => Promise.resolve(++n1 === 1 ? ('absent' as const) : ('unknown' as const)) });
+        expect((await takeHome({ chain: a.chain, key: k1, to, marker: null })).kind).toBe('pending');
+        expect((await takeHome({ chain: a.chain, key: k1, to: to2, marker: null })).kind).toBe('pending');
+        expect(new Set(a.raws).size).toBe(1);
+
+        // (b) "absent" both times, but by the second look the coins are gone: settled, never "try again".
+        const k2 = freshKey();
+        demo.fund(k2.address, 10000n);
+        let reads = 0;
+        const b = spy(demo, {
+            broadcast: () => Promise.reject(new ChainError('offline')),
+            lookup: () => Promise.resolve('absent' as const),
+            // The first read is for signing, the second is the first look; before the third, someone takes the coins.
+            read: async addr => {
+                if (++reads === 3) demo.steal(k2.address);
+                return demo.read(addr);
+            },
+        });
+        const r = await takeHome({ chain: b.chain, key: k2, to, marker: null });
+        expect(r.kind).not.toBe('error');
+        expect(b.calls.settle).toBeGreaterThan(0);
     });
 
     it('nothing-is-re-signed-until-the-earlier-tx-is-known-absent', async () => {

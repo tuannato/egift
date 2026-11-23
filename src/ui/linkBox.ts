@@ -69,7 +69,18 @@ function downloadText(text: string): void {
  * click — or when the person ticks "I copied it by hand", offered after a copy
  * fails (in-app browsers often refuse the clipboard).
  */
-export function linkButtons(opts: { link: string; onSaved: () => void; select?: () => void; download?: boolean }): HTMLElement {
+/**
+ * `primary`: saving the link is the one thing to do next (the created step of one gift), so "copy" is the solid
+ * button until the link is saved, by whichever of the ways here.
+ */
+export function linkButtons(o: { link: string; onSaved: () => void; select?: () => void; download?: boolean; primary?: boolean }): HTMLElement {
+    const opts = {
+        ...o,
+        onSaved: (): void => {
+            copy.classList.replace('btn-primary', 'btn-secondary');
+            o.onSaved();
+        },
+    };
     const msg = h('p', { class: 'small', role: 'status', 'aria-live': 'polite' });
     const say = (s: string) => {
         msg.textContent = s;
@@ -83,7 +94,7 @@ export function linkButtons(opts: { link: string; onSaved: () => void; select?: 
         'button',
         {
             type: 'button',
-            class: 'btn btn-secondary',
+            class: o.primary === true ? 'btn btn-primary' : 'btn btn-secondary',
             onclick: () => {
                 void copyText(opts.link).then(ok => {
                     if (ok) {
@@ -155,7 +166,7 @@ export function linkButtons(opts: { link: string; onSaved: () => void; select?: 
 }
 
 /** The link in a read-only box, with Copy / Share / Download and a QR toggle. */
-export function linkBox(opts: { link: string; onSaved: () => void; label?: string }): HTMLElement {
+export function linkBox(opts: { link: string; onSaved: () => void; label?: string; primary?: boolean }): HTMLElement {
     const id = 'lb-' + Math.random().toString(36).slice(2, 8);
     const box = h('textarea', {
         id,
@@ -191,7 +202,7 @@ export function linkBox(opts: { link: string; onSaved: () => void; label?: strin
         'div',
         { class: 'linkbox-wrap' },
         box,
-        linkButtons({ link: opts.link, onSaved: opts.onSaved, select: () => box.select(), download: true }),
+        linkButtons({ link: opts.link, onSaved: opts.onSaved, select: () => box.select(), download: true, ...(opts.primary === true ? { primary: true } : {}) }),
         toggle,
         qrHost,
     );

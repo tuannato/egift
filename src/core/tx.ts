@@ -24,7 +24,12 @@ export function isValidDestination(address: string): boolean {
     return parseEcashAddress(address) !== null;
 }
 
-/** `OP_RETURN <"EGIF"> <0x00 action>`; 0x01 = taken home, 0x02 = re-keyed. */
+/**
+ * `OP_RETURN <"EGIF"> <0x00 action>`; 0x01 = taken home, 0x02 = re-keyed.
+ *
+ * The page itself takes a gift home with no marker: the transaction into a recipient's wallet says nothing of where
+ * the money came from, and the only "EGIF" the page writes on the chain is the payment for a wrapper (`stamp.ts`).
+ */
 export function markerScript(marker: 'home' | 'rekey'): Script {
     return Script.fromOps([OP_RETURN, pushBytesOp(strToBytes('EGIF')), pushBytesOp(new Uint8Array([0x00, marker === 'home' ? 0x01 : 0x02]))]);
 }
@@ -53,18 +58,19 @@ function sweepSize(nInputs: number, outputs: readonly Script[]): number {
 
 /**
  * What taking a gift home costs when the gift sits in ONE coin (one funding
- * transaction, the usual case), with the "taken home" marker. Said to the
+ * transaction, the usual case): one input, one output, no marker. Said to the
  * giver before the gift exists; a gift funded in several coins, or carrying a
  * token, costs more, and the real fee is always read from the signed transaction.
  *
  * `withToken`: the gift will also carry one token coin. Then the sweep has
- * two inputs and a token SEND: 428 bytes for ALP, 424 for SLP and NFTs (both
+ * two inputs and a token SEND: at most 428 bytes for ALP (measured with the marker it used to carry; a little less
+ * without), 424 for SLP and NFTs (both
  * measured: ALP by `tokenTx.test.ts`, SLP on the real network, 12 Nov 2026).
  * The larger is said, so the recipient is never short.
  */
 export function takeFeeEstimate(withToken = false): bigint {
     if (withToken) return TOKEN_TAKE_FEE_SATS;
-    return calcTxFee(sweepSize(1, [markerScript('home'), Script.p2pkh(new Uint8Array(20))]), FEE_PER_KB);
+    return calcTxFee(sweepSize(1, [Script.p2pkh(new Uint8Array(20))]), FEE_PER_KB);
 }
 const TOKEN_TAKE_FEE_SATS = 428n;
 

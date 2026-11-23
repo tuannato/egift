@@ -268,7 +268,7 @@ export const pt: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash, embrulhado em um link.",
     'home.lead': "Escolha um embrulho, coloque XEC dentro, envie o link. Quem abrir leva o dinheiro para a carteira em segundos.",
-    'home.hint': "Toque em uma porta e a página inteira experimenta esse embrulho.",
+    'home.hint': "Toque num embrulho para experimentá-lo. A prateleira tem {n}: deslize para os lados para ver mais.",
     'home.shelf.label': "A prateleira de embrulhos",
     'home.shelf.prev': "Embrulhos anteriores",
     'home.shelf.next': "Mais embrulhos",

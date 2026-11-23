@@ -55,34 +55,44 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
     const el = h('div', { class: 'people', 'data-open': draft.peopleOpen ? 'yes' : 'no' }, toggle, body);
 
     const answerHint = (): string => t(draft.oneLink ? 'people.answer.own' : 'people.answer.opt');
+    /** The parts of each row that are repainted from outside, in the order of the rows. */
+    let parts: { name: HTMLInputElement; amount: HTMLInputElement; remove: HTMLButtonElement; answer: HTMLInputElement; answerBox: HTMLElement; answerCap: HTMLElement }[] = [];
     function row(p: Person, i: number): HTMLElement {
-        const name = h('input', { class: 'input people-name', type: 'text', autocomplete: 'off', maxlength: String(NAME_MAX), placeholder: t('people.name', { n: i + 1 }), 'aria-label': t('people.name.label', { n: i + 1 }) });
+        // The hint is the name the gift gets when none is typed: short enough to be read whole in a narrow column.
+        const name = h('input', { class: 'input people-name', type: 'text', autocomplete: 'off', maxlength: String(NAME_MAX), placeholder: t('people.nth', { n: i + 1 }), 'aria-label': t('people.name.label', { n: i + 1 }) });
         name.value = p.name;
         name.addEventListener('input', () => {
             p.name = name.value;
             opts.onChange();
         });
-        const amount = h('input', { class: 'input mono people-amount', type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: 'XEC', 'aria-label': t('people.amount.label', { n: i + 1 }) });
+        const amount = h('input', { class: 'input mono people-amount', type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: '0', 'aria-label': t('people.amount.label', { n: i + 1 }) });
         amount.value = p.amount;
         amount.addEventListener('input', () => {
             p.amount = amount.value;
             opts.onChange();
         });
+        // The unit stays in view beside the figure, typed or not.
+        const amountBox = h('span', { class: 'people-amount-box' }, amount, h('span', { class: 'people-unit', 'aria-hidden': 'true' }, 'XEC'));
         const remove = h('button', { type: 'button', class: 'people-remove', 'aria-label': t('people.remove', { n: i + 1 }) }, h('span', { 'aria-hidden': 'true' }, '×'));
         remove.addEventListener('click', () => {
             draft.people.splice(i, 1);
             paintRows();
             opts.onChange();
         });
-        const answer = h('input', { class: 'input people-answer', type: 'text', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: answerHint(), 'aria-label': t('people.answer.label', { n: i + 1 }) });
+        const answer = h('input', { class: 'input people-answer', type: 'text', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', 'aria-label': t('people.answer.label', { n: i + 1 }) });
         answer.value = p.answer;
         answer.addEventListener('input', () => {
             p.answer = answer.value;
             opts.onChange();
         });
-        return h('div', { class: 'people-row', 'data-i': String(i) }, name, amount, remove, answer);
+        // What the box is for is written above it, so it is still there once something is typed.
+        const answerCap = h('span', { class: 'people-cap', 'aria-hidden': 'true' }, answerHint());
+        const answerBox = h('span', { class: 'people-answer-box' }, answerCap, answer);
+        parts[i] = { name, amount, remove, answer, answerBox, answerCap };
+        return h('div', { class: 'people-row', 'data-i': String(i) }, name, amountBox, remove, answerBox);
     }
     function paintRows(): void {
+        parts = [];
         list.replaceChildren(...draft.people.map(row));
         paintState();
     }
@@ -102,14 +112,13 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
         const typed = draft.people.map(p => normaliseAnswer(p.answer)).filter(a => a !== '');
         sameWarn.hidden = !(canOne && draft.oneLink && new Set(typed).size < typed.length);
         oneBox.disabled = working;
-        [...list.children].forEach((r, i) => {
-            const [name, amount, remove, answer] = [...r.children] as [HTMLInputElement, HTMLInputElement, HTMLButtonElement, HTMLInputElement];
+        parts.forEach(({ name, amount, remove, answer, answerBox, answerCap }, i) => {
             for (const f of [name, amount, answer]) f.disabled = working;
             remove.disabled = working || n <= 1;
             amount.classList.toggle('input--bad', bad.has(i));
             // An answer of its own is for telling several gifts apart: one gift has the one answer, typed twice below.
-            answer.hidden = !riddleOn || n < 2;
-            answer.placeholder = answerHint();
+            answerBox.hidden = !riddleOn || n < 2;
+            answerCap.textContent = answerHint();
             answer.classList.toggle('input--bad', badAnswers.has(i));
         });
     }

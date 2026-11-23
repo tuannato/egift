@@ -266,7 +266,7 @@ export const vi = {
 
     'home.title': 'eCash, gói thành một đường link.',
     'home.lead': 'Chọn vỏ, bỏ XEC vào, gửi link đi. Người nhận mở ra và mang tiền về ví trong vài giây.',
-    'home.hint': 'Chạm một cánh cửa để cả trang mặc thử vỏ quà đó.',
+    'home.hint': "Chạm một vỏ để mặc thử. Kệ có {n} vỏ, vuốt ngang để xem thêm.",
     'home.shelf.label': 'Kệ vỏ quà',
     'home.shelf.prev': "Các vỏ trước",
     'home.shelf.next': "Các vỏ tiếp theo",

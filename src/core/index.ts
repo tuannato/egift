@@ -12,7 +12,7 @@ export { buildSweep, isValidDestination, takeFeeEstimate } from './tx';
 export { fundLinks, stampedFundLinks, batchFundLinks, tokenFundLinks, batchTokenFundLinks, bip21Amount } from './bip21';
 export { stampScript, stampOpReturnRaw, batchStampScript, batchOpReturnRaw, BATCH_MAX, isStamp, isValidOffer, licenceOf, isOwnedFunding, entitlement, MAX_STAMP_LOOKUPS, type WrapperOffer, type PastTerms, type Entitlement } from './stamp';
 export { formatXec, parseXec, whyNotXec, type XecRefusal, numberMarks } from './money';
-export { takeHome, forgetSweeps } from './flow';
+export { takeHome, forgetSweeps, setAbsentWaitForTests } from './flow';
 export { buildGiftSweep, isMovableToken, isCleanSend } from './tokenTx';
 export { giftTokens, holdings, formatAtoms, MAX_TOKEN_LOOKUPS, type GiftToken } from './token';
 export { createChronikChain, CHRONIK_HOSTS } from './chain/chronik';

@@ -122,7 +122,10 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         e.returnValue = '';
     };
     window.addEventListener('beforeunload', onLeave);
+    // What reloading costs matters once there is something to press: said with the funding controls, when they open.
+    const keepOpen = h('p', { class: 'warning', hidden: !made.saved }, t('created.keepopen'));
     const unlock = () => {
+        keepOpen.hidden = false;
         markSaved();
         if (fundedOk) keptSinceFunded = true;
         fundBtns.forEach(b => (b.disabled = false));
@@ -692,7 +695,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                     amountBlock({ text: amountText, label: t('gift.amount.label'), address: made.key.address, refLabel: t('gift.ref.label'), size: 'small', ref: copyRef(made.key.address, shortId(made.key.address)) }),
                     // The state of the package, near the top: once funded, what to do next is in view without scrolling.
                     h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), tokenNext, afterFunded),
-                    stepRow(1, t('created.step1.title'), h('p', null, t('created.step1.body')), linkBox({ link: made.link, onSaved: unlock }), riddleNote),
+                    stepRow(1, t('created.step1.title'), h('p', null, t('created.step1.body')), linkBox({ link: made.link, onSaved: unlock, primary: !made.saved }), riddleNote),
                     stepRow(
                         2,
                         t('created.step2.title'),
@@ -707,7 +710,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                         ),
                         totalLine,
                         // A money-loss condition: said before the buttons, as a warning.
-                        h('p', { class: 'warning' }, t('created.keepopen')),
+                        keepOpen,
                         h(
                             'div',
                             { class: 'fund' },

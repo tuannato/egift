@@ -268,7 +268,7 @@ export const zhHans: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash，包进一个链接。",
     'home.lead': "挑封套，放进 XEC，发出链接。谁打开它，几秒内就能把钱领到钱包。",
-    'home.hint': "轻点一扇门，整个页面就会试用那个封套。",
+    'home.hint': "点一个包装即可试穿。架上共有 {n} 款，左右滑动查看更多。",
     'home.shelf.label': "封套架",
     'home.shelf.prev': "前面的封套",
     'home.shelf.next': "后面的封套",

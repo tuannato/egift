@@ -167,7 +167,7 @@ describe('several people on the create step', () => {
         const lockBox = $<HTMLInputElement>('#f-riddle');
         lockBox.checked = true;
         lockBox.dispatchEvent(new Event('change', { bubbles: true }));
-        expect(all<HTMLInputElement>('.people-answer')[0]!.hidden).toBe(true);
+        expect(all('.people-answer-box')[0]!.hidden).toBe(true);
         lockBox.checked = false;
         lockBox.dispatchEvent(new Event('change', { bubbles: true }));
         submit();

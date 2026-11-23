@@ -135,7 +135,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         art.style.setProperty('--ar', String(def.size[0] / def.size[1]));
         const name = h('span', { class: 'door-name' });
         setUserText(name, inLang(def.name, lang));
-        const tag = h('div', { class: 'door-tag', 'aria-hidden': 'true' }, name, h('span', { class: 'door-price' }, price(def)), h('span', { class: 'door-heart' }, heart()));
+        const tag = h('div', { class: 'door-tag', 'aria-hidden': 'true' }, name, offerOf(def).kind === 'free' ? null : h('span', { class: 'door-price' }, price(def)), h('span', { class: 'door-heart' }, heart()));
+        // Only a wrapper with a price carries a tag: "free" on every other door was noise.
         // A name with a very long word is set a little smaller, so that the word is not broken in two.
         if (inLang(def.name, lang).split(/[\s-]+/).some(word => [...word].length >= 11)) tag.dataset.long = 'yes';
         const btn = h('button', {
@@ -379,7 +380,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             return [
                 h('h1', { class: 'home-title' }, ...rich('home.title')),
                 h('p', { class: 'lead' }, t('home.lead')),
-                h('p', { class: 'guide home-hint' }, ribbon('bow'), h('span', null, t('home.hint'))),
+                h('p', { class: 'guide home-hint' }, ribbon('bow'), h('span', null, t('home.hint', { n: WRAPPERS.length }))),
                 h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.go')),
                 shelfFilter(),
                 cards(),

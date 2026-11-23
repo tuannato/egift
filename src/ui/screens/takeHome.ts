@@ -41,16 +41,16 @@ export function previewSweep(key: PackageKey, state: PackageState, to: string, t
     try {
         if (tokenId !== null) {
             try {
-                const g = buildGiftSweep({ key, coins: state.coins, to, marker: 'home', tokenId });
+                const g = buildGiftSweep({ key, coins: state.coins, to, marker: null, tokenId });
                 return { sentSats: g.sentSats, feeSats: g.feeSats, ...(g.token?.fused === true ? { fused: true } : {}) };
             } catch (e) {
                 // The package cannot pay to move the token: the XEC goes alone, exactly as `takeHome` will do.
                 if ((e as { code?: unknown }).code !== 'dust') throw e;
-                const alone = buildSweep({ key, coins: state.coins, to, marker: 'home' });
+                const alone = buildSweep({ key, coins: state.coins, to, marker: null });
                 return { sentSats: alone.sentSats, feeSats: alone.feeSats, tokenLeft: true };
             }
         }
-        const s = buildSweep({ key, coins: state.coins, to, marker: 'home' });
+        const s = buildSweep({ key, coins: state.coins, to, marker: null });
         return { sentSats: s.sentSats, feeSats: s.feeSats };
     } catch (e) {
         const code = (e as { code?: unknown }).code;
@@ -194,7 +194,7 @@ function run(s: TakeSession, o: TakeHomeOpts, timed: boolean): void {
         s.view?.paint();
     };
     const onSent = s.onSent;
-    track(takeHome({ chain: o.chain, key: o.key, to: s.sweptTo, marker: 'home', tokenId: wanted, onSent })).then(settle, () =>
+    track(takeHome({ chain: o.chain, key: o.key, to: s.sweptTo, marker: null, tokenId: wanted, onSent })).then(settle, () =>
         settle({ kind: 'error', code: 'offline', message: '' }),
     );
 }

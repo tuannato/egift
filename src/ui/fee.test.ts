@@ -51,7 +51,7 @@ async function reveal(a: Booted): Promise<void> {
 
 describe('the network fee, for the giver', () => {
     it('the estimate is the fee of the sweep a one-coin gift really gets', () => {
-        expect(takeFeeEstimate()).toBe(203n);
+        expect(takeFeeEstimate()).toBe(185n);
     });
 
     it('says what the recipient will receive, and the giver can pay the fee on top', async () => {
@@ -60,17 +60,17 @@ describe('the network fee, for the giver', () => {
         type(main(app).querySelector('#f-amount') as HTMLInputElement, '20');
         const note = main(app).querySelector('.fee-note') as HTMLElement;
         expect(note.hidden).toBe(false);
-        expect(note.textContent).toBe(t('create.fee.off', { net: '17.97', fee: '2.03' }));
+        expect(note.textContent).toBe(t('create.fee.off', { net: '18.15', fee: '1.85' }));
         const box = main(app).querySelector('#f-fee') as HTMLInputElement;
         box.checked = true;
         box.dispatchEvent(new Event('change', { bubbles: true }));
-        expect(note.textContent).toBe(t('create.fee.on', { total: '22.03', amount: '20', fee: '2.03' }));
+        expect(note.textContent).toBe(t('create.fee.on', { total: '21.85', amount: '20', fee: '1.85' }));
         (main(app).querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         await flush();
         const made = getMade()!;
-        expect(made.sats).toBe(2_203n);
-        expect(made.feeCovered).toBe(203n);
-        expect(main(app).textContent).toContain(t('created.step2.body.fee', { amount: '22.03', gift: '20', fee: '2.03' }));
+        expect(made.sats).toBe(2_185n);
+        expect(made.feeCovered).toBe(185n);
+        expect(main(app).textContent).toContain(t('created.step2.body.fee', { amount: '21.85', gift: '20', fee: '1.85' }));
     });
 
     it('paying the recipient\'s fee is the giver\'s standing choice: on unless switched off, and kept for the next gift', async () => {
@@ -82,7 +82,7 @@ describe('the network fee, for the giver', () => {
         type(main(app).querySelector('#f-amount') as HTMLInputElement, '20');
         const box = main(app).querySelector('#f-fee') as HTMLInputElement;
         expect(box.checked).toBe(true);
-        expect((main(app).querySelector('.fee-note') as HTMLElement).textContent).toBe(t('create.fee.on', { total: '22.03', amount: '20', fee: '2.03' }));
+        expect((main(app).querySelector('.fee-note') as HTMLElement).textContent).toBe(t('create.fee.on', { total: '21.85', amount: '20', fee: '1.85' }));
         expect(localStorage.getItem('gift.cover')).toBeNull();
         // Switched off: one fixed word is stored, and this gift is funded with the amount alone.
         box.checked = false;
@@ -145,7 +145,7 @@ describe('the network fee, for the giver', () => {
         box.dispatchEvent(new Event('change', { bubbles: true }));
         (main(app).querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         await flush();
-        expect(getMade()!.sats).toBe(3_203n);
+        expect(getMade()!.sats).toBe(3_185n);
         expect(main(app).textContent).toContain(t('created.tok.feenote', { fee: '4.28' }));
         // It is said where a token is added: in the token step, which for an ordinary gift is one line to press.
         const tokFold = main(app).querySelector('.token-box > details.fold') as HTMLDetailsElement;
@@ -171,9 +171,9 @@ describe('the network fee, for the giver', () => {
 
 describe('the network fee, for whoever opens the gift', () => {
     it('a gift whose fee was paid for arrives whole, and the screen says so before any button', async () => {
-        open(2_203n);
+        open(2_185n);
         await reveal(app!);
-        expect(main(app!).textContent).toContain(t('pkg.net', { net: '20', fee: '2.03' }));
+        expect(main(app!).textContent).toContain(t('pkg.net', { net: '20', fee: '1.85' }));
     });
 
     it('after taking it home, the fee is said again and the sender\'s words and the package are still there to read', async () => {
@@ -187,10 +187,10 @@ describe('the network fee, for whoever opens the gift', () => {
         await new Promise(r => setTimeout(r, 60));
         await flush(12);
         const text = main(app!).textContent!;
-        expect(text).toContain(t('take.done.fee', { amount: '17.97', fee: '2.03' }));
+        expect(text).toContain(t('take.done.fee', { amount: '18.15', fee: '1.85' }));
         expect(text).toContain(WISH);
         expect(text).toContain(t('pkg.note.title'));
-        expect((await chain.read(home.address)).xecSats).toBe(1_797n);
+        expect((await chain.read(home.address)).xecSats).toBe(1_815n);
         // Opening the same link again in this visit: still done, and the words are still readable.
         app!.stop();
         history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
@@ -258,7 +258,7 @@ describe('keeping a record of a gift that was taken home', () => {
         for (const f of forms) expect(raw.includes(f), f).toBe(false);
         expect(raw).not.toContain('#');
         const [k] = loadKept();
-        expect(k).toMatchObject({ ref: keptId(key.address), wrapper: 'lixi', wish: WISH, sats: '1797', fee: '203' });
+        expect(k).toMatchObject({ ref: keptId(key.address), wrapper: 'lixi', wish: WISH, sats: '1815', fee: '185' });
         expect(k!.ref.length).toBe(16);
         // Only the kept gifts and, under its own key, the address the gift went home to are in storage.
         expect(Object.keys(localStorage).sort()).toEqual(['gift.dest', 'gift.kept']);
@@ -328,7 +328,7 @@ describe('keeping a record of a gift that was taken home', () => {
         buttonByText(app.root, t('kept.nav')).click();
         const text = app.root.textContent!;
         expect(text).toContain(WISH);
-        expect(text).toContain('17.97 XEC');
+        expect(text).toContain('18.15 XEC');
         vi.spyOn(window, 'confirm').mockReturnValue(true);
         buttonByText(app.root, t('kept.remove')).click();
         expect(loadKept()).toEqual([]);

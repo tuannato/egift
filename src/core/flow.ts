@@ -79,24 +79,44 @@ type Resolution =
     /** Its coins are unspent, but no node said the tx is gone. Only the same bytes may go out again. */
     | { readonly kind: 'unspent' };
 
-/** Find out what became of a remembered sweep, before anything new is signed. */
+/**
+ * How long "no node knows this transaction" is left to stand before it is believed. A transaction that a node took
+ * a moment ago may not have reached the node that is asked next: its "absent" then says nothing about the first.
+ */
+let absentWaitMs = 3000;
+/** For tests: the wait before "absent" is asked about a second time. */
+export function setAbsentWaitForTests(ms: number): void {
+    absentWaitMs = ms;
+}
+
+/**
+ * Find out what became of a remembered sweep, before anything new is signed.
+ *
+ * "Absent" (no node knows it, its coins are unspent) is what allows a new signature, so it is the one answer that
+ * is never taken at once: it is asked for again after a wait, and only two "absent" in a row, with the coins still
+ * unspent both times, count.
+ */
 async function resolve(chain: Chain, address: string, r: Remembered): Promise<Resolution> {
-    const lk = await safeLookup(chain, r.txid);
-    if (lk === 'final') {
-        memory.set(address, { ...r, final: true });
-        return { kind: 'result', result: done(r) };
+    for (let pass = 0; ; pass++) {
+        const lk = await safeLookup(chain, r.txid);
+        if (lk === 'final') {
+            memory.set(address, { ...r, final: true });
+            return { kind: 'result', result: done(r) };
+        }
+        if (lk === 'seen') return { kind: 'result', result: await settleRemembered(chain, address, r) };
+        let live: Set<string>;
+        try {
+            live = new Set((await chain.read(address)).coins.map(op));
+        } catch {
+            return { kind: 'result', result: pending(r) };
+        }
+        // Some of our coins are spent, by us or by someone else: the settlement,
+        // told our outpoints, can tell which.
+        if (!r.spent.every(o => live.has(op(o)))) return { kind: 'result', result: await settleRemembered(chain, address, r) };
+        if (lk !== 'absent') return { kind: 'unspent' };
+        if (pass > 0) return { kind: 'absent' };
+        await new Promise(res => setTimeout(res, absentWaitMs));
     }
-    if (lk === 'seen') return { kind: 'result', result: await settleRemembered(chain, address, r) };
-    let live: Set<string>;
-    try {
-        live = new Set((await chain.read(address)).coins.map(op));
-    } catch {
-        return { kind: 'result', result: pending(r) };
-    }
-    if (r.spent.every(o => live.has(op(o)))) return lk === 'absent' ? { kind: 'absent' } : { kind: 'unspent' };
-    // Some of our coins are spent, by us or by someone else: the settlement,
-    // told our outpoints, can tell which.
-    return { kind: 'result', result: await settleRemembered(chain, address, r) };
 }
 
 /** Broadcast a remembered sweep (again: the same bytes are harmless) and wait for its verdict. */

@@ -333,7 +333,8 @@ h2, .step-title, .state-title, .done-title { font-size: var(--t17); font-weight:
 .chip:hover { color: var(--ink); border-color: var(--dim); background: rgba(255, 255, 255, 0.04); }
 .textarea--wish { font: 500 clamp(19px, 5.4vw, 22px) / 1.4 var(--text); min-height: 108px; padding: var(--s4); }
 .check--confirm { padding: 0; align-items: center; color: var(--dim); font-size: var(--t15); }
-.check-why { color: var(--warn); }
+/* What a switch does, said beside it: plain, since it is an explanation and not a warning. */
+.check-why { color: var(--dim); }
 .finish-host { display: flex; flex-direction: column; gap: var(--s2); }
 .confirm-step { display: flex; flex-direction: column; gap: var(--s4); padding-top: var(--s5); border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .confirm-body { font: 600 clamp(22px, 6vw, 28px) / 1.25 var(--display); letter-spacing: -0.01em; }

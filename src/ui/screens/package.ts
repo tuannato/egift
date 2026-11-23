@@ -321,9 +321,10 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             },
         },
         h('div', { class: 'field' }, h('p', { class: 'label' }, t('pkg.riddle.q.label')), q),
-        // The question is a stranger's words on this page: the two things nobody may ask for are said before any answer.
-        h('p', { class: 'warning danger scam' }, t('pkg.empty.scam')),
         h('div', { class: 'field' }, h('label', { class: 'label', for: 'rd-answer' }, t('pkg.riddle.a.label')), answer),
+        // The question is a stranger's words on this page: what nobody may ask for is said before any answer is sent,
+        // in view between the box and the button, and no longer between the question and where it is answered.
+        h('p', { class: 'warning danger scam' }, t('pkg.empty.scam')),
         submit,
         msg,
     );
