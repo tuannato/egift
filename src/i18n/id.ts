@@ -141,6 +141,12 @@ export const id: Record<keyof typeof vi, string> = {
     'create.error': "Tautan tidak bisa dibuat. Silakan coba lagi.",
 
     'created.title': "Hadiah Anda sudah siap",
+    'created.title.empty': "Tautan sudah dibuat, belum ada uang di dalamnya",
+    'created.startover.next': "Bungkus hadiah lain",
+    'take.confirm.to': "Ke dompet {to}.",
+    'created.many.empty': "{n} tautan sudah dibuat, belum ada uang di dalamnya",
+    'created.many.one.empty': "Tautan berisi {n} hadiah sudah dibuat, belum ada uang di dalamnya",
+    'created.many.some': "{k} dari {n} hadiah sudah berisi uang",
     'created.preview': "Pratinjau",
     'created.step1.title': "Simpan tautannya",
     'created.step1.body': "Salin, bagikan, atau unduh tautannya dulu. Jika tautannya hilang, hadiahnya ikut hilang.",

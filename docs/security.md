@@ -15,8 +15,8 @@ eGift is beta software: use small amounts.
   before "Create" is pressed, and no key, link or secret is written to
   storage, a request, a title or a log; a wallet address is never put in a
   title or a log. Browser storage holds the chosen
-  language, a list of favourite wrappers, and short records of gifts taken
-  home or funded (never a link). A record is written once the gift is home,
+  language, a list of favourite wrappers, the looks you saved, and
+  short records of gifts taken home or funded (never a link). A record is written once the gift is home,
   or once it is seen funded; the screen says so, with a button that removes
   it and a switch that stops records being written at all. Storage also
   holds the wallet address a gift was last taken home to, written once that
@@ -46,11 +46,17 @@ was sent keeps naming the same address.
 - A gift link's path names its wrapper (`/snowbox/`), so the host and a chat
   app that draws a preview learn which wrapper a link uses. They never see
   the part after `#`.
-- A record kept in your browser holds the amount, the time and
-  the gift's address (only part of it for a gift you received), never the link.
-  For a gift you made it also holds the name you gave it, if you gave one, and
-  its place among gifts made together ("3/9"). Anyone who uses the same
+- A record kept in your browser holds the amount, the time, the wrapper and
+  how it was dressed, the wish, and the gift's address (only part of it for a
+  gift you received), never the link. For a gift you received it also holds
+  the network fee and, if the gift held a token, which token and how much.
+  For a gift you made it also holds the name you gave it, if you gave one,
+  and its place among gifts made together ("3/9"). Anyone who uses the same
   browser can read these.
+- While a gift's page is open, its link is in the address bar. The browser's
+  history keeps it like any other address, and a history that is synced
+  between devices carries it there too. Open a gift on a device you trust,
+  and take it home before you leave the page.
 - Several gifts made together are funded by one transaction, so anyone can
   see on the chain that they belong together. With a paid wrapper that
   transaction also lists the address of each of them.

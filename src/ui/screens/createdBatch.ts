@@ -23,6 +23,8 @@ import { setUserText } from '../text';
 export const FUND_QR_MAX_CHARS = 420;
 /** How often every gift is asked about again while the screen is up (the first gift is also watched live). */
 const POLL_MS = 20_000;
+/** Once every gift is funded, the waits between reads: each longer than the last, the last one kept. */
+const QUIET_MS = [60_000, 120_000, 300_000] as const;
 
 /**
  * Screen B for several gifts made by one press. Only reachable in the session that made the keys.
@@ -358,6 +360,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
 
     // ---- The count, and the gift a wallet left out ----
     const statusText = h('span', null, t('batch.status.waiting'));
+    const title = h('h1', null, '');
     const status = h('p', { class: 'status status--waiting', role: 'status', 'aria-live': 'polite' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), statusText);
     const stampNote = h('p', { class: 'note', hidden: true });
     // A gift with two kinds of token in it: the recipient can take one kind home, the other stays stuck. Said in
@@ -479,6 +482,8 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             r.el.dataset.state = key.slice('batch.row.'.length);
         });
         const all = k === n;
+        // Ready is said only once every gift has its money: until then these are links to empty packages.
+        title.textContent = all ? t(batch!.kind === 'answers' ? 'batch.title.one' : 'batch.title', { n }) : k > 0 ? t('created.many.some', { k, n }) : t(batch!.kind === 'answers' ? 'created.many.one.empty' : 'created.many.empty', { n });
         const mixed = batch!.gifts.map((g, i) => (kindsIn(states[i]) > 1 ? label(g, i) : '')).filter(x => x !== '');
         twoKinds.hidden = mixed.length === 0;
         if (mixed.length > 0) setUserText(twoKinds, t('batch.tok.two', { who: mixed.join(', ') }));
@@ -576,8 +581,31 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     } catch {
         /* the list then updates on the timer only */
     }
-    const timer = setInterval(() => void refresh(), POLL_MS);
+    // The list is read again on a timer, since only the first gift's address is watched. Not while the tab is out of
+    // sight (it is read at once when it comes back), and less and less often once every gift is funded: what is left
+    // to learn then is who has taken theirs, which nothing here waits on.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let quiet = -1;
+    function next(fired = false): void {
+        clearTimeout(timer);
+        if (disposed || document.hidden) return;
+        // A token on its way to the gifts is waited for at the usual pace: only the first gift is watched live.
+        const tokenDue = batch!.tokenSent !== undefined && !states.every(s => s !== null && s !== undefined && (s.hasToken || s.kind === 'taken'));
+        const calm = fundedCount() === n && !tokenDue;
+        // Each calm wait that ran its course makes the next one longer; anything else starts over.
+        quiet = !calm ? -1 : fired ? Math.min(quiet + 1, QUIET_MS.length - 1) : Math.max(quiet, 0);
+        timer = setTimeout(() => {
+            void refresh();
+            next(true);
+        }, calm ? QUIET_MS[quiet]! : POLL_MS);
+    }
+    const onSight = (): void => {
+        if (!document.hidden) void refresh();
+        next();
+    };
+    document.addEventListener('visibilitychange', onSight);
     void refresh();
+    next();
 
     // Closing the tab erases the only copy of these keys: asked first, until every gift is funded and saved after that.
     const onLeave = (e: BeforeUnloadEvent): void => {
@@ -617,7 +645,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             { class: 'screen screen-created screen-batch' },
             layout({
                 kind: 'created',
-                head: [h('h1', null, t(batch.kind === 'answers' ? 'batch.title.one' : 'batch.title', { n }))],
+                head: [title],
                 plate: plate(card, def, { tag: t('created.preview') }),
                 body: [
                     amountBlock({ text: formatXec(total, lang), label: t('batch.total.label'), size: 'small' }),
@@ -650,7 +678,8 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
 
     return () => {
         disposed = true;
-        clearInterval(timer);
+        clearTimeout(timer);
+        document.removeEventListener('visibilitychange', onSight);
         unwatch();
         watchMissing([]);
         window.removeEventListener('beforeunload', onLeave);

@@ -270,7 +270,12 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
         s.sweptTo = to;
         s.fee = p.feeSats;
         s.feeFor = p.sentSats;
+        // Where it goes is said again beside what arrives: the start and the end of the address, enough to tell a
+        // wrong paste from the right one at a glance.
+        const body = to.replace(/^ecash:/i, '');
         confirm.textContent =
+            t('take.confirm.to', { to: `${body.slice(0, 6)}…${body.slice(-4)}` }) +
+            ' ' +
             t('take.confirm', { amount: formatXec(p.sentSats, lang), fee: formatXec(p.feeSats, lang) }) +
             ' ' +
             // What happens to a token is always said before the press: it goes along, or it stays.

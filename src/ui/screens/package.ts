@@ -429,7 +429,10 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
     let looking: Promise<void> | null = lookAhead();
     // A page that says "nothing here yet" looks again when it is come back to, or when the network returns.
     const relook = (): void => {
-        if (!disposed && waiting && !working && document.visibilityState !== 'hidden') looking = lookAhead();
+        if (disposed || document.visibilityState === 'hidden') return;
+        if (waiting && !working) looking = lookAhead();
+        // How many gifts are left behind a shared link may have changed while the page was out of sight.
+        void countLeft();
     };
     document.addEventListener('visibilitychange', relook);
     window.addEventListener('online', relook);

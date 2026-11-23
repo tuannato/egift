@@ -35,6 +35,8 @@ type View = 'shelf' | 'how' | 'about' | 'workshop' | 'market' | 'kept' | 'sent';
  */
 /** How many remembered gifts the "sent" page asks the network about at once. */
 const SENT_READ_MAX = 9;
+/** Out of sight for this long, what the list of gifts sent read from the chain is asked for again. */
+const SENT_STALE_MS = 10_000;
 
 let worn: string | null = null;
 let view: View = 'shelf';
@@ -802,7 +804,23 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     requestAnimationFrame(ends);
     root.append(h('section', { class: 'screen screen-home' }, h('div', { class: 'layout layout--home' }, doorsEl, prev, next, cap.el)));
     sync();
+    // The list of gifts sent says what the chain said when it was asked. Come back to after a while out of sight
+    // (a phone that slept), it asks again: what was read before is forgotten and the list is drawn anew.
+    let awayAt: number | undefined;
+    const onSight = (): void => {
+        if (document.visibilityState === 'hidden') {
+            awayAt ??= Date.now();
+            return;
+        }
+        const away = awayAt === undefined ? 0 : Date.now() - awayAt;
+        awayAt = undefined;
+        if (view !== 'sent' || away < SENT_STALE_MS) return;
+        sentStates.clear();
+        renderBody();
+    };
+    document.addEventListener('visibilitychange', onSight);
     return () => {
+        document.removeEventListener('visibilitychange', onSight);
         score.stop();
         window.removeEventListener('resize', fitStills);
         for (const d of doors) d.card.destroy();

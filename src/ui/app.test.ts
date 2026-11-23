@@ -608,13 +608,19 @@ describe('created safety', () => {
         app.chain.fund(getMade()!.key.address, getMade()!.sats);
         await flush();
         expect(app.root.querySelector('.status--ok')).toBeTruthy();
+        // Funded: the title says the gift is ready, and the way out is named for what comes next, not for undoing.
+        expect(app.root.querySelector('h1')!.textContent).toBe(t('created.title'));
+        // Taken while the screen is up: the title no longer says ready, and never says "no money yet" either.
+        app.chain.steal(getMade()!.key.address);
+        await flush();
+        expect(app.root.querySelector('h1')!.textContent).toBe(t('pkg.taken'));
         const ask = vi.spyOn(window, 'confirm').mockReturnValue(false);
-        buttonByText(app.root, t('created.startover')).click();
+        buttonByText(app.root, t('created.startover.next')).click();
         expect(ask).toHaveBeenCalledWith(t('created.startover.unsaved'));
         expect(getMade()).not.toBeNull();
         expect(app.root.querySelector('#f-amount')).toBeNull();
         ask.mockReturnValue(true);
-        buttonByText(app.root, t('created.startover')).click();
+        buttonByText(app.root, t('created.startover.next')).click();
         await flush();
         expect(getMade()).toBeNull();
     });
@@ -654,6 +660,8 @@ describe('closing the tab on the funding step', () => {
         app = boot();
         await createGift(app.root);
         expect(asksBeforeLeaving()).toBe(true);
+        // Nothing is in it yet, and the title says so.
+        expect(app.root.querySelector('h1')!.textContent).toBe(t('created.title.empty'));
         vi.spyOn(window, 'confirm').mockReturnValue(true);
         buttonByText(app.root, t('created.startover')).click();
         await flush();
@@ -672,11 +680,11 @@ describe('start over always asks', () => {
         app.chain.fund(getMade()!.key.address, getMade()!.sats);
         await flush();
         const ask = vi.spyOn(window, 'confirm').mockReturnValue(false);
-        buttonByText(app.root, t('created.startover')).click();
+        buttonByText(app.root, t('created.startover.next')).click();
         expect(ask).toHaveBeenCalledWith(t('created.startover.funded'));
         expect(getMade()).not.toBeNull();
         ask.mockReturnValue(true);
-        buttonByText(app.root, t('created.startover')).click();
+        buttonByText(app.root, t('created.startover.next')).click();
         await flush();
         expect(getMade()).toBeNull();
     });

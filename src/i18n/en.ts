@@ -141,6 +141,12 @@ export const en: Record<keyof typeof vi, string> = {
     'create.error': 'Could not make the link. Please try again.',
 
     'created.title': 'Your gift is ready',
+    'created.title.empty': "The link is made, with no money in it yet",
+    'created.startover.next': "Wrap another gift",
+    'take.confirm.to': "To the wallet {to}.",
+    'created.many.empty': "{n} links are made, with no money in them yet",
+    'created.many.one.empty': "The link with {n} gifts is made, with no money in it yet",
+    'created.many.some': "{k} of {n} gifts have money in them",
     'created.preview': 'Preview',
     'created.step1.title': 'Save the link',
     'created.step1.body': 'Copy, share or download the link first. If you lose it, the gift is gone.',

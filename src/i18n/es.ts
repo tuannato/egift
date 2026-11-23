@@ -141,6 +141,12 @@ export const es: Record<keyof typeof vi, string> = {
     'create.error': "No se pudo crear el enlace. Inténtalo de nuevo, por favor.",
 
     'created.title': "Tu regalo está listo",
+    'created.title.empty': "El enlace está creado, aún sin dinero dentro",
+    'created.startover.next': "Envolver otro regalo",
+    'take.confirm.to': "A la billetera {to}.",
+    'created.many.empty': "{n} enlaces creados, aún sin dinero dentro",
+    'created.many.one.empty': "El enlace con {n} regalos está creado, aún sin dinero dentro",
+    'created.many.some': "{k} de {n} regalos ya tienen dinero",
     'created.preview': "Vista previa",
     'created.step1.title': "Guarda el enlace",
     'created.step1.body': "Primero copia, comparte o descarga el enlace. Si lo pierdes, el regalo se pierde.",

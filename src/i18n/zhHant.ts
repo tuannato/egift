@@ -141,6 +141,12 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'create.error': "無法產生連結。請再試一次。",
 
     'created.title': "禮物準備好了",
+    'created.title.empty': "連結已建立，裡面還沒有錢",
+    'created.startover.next': "再包一份禮物",
+    'take.confirm.to': "轉入錢包 {to}。",
+    'created.many.empty': "已建立 {n} 個連結，裡面還沒有錢",
+    'created.many.one.empty': "含 {n} 份禮物的連結已建立，裡面還沒有錢",
+    'created.many.some': "{n} 份禮物中已有 {k} 份到帳",
     'created.preview': "預覽",
     'created.step1.title': "儲存連結",
     'created.step1.body': "請先複製、分享或下載連結。連結不見了，禮物就沒了。",

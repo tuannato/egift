@@ -161,7 +161,7 @@ export function getLang(): Lang {
     return current;
 }
 
-/** Change the language, remember it (the only thing the page ever stores) and tell the listeners. */
+/** Change the language, remember it (under the one key this file owns) and tell the listeners. */
 export function setLang(lang: Lang): void {
     if (!isLang(lang) || lang === current) return;
     current = lang;

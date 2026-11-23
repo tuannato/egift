@@ -141,6 +141,12 @@ export const ko: Record<keyof typeof vi, string> = {
     'create.error': "링크를 만들지 못했어요. 다시 시도해 주세요.",
 
     'created.title': "선물이 준비됐어요",
+    'created.title.empty': "링크가 만들어졌습니다. 아직 돈은 들어 있지 않습니다",
+    'created.startover.next': "다른 선물 포장하기",
+    'take.confirm.to': "받는 지갑: {to}.",
+    'created.many.empty': "링크 {n}개가 만들어졌습니다. 아직 돈은 들어 있지 않습니다",
+    'created.many.one.empty': "선물 {n}개가 담긴 링크가 만들어졌습니다. 아직 돈은 들어 있지 않습니다",
+    'created.many.some': "선물 {n}개 중 {k}개에 돈이 들어왔습니다",
     'created.preview': "미리 보기",
     'created.step1.title': "링크 저장",
     'created.step1.body': "먼저 링크를 복사하거나 공유하거나 다운로드하세요. 링크를 잃으면 선물도 사라져요.",

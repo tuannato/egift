@@ -141,6 +141,12 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'create.error': "没能生成链接。请再试一次。",
 
     'created.title': "礼物准备好了",
+    'created.title.empty': "链接已生成，里面还没有钱",
+    'created.startover.next': "再包一份礼物",
+    'take.confirm.to': "转入钱包 {to}。",
+    'created.many.empty': "已生成 {n} 个链接，里面还没有钱",
+    'created.many.one.empty': "含 {n} 份礼物的链接已生成，里面还没有钱",
+    'created.many.some': "{n} 份礼物中已有 {k} 份到账",
     'created.preview': "预览",
     'created.step1.title': "保存链接",
     'created.step1.body': "请先复制、分享或下载链接。链接丢了，礼物就没了。",

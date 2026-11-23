@@ -153,7 +153,8 @@ describe('several people on the create step', () => {
         }
         // The names are the giver's own: none is in any link.
         expect(b.gifts.some(g => g.link!.includes('Hai'))).toBe(false);
-        expect(app.root.textContent).toContain(t('batch.title', { n: 3 }));
+        // Made, not funded: the title does not say ready.
+        expect(app.root.querySelector('h1')!.textContent).toBe(t('created.many.empty', { n: 3 }));
         // The form is empty again for the next batch.
         expect(app.root.querySelector('.people-row')).toBeNull();
     });
@@ -276,7 +277,7 @@ describe('several people on the create step', () => {
         expect(b.gifts.map(g => g.sats)).toEqual([2_000n, 3_000n, 4_000n]);
         // A wrong answer is a key to an address that holds nothing.
         expect(b.gifts.map(g => g.key.address)).not.toContain((await unlockKey(link, 'red kit')).address);
-        expect(app.root.textContent).toContain(t('batch.title.one', { n: 3 }));
+        expect(app.root.querySelector('h1')!.textContent).toBe(t('created.many.one.empty', { n: 3 }));
         expect(app.root.textContent).toContain(t('batch.riddle.one'));
     });
 });
@@ -492,6 +493,47 @@ describe('several gifts on the created step', () => {
         await confirmBatch();
     }
 
+    it('does not read while the tab is hidden, reads at once when it is back, and slows down once every gift is funded', async () => {
+        await made([{ name: '', amount: '20' }, { name: '', amount: '30' }]);
+        try {
+            const b = getBatch()!;
+            await flush();
+            const read = vi.spyOn(app!.chain, 'read');
+            vi.useFakeTimers();
+            const hide = (hidden: boolean): void => {
+                Object.defineProperty(document, 'hidden', { configurable: true, value: hidden });
+                document.dispatchEvent(new Event('visibilitychange'));
+            };
+            // In sight: both gifts are asked about every twenty seconds.
+            hide(false);
+            await vi.advanceTimersByTimeAsync(100);
+            read.mockClear();
+            await vi.advanceTimersByTimeAsync(20_100);
+            expect(read.mock.calls.length).toBe(2);
+            // Out of sight: nothing is asked, however long.
+            hide(true);
+            read.mockClear();
+            await vi.advanceTimersByTimeAsync(600_000);
+            expect(read.mock.calls.length).toBe(0);
+            // Back: asked at once.
+            hide(false);
+            await vi.advanceTimersByTimeAsync(100);
+            expect(read.mock.calls.length).toBe(2);
+            // Every gift funded: the next reads are a minute, then two, then five apart.
+            for (const g of b.gifts) app!.chain.fund(g.key.address, g.sats);
+            await vi.advanceTimersByTimeAsync(25_000);
+            expect(app!.root.textContent).toContain(t('batch.status.all', { n: 2 }));
+            read.mockClear();
+            await vi.advanceTimersByTimeAsync(50_000);
+            expect(read.mock.calls.length).toBe(0);
+            await vi.advanceTimersByTimeAsync(10_000);
+            expect(read.mock.calls.length).toBe(2);
+        } finally {
+            vi.useRealTimers();
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+        }
+    });
+
     it('funding is locked until the whole list is saved in one piece; a copy of one row does not count', async () => {
         const clip = stubClipboard();
         await made([{ name: 'A', amount: '20' }, { name: 'B', amount: '30' }]);
@@ -578,6 +620,7 @@ describe('several gifts on the created step', () => {
         expect(top.textContent).toContain(t('batch.fund.again'));
         app!.chain.fund(b.gifts[1]!.key.address, b.gifts[1]!.sats);
         await until(() => app!.root.textContent!.includes(t('batch.status.all', { n: 3 })));
+        expect(app!.root.querySelector('h1')!.textContent).toBe(t('batch.title', { n: 3 }));
         expect($('.batch-topup').hidden).toBe(true);
         // The giver's record: where each gift is, its name and its place. Never a link.
         const sent = loadSent();

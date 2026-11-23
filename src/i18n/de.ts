@@ -141,6 +141,12 @@ export const de: Record<keyof typeof vi, string> = {
     'create.error': "Der Link konnte nicht erstellt werden. Bitte versuch es noch einmal.",
 
     'created.title': "Dein Geschenk ist bereit",
+    'created.title.empty': "Der Link ist erstellt, noch ohne Geld darin",
+    'created.startover.next': "Ein weiteres Geschenk verpacken",
+    'take.confirm.to': "An die Wallet {to}.",
+    'created.many.empty': "{n} Links sind erstellt, noch ohne Geld darin",
+    'created.many.one.empty': "Der Link mit {n} Geschenken ist erstellt, noch ohne Geld darin",
+    'created.many.some': "{k} von {n} Geschenken enthalten Geld",
     'created.preview': "Vorschau",
     'created.step1.title': "Link sichern",
     'created.step1.body': "Kopiere, teile oder lade den Link zuerst herunter. Wenn du ihn verlierst, ist das Geschenk weg.",

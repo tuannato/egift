@@ -470,6 +470,52 @@ describe('watch', () => {
         }
     });
 
+    it('coming back after a while out of sight opens a fresh socket and reads; a short absence only reads', async () => {
+        vi.useFakeTimers();
+        const sight = (state: 'hidden' | 'visible'): void => {
+            Object.defineProperty(document, 'visibilityState', { configurable: true, value: state });
+            document.dispatchEvent(new Event('visibilitychange'));
+        };
+        try {
+            const f = fake();
+            let n = 0;
+            const stop = f.chain.watch(key.address, () => n++);
+            await vi.advanceTimersByTimeAsync(5);
+            expect(f.sockets.length).toBe(1);
+            // A glance away: the same socket, and one read on the way back.
+            sight('hidden');
+            await vi.advanceTimersByTimeAsync(5_000);
+            sight('visible');
+            expect(f.sockets.length).toBe(1);
+            expect(n).toBe(1);
+            // A phone that slept: nothing is read meanwhile; back, the old socket is closed, a new one hears the address.
+            sight('hidden');
+            await vi.advanceTimersByTimeAsync(120_000);
+            expect(n).toBe(1);
+            sight('visible');
+            await vi.advanceTimersByTimeAsync(5);
+            expect(f.sockets.length).toBe(2);
+            expect(f.sockets[0]!.closed).toBe(true);
+            expect(f.sockets[1]!.subs).toEqual([key.address]);
+            expect(n).toBe(2);
+            // The old socket is no longer listened to; the new one is.
+            f.sockets[0]!.emit(txMsg(otherTxid, 'TX_ADDED_TO_MEMPOOL'));
+            expect(n).toBe(2);
+            await vi.advanceTimersByTimeAsync(500);
+            f.sockets[1]!.emit(txMsg(otherTxid, 'TX_ADDED_TO_MEMPOOL'));
+            expect(n).toBe(3);
+            // The network came back: a fresh socket too.
+            window.dispatchEvent(new Event('online'));
+            await vi.advanceTimersByTimeAsync(5);
+            expect(f.sockets.length).toBe(3);
+            stop();
+            expect(f.sockets[2]!.closed).toBe(true);
+        } finally {
+            Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+            vi.useRealTimers();
+        }
+    });
+
     it('a bad address watches nothing', () => {
         const f = fake();
         const stop = f.chain.watch('nope', () => {});

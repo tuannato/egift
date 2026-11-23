@@ -139,6 +139,12 @@ export const vi = {
     'create.error': 'Chưa tạo được link. Hãy thử lại.',
 
     'created.title': 'Món quà đã sẵn sàng',
+    'created.title.empty': "Link đã tạo, chưa có tiền bên trong",
+    'created.startover.next': "Gói quà khác",
+    'take.confirm.to': "Gửi về ví {to}.",
+    'created.many.empty': "{n} link đã tạo, chưa có tiền bên trong",
+    'created.many.one.empty': "Link gồm {n} phần quà đã tạo, chưa có tiền bên trong",
+    'created.many.some': "{k}/{n} quà đã có tiền",
     'created.preview': 'Xem trước',
     'created.step1.title': 'Lưu link',
     'created.step1.body': 'Chép, chia sẻ hoặc tải link về trước. Mất link là mất quà.',

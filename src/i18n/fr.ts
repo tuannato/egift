@@ -141,6 +141,12 @@ export const fr: Record<keyof typeof vi, string> = {
     'create.error': "Le lien n'a pas pu être créé. Merci de réessayer.",
 
     'created.title': "Votre cadeau est prêt",
+    'created.title.empty': "Le lien est créé, encore sans argent dedans",
+    'created.startover.next': "Emballer un autre cadeau",
+    'take.confirm.to': "Vers le portefeuille {to}.",
+    'created.many.empty': "{n} liens créés, encore sans argent dedans",
+    'created.many.one.empty': "Le lien de {n} cadeaux est créé, encore sans argent dedans",
+    'created.many.some': "{k} cadeaux sur {n} contiennent de l’argent",
     'created.preview': "Aperçu",
     'created.step1.title': "Enregistrer le lien",
     'created.step1.body': "Copiez, partagez ou téléchargez d'abord le lien. Si vous le perdez, le cadeau est perdu.",

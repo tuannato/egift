@@ -16,8 +16,10 @@
  * site's data after seven days without a visit; a private window drops it on
  * close). The file a person downloads is the copy that lasts.
  *
- * With `i18n/index.ts` (the language), this is the only file that touches
- * storage.
+ * Storage is touched by this file and five small ones, each with one key of
+ * its own: the language (`i18n/index.ts`), favourite wrappers (`fav.ts`), saved
+ * looks (`looks.ts`), the take-home address (`dest.ts`) and the giver's fee
+ * choice (`prefs.ts`). `source.test.ts` holds the list.
  */
 import { formatAtoms, formatXec } from '../core/money';
 import { formatRecipe, parseRecipe } from '../core/recipe';

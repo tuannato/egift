@@ -141,6 +141,12 @@ export const pt: Record<keyof typeof vi, string> = {
     'create.error': "Não foi possível criar o link. Tente de novo.",
 
     'created.title': "Seu presente está pronto",
+    'created.title.empty': "O link está criado, ainda sem dinheiro dentro",
+    'created.startover.next': "Embrulhar outro presente",
+    'take.confirm.to': "Para a carteira {to}.",
+    'created.many.empty': "{n} links criados, ainda sem dinheiro dentro",
+    'created.many.one.empty': "O link com {n} presentes está criado, ainda sem dinheiro dentro",
+    'created.many.some': "{k} de {n} presentes já têm dinheiro",
     'created.preview': "Prévia",
     'created.step1.title': "Salve o link",
     'created.step1.body': "Copie, compartilhe ou baixe o link primeiro. Se você perder o link, perde o presente.",

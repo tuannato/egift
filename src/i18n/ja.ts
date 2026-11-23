@@ -141,6 +141,12 @@ export const ja: Record<keyof typeof vi, string> = {
     'create.error': "リンクを作れませんでした。もう一度お試しください。",
 
     'created.title': "ギフトの準備ができました",
+    'created.title.empty': "リンクを作成しました。まだお金は入っていません",
+    'created.startover.next': "別のギフトを包む",
+    'take.confirm.to': "送り先のウォレット：{to}。",
+    'created.many.empty': "{n}件のリンクを作成しました。まだお金は入っていません",
+    'created.many.one.empty': "ギフト{n}件のリンクを作成しました。まだお金は入っていません",
+    'created.many.some': "{n}件中{k}件のギフトにお金が入りました",
     'created.preview': "プレビュー",
     'created.step1.title': "リンクを保存する",
     'created.step1.body': "まずリンクをコピー、共有、またはダウンロードしてください。なくすとギフトも失われます。",

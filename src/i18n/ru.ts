@@ -141,6 +141,12 @@ export const ru: Record<keyof typeof vi, string> = {
     'create.error': "Не удалось создать ссылку. Попробуйте ещё раз.",
 
     'created.title': "Ваш подарок готов",
+    'created.title.empty': "Ссылка создана, денег в ней пока нет",
+    'created.startover.next': "Упаковать другой подарок",
+    'take.confirm.to': "На кошелёк {to}.",
+    'created.many.empty': "Создано ссылок: {n}. Денег в них пока нет",
+    'created.many.one.empty': "Ссылка создана, подарков в ней: {n}. Денег пока нет",
+    'created.many.some': "Подарков с деньгами: {k} из {n}",
     'created.preview': "Предпросмотр",
     'created.step1.title': "Сохраните ссылку",
     'created.step1.body': "Сначала скопируйте ссылку, поделитесь ею или скачайте её. Потеряете ссылку — потеряете подарок.",

@@ -13,9 +13,6 @@ import { setTokenIconSource } from './ui/tokens';
 
 const DEMO_ICON = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#c9a24a"/><circle cx="32" cy="32" r="18" fill="none" stroke="#3a2a08" stroke-width="6"/></svg>');
 
-// The page's language is fetched before anything is drawn (English is already here). If it cannot be fetched, English stands in.
-await loadLang(initLang()).catch(() => {});
-
 /** The heavy piece (`src/heavy.ts`), fetched once. A fetch that failed is forgotten, so the next ask tries again. */
 let heavy: Promise<typeof import('./heavy')> | undefined;
 function loadHeavy(): Promise<typeof import('./heavy')> {
@@ -27,6 +24,14 @@ function loadHeavy(): Promise<typeof import('./heavy')> {
     }
     return heavy;
 }
+
+// A gift link, or a visit that was on the create step, needs the heavy piece at once: its fetch starts here, before
+// the language is waited for, so the two travel together.
+const needsHeavy = location.hash.length > 1 || (history.state as { gift?: string } | null)?.gift === 'create';
+if (needsHeavy) void loadHeavy().catch(() => {});
+
+// The page's language is fetched before anything is drawn (English is already here). If it cannot be fetched, English stands in.
+await loadLang(initLang()).catch(() => {});
 
 /**
  * The chain, before its client has arrived: every question waits for the
@@ -99,12 +104,20 @@ if (root) {
         if (params.has('listen')) void import('./ui/listen').then(m => m.mountListen(root));
         else startApp(root, d, demo, screens);
     } else {
-        // A gift link, or a visit that was on the create step, needs the heavy piece at once: it is fetched while the
-        // page draws. A visit to the shop fetches it a moment later, quietly, so that the next step is ready: unless the
-        // browser says its person saves data or is on a slow connection, and then it waits until it is needed.
-        const needsIt = location.hash.length > 1 || (history.state as { gift?: string } | null)?.gift === 'create';
-        if (needsIt) void loadHeavy().catch(() => {});
-        else if (!sparesData()) setTimeout(() => void loadHeavy().catch(() => {}), 1500);
+        // A visit to the shop does not fetch the heavy piece ahead of time: most visitors only look, and it is well
+        // over a megabyte. It is fetched at the first sign that a gift will be made (a wrapper tried on, a press on
+        // the button that goes to the create step), unless the browser says its person saves data: then it waits
+        // until it is needed.
+        if (!needsHeavy && !sparesData()) {
+            const intent = (e: Event): void => {
+                const at = e.target instanceof Element ? e.target.closest('.door-btn, .home-go') : null;
+                if (!at) return;
+                document.removeEventListener('click', intent, true);
+                void loadHeavy().catch(() => {});
+            };
+            // A click, not a touch: a finger that lands on a wrapper to scroll the shelf is not a sign of anything.
+            document.addEventListener('click', intent, true);
+        }
         startApp(root, lazyChain(), undefined, loadHeavy);
     }
 }

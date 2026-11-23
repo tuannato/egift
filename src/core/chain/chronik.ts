@@ -114,6 +114,8 @@ const KNOWN_FINAL_MAX = 500;
 const WATCH_MIN_GAP_MS = 400;
 /** A watched address is also read this often while the page is in view, socket or no socket. */
 const WATCH_BEAT_MS = 25_000;
+/** Out of sight for this long, a socket is no longer trusted to be alive: a new one is opened on the way back. */
+const STALE_SOCKET_MS = 30_000;
 /** After a message at a watched address, read again this long after it. */
 const FOLLOW_UPS_MS: readonly number[] = [800, 2000, 5000, 12000];
 /** After a broadcast, ask about the tx this long after it, before settling into the slower recheck. */
@@ -699,46 +701,73 @@ export function createChronikChain(opts: { client?: ChronikLike; peers?: readonl
             followUps = FOLLOW_UPS_MS.map(ms => setTimeout(call, ms));
             call();
         };
+        /** Open a socket for the address, in place of the one before (if any). Only the newest one is listened to. */
+        let opened = 0;
+        const open = (): void => {
+            const mine = ++opened;
+            const old = ws;
+            ws = undefined;
+            try {
+                old?.close();
+            } catch {
+                // best effort
+            }
+            void (async () => {
+                let s: ChronikWsLike | undefined;
+                const stale = (): boolean => closed || mine !== opened;
+                try {
+                    s = getClient().ws({
+                        onMessage: msg => {
+                            if (stale()) return void s?.close();
+                            noteFinal(msg);
+                            if (msg.type === 'Tx') changed();
+                        },
+                        onReconnect: () => {
+                            if (stale()) return void s?.close();
+                            changed();
+                        },
+                        autoReconnect: true,
+                    });
+                    if (!stale()) ws = s;
+                    s.subscribeToAddress(addr);
+                    await s.waitForOpen();
+                } catch {
+                    // offline: the caller still reads on its own
+                }
+                if (stale()) {
+                    try {
+                        s?.close();
+                    } catch {
+                        // best effort
+                    }
+                }
+            })();
+        };
         // The socket can die for good (a phone that slept, a network that changed) without a word. So the
         // address is also read on a slow beat while the page is in view, and when the page or the network comes back.
         const visible = (): boolean => typeof document === 'undefined' || document.visibilityState !== 'hidden';
         const beat = setInterval(() => {
             if (visible()) call();
         }, WATCH_BEAT_MS);
-        const back = (): void => {
-            if (visible()) call();
+        // A socket that was out of sight for a while (a phone that slept, a tab left behind), or that lived through a
+        // loss of network, may be dead without having said so: the client only opens a new one when the old one
+        // closes. So coming back opens a fresh socket, and then reads.
+        let awayAt: number | undefined;
+        const back = (e?: Event): void => {
+            if (!visible()) {
+                awayAt ??= Date.now();
+                return;
+            }
+            const away = awayAt === undefined ? 0 : Date.now() - awayAt;
+            awayAt = undefined;
+            if (e?.type === 'online' || away >= STALE_SOCKET_MS || (e?.type === 'pageshow' && (e as PageTransitionEvent).persisted === true)) open();
+            call();
         };
         const target = typeof window === 'undefined' ? undefined : window;
         target?.addEventListener('online', back);
         target?.addEventListener('pageshow', back);
         if (typeof document !== 'undefined') document.addEventListener('visibilitychange', back);
-        void (async () => {
-            try {
-                ws = getClient().ws({
-                    onMessage: msg => {
-                        if (closed) return void ws?.close();
-                        noteFinal(msg);
-                        if (msg.type === 'Tx') changed();
-                    },
-                    onReconnect: () => {
-                        if (closed) return void ws?.close();
-                        changed();
-                    },
-                    autoReconnect: true,
-                });
-                ws.subscribeToAddress(addr);
-                await ws.waitForOpen();
-            } catch {
-                // offline: the caller still reads on its own
-            }
-            if (closed) {
-                try {
-                    ws?.close();
-                } catch {
-                    // best effort
-                }
-            }
-        })();
+        open();
         return () => {
             if (closed) return;
             closed = true;

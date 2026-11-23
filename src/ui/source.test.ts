@@ -11,12 +11,12 @@ function files(dir: string): string[] {
 
 describe('source hygiene', () => {
     const root = join(process.cwd(), 'src');
-    const sources = [...files(join(root, 'ui')), ...files(join(root, 'i18n')), join(root, 'main.ts')].filter(
-        f => f.endsWith('.ts') && !f.endsWith('.test.ts') && !/testkit|fakestage/.test(f),
-    );
+    // Every file under `src` that is shipped: the screens, the money core, the stage and the wrappers alike.
+    const sources = files(root).filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts') && !/testkit|fakestage/.test(f));
 
     it('no-source-file-uses-innerHTML', () => {
-        expect(sources.length).toBeGreaterThan(10);
+        expect(sources.length).toBeGreaterThan(100);
+        for (const part of ['/core/', '/stage/', '/wrappers/', '/ui/', '/i18n/']) expect(sources.some(f => f.includes(part)), part).toBe(true);
         const bad = /innerHTML|insertAdjacentHTML|outerHTML|document\.write|eval\(|new Function/;
         for (const f of sources) expect(bad.test(readFileSync(f, 'utf8')), f).toBe(false);
     });

@@ -141,6 +141,12 @@ export const th: Record<keyof typeof vi, string> = {
     'create.error': "สร้างลิงก์ไม่ได้ โปรดลองอีกครั้ง",
 
     'created.title': "ของขวัญของคุณพร้อมแล้ว",
+    'created.title.empty': "สร้างลิงก์แล้ว ยังไม่มีเงินอยู่ข้างใน",
+    'created.startover.next': "ห่อของขวัญชิ้นอื่น",
+    'take.confirm.to': "ส่งไปที่กระเป๋า {to}",
+    'created.many.empty': "สร้างแล้ว {n} ลิงก์ ยังไม่มีเงินอยู่ข้างใน",
+    'created.many.one.empty': "สร้างลิงก์ที่มีของขวัญ {n} ชิ้นแล้ว ยังไม่มีเงินอยู่ข้างใน",
+    'created.many.some': "ของขวัญ {k} จาก {n} ชิ้นมีเงินแล้ว",
     'created.preview': "ดูตัวอย่าง",
     'created.step1.title': "บันทึกลิงก์",
     'created.step1.body': "คัดลอก แชร์ หรือดาวน์โหลดลิงก์ก่อน ถ้าลิงก์หาย ของขวัญก็หายไปด้วย",

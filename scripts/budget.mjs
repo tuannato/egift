@@ -5,8 +5,8 @@
  *
  *   - what the shop must fetch before it can draw (the entry script and what
  *     it preloads), gzipped
- *   - the heavy piece (everything beyond the shop): the page's own code in it,
- *     and the whole of it with the signing module it carries, gzipped
+ *   - the heavy piece (everything beyond the shop): the file that holds the
+ *     page's own code, and that file with the signing core beside it, gzipped
  *   - the rules in `_headers` (the host reads at most 100)
  *   - each wrapper's pictures: its small still, its share card, its art
  *   - the number of files the host is given
@@ -18,8 +18,9 @@ import { join } from 'node:path';
 const KB = 1024;
 const LIMITS = {
     entryGzip: 140 * KB, // the shop's own code with English; one more language adds about 9 kB
-    // The heavy piece is what a gift's recipient waits for. Its own code is the part that grows with features; the
-    // signing module inside it only changes with the library. Both stood at 125 kB and 1280 kB when the limits were set.
+    // The heavy piece is what a gift's recipient waits for, in two files. The first holds the screens and the
+    // libraries' own code: the part that grows with features. The second is the signing core, which only changes with
+    // the library. They stood at 133 kB, and 1287 kB together, when the limits were set.
     heavyOwnGzip: 150 * KB,
     heavyGzip: 1310 * KB,
     headerRules: 40,
@@ -40,18 +41,24 @@ const walk = dir => readdirSync(dir).flatMap(n => (statSync(join(dir, n)).isDire
 const html = readFileSync('dist/index.html', 'utf8');
 const eager = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map(m => m[1]);
 const entry = eager.reduce((sum, f) => sum + gzipSync(readFileSync('dist' + f)).length, 0);
-// The signing module rides in the heavy piece as one long run of base64 lines; what is left is the page's own code.
-const heavyFiles = readdirSync('dist/assets').filter(f => /^heavy-.*\.js$/.test(f));
+// The heavy piece is two files: the screens with the libraries' own code, and the signing core on its own.
+const named = re => readdirSync('dist/assets').filter(f => re.test(f));
+const heavyFiles = named(/^heavy-.*\.js$/);
+const signingFiles = named(/^signing-.*\.js$/);
 if (heavyFiles.length !== 1) fail.push(`heavy piece: expected one file, found ${heavyFiles.length}`);
-const heavyText = heavyFiles.map(f => readFileSync(`dist/assets/${f}`, 'utf8')).join('');
-const gz = text => gzipSync(Buffer.from(text)).length;
-const heavyOwn = gz(heavyText.replace(/(?:[A-Za-z0-9+/]{76}\n){1000,}[A-Za-z0-9+/=]*\n?/g, ''));
+if (signingFiles.length !== 1) fail.push(`signing core: expected one file, found ${signingFiles.length}`);
+const gzFile = f => gzipSync(readFileSync(`dist/assets/${f}`)).length;
+const heavyOwn = heavyFiles.reduce((s, f) => s + gzFile(f), 0);
+const heavyAll = heavyOwn + signingFiles.reduce((s, f) => s + gzFile(f), 0);
+// The signing core must stay out of what the shop fetches, and must not lean on a file that changes with the page.
+if (eager.some(f => /\/(?:heavy|signing)-/.test(f))) fail.push('the shop fetches the heavy piece at once');
+for (const f of signingFiles) if (/import\s*(?:[^"']*from\s*)?["']\.\//.test(readFileSync(`dist/assets/${f}`, 'utf8').slice(0, 2000))) fail.push('signing core: it imports another file, so it changes when that file does');
 const rules = readFileSync('dist/_headers', 'utf8').split('\n').filter(l => /^\/\S*$/.test(l)).length;
 const files = walk('dist');
 const lines = [
     `shop code, gzipped: ${check('shop code (gzip)', entry, LIMITS.entryGzip)}`,
     `heavy piece, own code: ${check('heavy piece, own code (gzip)', heavyOwn, LIMITS.heavyOwnGzip)}`,
-    `heavy piece, whole: ${check('heavy piece, whole (gzip)', gz(heavyText), LIMITS.heavyGzip)}`,
+    `heavy piece, whole: ${check('heavy piece, whole (gzip)', heavyAll, LIMITS.heavyGzip)}`,
     `_headers rules: ${check('_headers rules', rules, LIMITS.headerRules, 'n')}`, `files: ${check('files in dist', files.length, LIMITS.files, 'n')}`,
 ];
 for (const id of readdirSync('dist/wrappers')) {

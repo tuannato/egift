@@ -129,6 +129,8 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
 
     // Status
     const statusText = h('span', null, t('created.status.waiting'));
+    const title = h('h1', null, t('created.title.empty'));
+    const startText = h('span', null, t('created.startover'));
     const status = h('p', { class: 'status status--waiting', role: 'status', 'aria-live': 'polite' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), statusText);
     // Built only once funded: until then there is nothing here to press.
     const afterFunded = h('div', { class: 'stack after-funded', hidden: true });
@@ -136,7 +138,14 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     const tokenOnly = made.tokenOnly === true;
     const tokenNext = h('p', { class: 'strong', hidden: true }, t('created.tokenonly.next'));
     let tokenIn = false;
+    let taken = false;
     const paintReady = (): void => {
+        const ready = fundedOk && (!tokenOnly || tokenIn);
+        // The title says the gift is ready only once all of it is in the package: until then it is a link to a
+        // package that is not full. A gift that is gone says so. The way out is named for what comes next only when
+        // nothing is left to do here.
+        title.textContent = t(taken ? 'pkg.taken' : ready ? 'created.title' : 'created.title.empty');
+        startText.textContent = t(taken || ready ? 'created.startover.next' : 'created.startover');
         afterFunded.hidden = !(fundedOk && (!tokenOnly || tokenIn));
         tokenNext.hidden = !(fundedOk && tokenOnly && !tokenIn);
     };
@@ -173,6 +182,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         status.classList.toggle('status--ok', done);
         for (const k of ['waiting', 'unfinal', 'bad']) status.classList.toggle('status--' + k, tone === k);
         fundedOk = done;
+        taken = s !== null && s.kind === 'taken';
         // Funded as meant: the gift is remembered, unless the giver switched that off. The one chance is spent
         // either way and is kept with the gift, not with this screen (a change of language builds the screen
         // again): a record the giver took back out, or a switch turned on later, never writes it behind their back.
@@ -584,7 +594,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                 ctx.nav.toCreate();
             },
         },
-        t('created.startover'),
+        startText,
     );
 
     // Remembering a gift: where its package is, never its link. Written once the gift is seen funded, unless the
@@ -672,7 +682,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
             { class: 'screen screen-created' },
             layout({
                 kind: 'created',
-                head: [h('h1', null, t('created.title'))],
+                head: [title],
                 plate: plate(card, def, { tag: t('created.preview') }),
                 body: [
                     hold,

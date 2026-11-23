@@ -91,6 +91,9 @@ describe('a gift with a token', () => {
         type(main(app!).querySelector('#th-addr') as HTMLInputElement, home.address);
         await flush();
         expect(main(app!).textContent).toContain(t('take.confirm.token'));
+        // Where it goes is said again beside what arrives: the start and the end of the address.
+        const at = home.address.replace('ecash:', '');
+        expect(main(app!).textContent).toContain(t('take.confirm.to', { to: `${at.slice(0, 6)}…${at.slice(-4)}` }));
         buttonByText(main(app!), t('take.go')).click();
         await new Promise(r => setTimeout(r, 60));
         await flush(12);
