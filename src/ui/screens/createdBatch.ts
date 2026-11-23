@@ -1,12 +1,14 @@
 import { DEFAULT_WRAPPER, batchFundLinks, batchTokenFundLinks, entitlement, formatXec, fundLinks, stampedFundLinks, takeFeeEstimate } from '../../core';
 import type { FundLinks, PackageState, TokenMeta } from '../../core';
-import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
+import { cutTokenText, tokenIcon, tokenIdRef } from '../tokens';
 import { autoKeep, dressOf, rememberSent } from '../kept';
 import { offerOf, wrapperById } from '../../wrappers';
 import { appRoad, isInAppBrowser } from '../inapp';
 import { dressed } from '../../wrappers/looks';
 import { stageCard } from '../stageCard';
 import { h, openOut } from '../dom';
+import { copyRef } from '../copyRef';
+import { shortId } from '../amount';
 import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
 import { getLang, t } from '../../i18n';
@@ -292,7 +294,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             setUserText(ticker, cutTokenText(meta.ticker));
             const name = h('span', { class: 'token-name' });
             setUserText(name, cutTokenText(meta.name));
-            tokName.append(tokenIcon(id) ?? '', ticker, ' ', name, h('span', { class: 'note' }, ' · ' + t('pkg.tok.id', { id: shortTokenId(id) })));
+            tokName.append(tokenIcon(id) ?? '', ticker, ' ', name, h('span', { class: 'note' }, tokenIdRef(id, ' · ')));
         }
         paintTok();
     }
@@ -466,9 +468,10 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         } else {
             body.append(h('p', { class: 'note' }, t('batch.row.answer')));
         }
+        // Where this gift is on the chain: public, and a press copies it.
+        body.append(h('p', { class: 'note batch-ref' }, `${t('gift.ref.label')} `, copyRef(g.key.address, shortId(g.key.address))));
         // Which answer opens it, never the answer itself: the page does not keep answers.
         if (batch.riddle !== undefined && batch.kind === 'links') body.append(h('p', { class: 'note' }, t(g.own === true ? 'batch.row.own' : 'batch.row.shared')));
-        body.append(h('p', { class: 'note' }, `${t('gift.ref.label')} ${g.key.address.slice(6, 10)}…${g.key.address.slice(-4)}`));
         const el = h('details', { class: 'batch-row' }, head, body);
         return { el, state };
     });

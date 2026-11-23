@@ -1,3 +1,5 @@
+import { shortId } from '../amount';
+import { explorerRef } from '../explorer';
 import { rich } from '../ecash';
 import { downloadKeepsake, forgetSent, keptRef, keptTokenText, keptWhen, loadKept, loadSent, removeKept } from '../kept';
 import type { Sent } from '../kept';
@@ -33,18 +35,24 @@ type View = 'shelf' | 'how' | 'about' | 'workshop' | 'market' | 'kept' | 'sent';
  * tried on (none at first: the whole shelf is in view) and the page of the
  * capsule that is open.
  */
-/** How many remembered gifts the "sent" page asks the network about at once. */
-const SENT_READ_MAX = 9;
+/** Cards on one page of the lists of gifts received and sent. */
+export const PAGE_ROWS = 6;
 /** Out of sight for this long, what the list of gifts sent read from the chain is asked for again. */
 const SENT_STALE_MS = 10_000;
+/** How many of the sent list's questions to the chain are under way at once: a page of batches is up to fifty-four. */
+const SENT_READS_AT_ONCE = 3;
 
 let worn: string | null = null;
 let view: View = 'shelf';
+/** The page in view of each list: kept across a change of language, like the view itself. */
+const listPage = { kept: 0, sent: 0 };
 
 /** For tests. */
 export function resetHome(): void {
     worn = null;
     view = 'shelf';
+    listPage.kept = 0;
+    listPage.sent = 0;
 }
 
 interface Door {
@@ -226,6 +234,22 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
 
     /** What the network said of each remembered gift, asked once while this page is up. */
     const sentStates = new Map<string, Promise<PackageState>>();
+    // The sent list's questions to the chain wait their turn: a few at once, however many cards the page has.
+    let reading = 0;
+    const waiting: (() => void)[] = [];
+    function inTurn<T>(ask: () => Promise<T>): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
+            const run = (): void => {
+                reading++;
+                ask().then(resolve, reject).finally(() => {
+                    reading--;
+                    waiting.shift()?.();
+                });
+            };
+            if (reading < SENT_READS_AT_ONCE) run();
+            else waiting.push(run);
+        });
+    }
 
     // ---- The counter ----
     const body = h('div', { class: 'home-body' });
@@ -244,6 +268,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                     class: cls,
                     onclick: () => {
                         view = v;
+                        // A list is opened at its first page, where the newest gift is.
+                        if (v === 'kept' || v === 'sent') listPage[v] = 0;
                         renderBody();
                     },
                 },
@@ -486,9 +512,40 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         );
     }
 
+    /** The page in view of each list, kept in range: removing the last card of the last page steps back one. */
+    function pageAt(which: 'kept' | 'sent', count: number): number {
+        listPage[which] = Math.max(0, Math.min(listPage[which], Math.ceil(count / PAGE_ROWS) - 1));
+        return listPage[which];
+    }
+    /** "Previous · page 2 of 7 · Next", or nothing for a list that fits on one page. */
+    function pager(which: 'kept' | 'sent', count: number): HTMLElement | null {
+        const pages = Math.ceil(count / PAGE_ROWS);
+        if (pages <= 1) return null;
+        const at = listPage[which];
+        const go = (to: number) => (): void => {
+            listPage[which] = to;
+            renderBody();
+            // The new page starts at its top; the keyboard stays at the pager, which says the page out loud.
+            (body.querySelector('.pager-at') as HTMLElement | null)?.focus({ preventScroll: true });
+            // Only the capsule's own scroller moves: nothing around it is shifted.
+            const scroller = body.closest('.cap-scroll') as HTMLElement | null;
+            if (scroller) scroller.scrollTop = 0;
+        };
+        return h(
+            'nav',
+            { class: 'pager', 'aria-label': t('list.pager') },
+            h('button', { type: 'button', class: 'btn btn-quiet btn-small pager-prev', disabled: at === 0, onclick: go(at - 1) }, t('list.prev')),
+            // Figures only, so the row fits a narrow screen in every language; the words are there for a screen reader.
+            h('span', { class: 'pager-at label', tabindex: '-1', role: 'status', 'aria-label': t('list.page', { p: at + 1, n: pages }) }, `${at + 1}/${pages}`),
+            h('button', { type: 'button', class: 'btn btn-quiet btn-small', disabled: at >= pages - 1, onclick: go(at + 1) }, t('list.next')),
+        );
+    }
+
     /** The gifts kept in this browser. Every word in a record is a stranger's text. */
     function kept(): Node[] {
-        const list = loadKept();
+        const all = loadKept();
+        const at = pageAt('kept', all.length);
+        const list = all.slice(at * PAGE_ROWS, (at + 1) * PAGE_ROWS);
         const cards = list.map(k => {
             const plain = wrapperById(k.wrapper);
             // The record wears what the gift wore.
@@ -534,7 +591,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             );
             return card;
         });
-        return page(t('kept.page.title'), h('p', { class: 'note' }, t('kept.page.lead')), h('ul', { class: 'kept-list' }, ...cards), fold(t('kept.warn.sum'), { id: 'home.kept.warn' }, h('p', { class: 'note' }, t('kept.warn'))));
+        return page(t('kept.page.title'), h('p', { class: 'note' }, t('kept.page.lead')), h('ul', { class: 'kept-list' }, ...cards), pager('kept', all.length), fold(t('kept.warn.sum'), { id: 'home.kept.warn' }, h('p', { class: 'note' }, t('kept.warn'))));
     }
 
     /**
@@ -552,13 +609,13 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             if (fresh) sentStates.delete(address);
             let p = sentStates.get(address);
             if (!p) {
-                p = ctx.chain.read(address);
+                p = inTurn(() => ctx.chain.read(address));
                 sentStates.set(address, p);
             }
             return p;
         };
         /** Gifts made together, as one card: how many are still there, and a line for each. */
-        const group = (ks: readonly Sent[], at: number): HTMLElement => {
+        const group = (ks: readonly Sent[]): HTMLElement => {
             const sorted = [...ks].sort((a, b) => Number(a.part![0]) - Number(b.part![0]));
             const n = Number(sorted[0]!.part!.slice(2));
             const item = h('li', { class: 'kept-card sent-group' });
@@ -573,7 +630,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 const who = h('span', { class: 'sent-row-who' });
                 setUserText(who, k.name ?? t('people.nth', { n: Number(k.part![0]) }));
                 const state = h('span', { class: 'sent-row-state' }, t('sent.row.unknown'));
-                const el = h('li', { class: 'sent-row' }, h('span', { class: 'label sent-row-n' }, k.part!), who, h('span', { class: 'sent-row-amt mono' }, `${formatXec(BigInt(k.sats), lang)} XEC`), state);
+                const el = h('li', { class: 'sent-row' }, h('span', { class: 'label sent-row-n' }, k.part!), who, h('span', { class: 'sent-row-amt mono' }, `${formatXec(BigInt(k.sats), lang)} XEC`), state, h('span', { class: 'sent-row-ref' }, explorerRef('address', k.address, shortId(k.address))));
                 return { k, el, state };
             });
             const ask = (fresh: boolean): void => {
@@ -606,12 +663,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                     status.className = 'status ' + (there > 0 ? 'status--ok' : 'status--waiting');
                 })();
             };
-            // The first few cards are asked about at once; the rest on a press.
-            if (at < 3 || sorted.every(k => sentStates.has(k.address))) ask(false);
-            else {
-                status.lastElementChild!.textContent = t('sent.status.later');
-                readBtn.hidden = false;
-            }
+            ask(false);
             item.append(
                 h('p', { class: 'kept-line' }, t('sent.group.title', { n: sorted.length === n ? n : sorted.length })),
                 status,
@@ -642,7 +694,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             );
             return item;
         };
-        const single = (k: Sent, i: number): HTMLElement => {
+        const single = (k: Sent): HTMLElement => {
             const name = nameOf(wrapperById(k.wrapper));
             const item = h('li', { class: 'kept-card' });
             if (k.wish) {
@@ -668,12 +720,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             };
             // One read per gift for as long as this page is up: coming back to the list, or dropping an item, asks nothing again.
             const ask = (fresh: boolean): void => {
-                if (fresh) sentStates.delete(k.address);
-                let p = sentStates.get(k.address);
-                if (!p) {
-                    p = ctx.chain.read(k.address);
-                    sentStates.set(k.address, p);
-                }
+                const p = read(k.address, fresh);
                 say(t('sent.status.reading'), 'waiting');
                 readBtn.hidden = true;
                 p.then(show, () => {
@@ -682,18 +729,13 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                     readBtn.hidden = false;
                 });
             };
-            // The first few are asked about at once; the rest on a press, so a long list is not a flood of requests.
-            if (i < SENT_READ_MAX || sentStates.has(k.address)) ask(false);
-            else {
-                say(t('sent.status.later'), 'waiting');
-                readBtn.hidden = false;
-            }
+            ask(false);
             item.append(
                 h('p', { class: 'kept-line' }, h('span', { class: 'kept-amount' }, k.tokenOnly ? t('create.tokenonly') : `${formatXec(BigInt(k.sats), lang)} XEC`)),
                 status,
                 readBtn,
                 // The giver's own name for it and its place in a batch come first: they are what tells nine gifts apart.
-                h('p', { class: 'note' }, [k.name ?? '', k.part ?? '', keptWhen(k, lang), name, `${t('gift.ref.label')} ${k.address.slice(6, 10)}…${k.address.slice(-4)}`].filter(x => x !== '').join(' · ')),
+                h('p', { class: 'note' }, [k.name ?? '', k.part ?? '', keptWhen(k, lang), name, `${t('gift.ref.label')} `].filter(x => x !== '').join(' · '), explorerRef('address', k.address, shortId(k.address))),
                 h(
                     'div',
                     { class: 'btn-row' },
@@ -730,12 +772,15 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 groups.get(key)!.push(k);
             }
         }
-        const items = order.map((x, i) => {
-            if (typeof x !== 'string') return single(x, i);
+        // Only the cards of the page in view are built, and only they are asked about: a long list is not a flood of
+        // requests. Gifts made together are one card, however many they are.
+        const at = pageAt('sent', order.length);
+        const items = order.slice(at * PAGE_ROWS, (at + 1) * PAGE_ROWS).map(x => {
+            if (typeof x !== 'string') return single(x);
             const ks = groups.get(x)!;
-            return ks.length > 1 ? group(ks, i) : single(ks[0]!, i);
+            return ks.length > 1 ? group(ks) : single(ks[0]!);
         });
-        return page(t('sent.page.title'), h('p', { class: 'note' }, t('sent.page.lead')), h('ul', { class: 'kept-list' }, ...items), fold(t('sent.warn.sum'), { id: 'home.sent.warn' }, h('p', { class: 'note' }, t('sent.warn'))));
+        return page(t('sent.page.title'), h('p', { class: 'note' }, t('sent.page.lead')), h('ul', { class: 'kept-list' }, ...items), pager('sent', order.length), fold(t('sent.warn.sum'), { id: 'home.sent.warn' }, h('p', { class: 'note' }, t('sent.warn'))));
     }
 
     function renderBody(): void {
@@ -814,9 +859,10 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         }
         const away = awayAt === undefined ? 0 : Date.now() - awayAt;
         awayAt = undefined;
-        if (view !== 'sent' || away < SENT_STALE_MS) return;
+        if (away < SENT_STALE_MS) return;
+        // Forgotten whatever is on screen, so the list opened later asks afresh too.
         sentStates.clear();
-        renderBody();
+        if (view === 'sent') renderBody();
     };
     document.addEventListener('visibilitychange', onSight);
     return () => {

@@ -1,6 +1,8 @@
+import { copyRef } from '../copyRef';
+import { shortId } from '../amount';
 import { DEFAULT_WRAPPER, DUST_SATS, takeFeeEstimate, entitlement, formatAtoms, giftTokens, licenceOf, formatXec, fundLinks, stampedFundLinks, tokenFundLinks } from '../../core';
 import type { FundLinks, GiftToken, PackageState, TokenMeta } from '../../core';
-import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
+import { cutTokenText, tokenIcon, tokenIdRef } from '../tokens';
 import { autoKeep, dressOf, forgetSent, isSentRemembered, rememberSent, setAutoKeep } from '../kept';
 import { offerOf, wrapperById, inLang } from '../../wrappers';
 import { appRoad } from '../inapp';
@@ -256,7 +258,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
             setUserText(ticker, cutTokenText(meta.ticker));
             const name = h('span', { class: 'token-name' });
             setUserText(name, cutTokenText(meta.name));
-            tokName.append(tokenIcon(id) ?? '', ticker, ' ', name, h('span', { class: 'note' }, ' · ' + t('pkg.tok.id', { id: shortTokenId(id) })));
+            tokName.append(tokenIcon(id) ?? '', ticker, ' ', name, h('span', { class: 'note' }, tokenIdRef(id, ' · ')));
         }
     }
     // The QR of the token step: always the package address alone. A QR that also carries the token id and the
@@ -686,7 +688,8 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                 plate: plate(card, def, { tag: t('created.preview') }),
                 body: [
                     hold,
-                    amountBlock({ text: amountText, label: t('gift.amount.label'), address: made.key.address, refLabel: t('gift.ref.label'), size: 'small' }),
+                    // The giver's own gift: a press on its reference copies where it is.
+                    amountBlock({ text: amountText, label: t('gift.amount.label'), address: made.key.address, refLabel: t('gift.ref.label'), size: 'small', ref: copyRef(made.key.address, shortId(made.key.address)) }),
                     // The state of the package, near the top: once funded, what to do next is in view without scrolling.
                     h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), tokenNext, afterFunded),
                     stepRow(1, t('created.step1.title'), h('p', null, t('created.step1.body')), linkBox({ link: made.link, onSaved: unlock }), riddleNote),

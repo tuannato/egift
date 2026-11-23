@@ -12,6 +12,7 @@
 import { formatAtoms } from '../core/money';
 import type { GiftToken, TokenMeta } from '../core';
 import { h } from './dom';
+import { explorerRef } from './explorer';
 import { getLang, t } from '../i18n';
 import { setUserText } from './text';
 
@@ -44,6 +45,12 @@ export function tokenIcon(tokenId: string): HTMLElement | null {
     // Most tokens have no icon: then there is simply none.
     img.addEventListener('error', () => img.remove());
     return img;
+}
+
+/** "id abc123…def456", the id a press away from the explorer. The words come from the page's language, the id from the chain. */
+export function tokenIdRef(id: string, before = ''): HTMLElement {
+    const [head, tail] = t('pkg.tok.id', { id: '\u0000' }).split('\u0000');
+    return h('span', { class: 'token-id' }, before + (head ?? ''), explorerRef('token', id, shortTokenId(id)), tail ?? '');
 }
 
 export function shortTokenId(id: string): string {
@@ -94,10 +101,10 @@ export function tokenCard(tk: GiftToken, meta: TokenMeta | null | undefined, lea
         line.prepend(tokenIcon(tk.tokenId) ?? '');
         card.append(line, name);
         if (looksLikeXec(meta.ticker, true) || looksLikeXec(meta.name)) card.append(h('p', { class: 'warning danger' }, t('pkg.tok.xec')));
-        card.append(h('p', { class: 'note' }, `${kind} · ${t('pkg.tok.id', { id: shortTokenId(tk.tokenId) })}`), h('p', { class: 'note' }, t('pkg.tok.claim')));
+        card.append(h('p', { class: 'note' }, tokenIdRef(tk.tokenId, `${kind} · `)), h('p', { class: 'note' }, t('pkg.tok.claim')));
     } else {
         // Origin unknown (or the token would not describe itself): no name, ever.
-        card.append(line, h('p', { class: 'token-name' }, t('pkg.tok.unknown')), h('p', { class: 'note' }, `${kind} · ${t('pkg.tok.id', { id: shortTokenId(tk.tokenId) })}`));
+        card.append(line, h('p', { class: 'token-name' }, t('pkg.tok.unknown')), h('p', { class: 'note' }, tokenIdRef(tk.tokenId, `${kind} · `)));
     }
     return card;
 }
@@ -119,7 +126,7 @@ export function otherTokens(o: { tokens: readonly GiftToken[]; metas: ReadonlyMa
                 h(
                     'div',
                     { class: 'token-other' },
-                    h('p', { class: 'mono' }, `${shortTokenId(tk.tokenId)} · ${amountText(tk, o.metas.get(tk.tokenId))}`),
+                    h('p', { class: 'mono' }, explorerRef('token', tk.tokenId, shortTokenId(tk.tokenId)), ` · ${amountText(tk, o.metas.get(tk.tokenId))}`),
                     h('button', { type: 'button', class: 'btn btn-secondary btn-small', disabled: o.locked, onclick: () => o.onPick(tk.tokenId) }, t('pkg.tok.pick')),
                 ),
             );

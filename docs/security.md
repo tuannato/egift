@@ -57,6 +57,13 @@ was sent keeps naming the same address.
   history keeps it like any other address, and a history that is synced
   between devices carries it there too. Open a gift on a device you trust,
   and take it home before you leave the page.
+- On the screen where a gift is opened and in the list of gifts sent, a
+  package's short reference opens explorer.e.cash in a new tab; so do a
+  token's id and the "see the transaction" button. That site then sees which
+  address or transaction you asked about, as any site you visit would. It is
+  told nothing about this page, and a gift's link is never part of what is
+  opened. On the giver's own "created" screens the reference copies the
+  package's address instead.
 - Several gifts made together are funded by one transaction, so anyone can
   see on the chain that they belong together. With a paid wrapper that
   transaction also lists the address of each of them.

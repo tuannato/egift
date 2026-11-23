@@ -17,6 +17,7 @@ import { qrPanel } from './qr';
 import { plate } from '../plate';
 import { layout, enter, fold } from '../layout';
 import { amountBlock, sealedBlock, shortId } from '../amount';
+import { explorerRef } from '../explorer';
 import { tick } from '../stopwatch';
 import { cue, score } from '../sound';
 import { track } from '../busy';
@@ -883,7 +884,7 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
     /** What stays readable once the gift is gone: the words, and the package's reference. */
     function keepsake(): HTMLElement[] {
         const w = wishBlock();
-        const ref = h('p', { class: 'note keepsake-ref' }, `${t('gift.ref.label')} `, h('span', { class: 'mono' }, shortId(key.address)));
+        const ref = h('p', { class: 'note keepsake-ref' }, `${t('gift.ref.label')} `, explorerRef('address', key.address, shortId(key.address)));
         return w ? [w, ref] : [ref];
     }
 

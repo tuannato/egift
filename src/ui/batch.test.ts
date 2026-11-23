@@ -482,6 +482,54 @@ describe('gifts made together on the sent page', () => {
         buttonByText(groups[0]!, t('sent.group.forget')).click();
         expect(loadSent().map(x => x.address)).toEqual([alone.address]);
     });
+
+    it('a long list is shown a page at a time, and only the page in view is asked about', async () => {
+        const chain = createDemoChain();
+        const at = Date.now() - 60_000;
+        const keys = Array.from({ length: 14 }, (_, i) => deriveKey(new Uint8Array(16).fill(100 + i)));
+        // The newest first: the fourteenth is at the top of the list.
+        keys.forEach((k, i) => expect(rememberSent({ address: k.address, at: at + i * 2_000, wrapper: 'lixi', sats: '2000' })).toBe(true));
+        const read = vi.spyOn(chain, 'read');
+        app = boot(chain, { stay: true });
+        await flush();
+        buttonByText(app.root, t('sent.nav')).click();
+        await flush();
+        const asked = (): string[] => read.mock.calls.map(c => String(c[0]));
+        expect(all('.kept-card').length).toBe(6);
+        expect(app.root.querySelector('.pager-at')!.getAttribute('aria-label')).toBe(t('list.page', { p: 1, n: 3 }));
+        expect(asked().sort()).toEqual(keys.slice(8).map(k => k.address).sort());
+        expect(buttonByText(app.root, t('list.prev')).disabled).toBe(true);
+        // No card waits for a press to be read: the page reads all of its own.
+        expect([...app.root.querySelectorAll('button')].filter(b => b.textContent === t('sent.status.read') && !b.hidden)).toHaveLength(0);
+        read.mockClear();
+        buttonByText(app.root, t('list.next')).click();
+        await flush();
+        expect(all('.kept-card').length).toBe(6);
+        expect(new Set(asked())).toEqual(new Set(keys.slice(2, 8).map(k => k.address)));
+        buttonByText(app.root, t('list.next')).click();
+        await flush();
+        expect(all('.kept-card').length).toBe(2);
+        expect(app.root.querySelector('.pager-at')!.getAttribute('aria-label')).toBe(t('list.page', { p: 3, n: 3 }));
+        expect(buttonByText(app.root, t('list.next')).disabled).toBe(true);
+        // The last page emptied: the list steps back to the page before it.
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        buttonByText(app.root, t('sent.forget')).click();
+        buttonByText(app.root, t('sent.forget')).click();
+        await flush();
+        expect(all('.kept-card').length).toBe(6);
+        expect(app.root.querySelector('.pager-at')!.getAttribute('aria-label')).toBe(t('list.page', { p: 2, n: 2 }));
+        // Each card's reference opens the explorer at that gift's address.
+        const opened: string[] = [];
+        vi.spyOn(window, 'open').mockImplementation(((u: string) => void opened.push(u)) as unknown as typeof window.open);
+        (all('.kept-card')[0]!.querySelector('.ref-out') as HTMLButtonElement).click();
+        expect(opened).toEqual([`https://explorer.e.cash/address/${keys[7]!.address}`]);
+        read.mockClear();
+        buttonByText(app.root, t('list.prev')).click();
+        await flush();
+        expect(app.root.querySelector('.pager-at')!.getAttribute('aria-label')).toBe(t('list.page', { p: 1, n: 2 }));
+        // A page already read is not read again.
+        expect(read.mock.calls.length).toBe(0);
+    });
 });
 
 describe('several gifts on the created step', () => {

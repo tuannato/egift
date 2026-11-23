@@ -1,4 +1,5 @@
 import { h } from './dom';
+import { explorerRef } from './explorer';
 import { noteSvg } from './note';
 import { odometer, odometerLength } from './odometer';
 import { prefersReducedMotion } from './stageCard';
@@ -25,6 +26,8 @@ export interface AmountOpts {
     address?: string;
     /** The label printed beside the reference. */
     refLabel?: string;
+    /** The reference itself, when it is not the usual one (a press on which opens the explorer). */
+    ref?: HTMLElement;
     size?: 'hero' | 'small';
     /** Play the reveal: the figure rolls up like an odometer, then the foil catches the light once. Never with reduced motion. */
     reveal?: boolean;
@@ -51,7 +54,7 @@ export function amountBlock(o: AmountOpts): HTMLElement {
     const line = h('div', { class: 'amount-line' }, fig, h('span', { class: 'unit' }, 'XEC'));
     block.append(line);
     // The package's own seal — a small rosette drawn from its address, no two alike — beside its reference.
-    if (o.address) block.append(h('p', { class: 'amount-ref' }, h('span', { class: 'amount-seal', 'aria-hidden': 'true' }, noteSvg(o.address)), o.refLabel ? h('span', { class: 'amount-ref-label' }, o.refLabel) : null, h('span', { class: 'mono' }, shortId(o.address))));
+    if (o.address) block.append(h('p', { class: 'amount-ref' }, h('span', { class: 'amount-seal', 'aria-hidden': 'true' }, noteSvg(o.address)), o.refLabel ? h('span', { class: 'amount-ref-label' }, o.refLabel) : null, o.ref ?? explorerRef('address', o.address, shortId(o.address))));
 
     if (o.reveal === true && !prefersReducedMotion()) {
         const odo = odometer(o.text);
@@ -77,6 +80,6 @@ export function sealedBlock(o: { label: string; address: string; refLabel: strin
         { class: 'amount-block amount-block--sealed' },
         h('div', { class: 'amount-head' }, h('span', { class: 'label' }, o.label)),
         h('div', { class: 'amount-line' }, h('span', { class: 'sealed', 'aria-hidden': 'true' }, '•••' + o.mark + '••'), h('span', { class: 'unit' }, 'XEC')),
-        h('p', { class: 'amount-ref' }, h('span', { class: 'amount-seal', 'aria-hidden': 'true' }, noteSvg(o.address)), h('span', { class: 'amount-ref-label' }, o.refLabel), h('span', { class: 'mono' }, shortId(o.address))),
+        h('p', { class: 'amount-ref' }, h('span', { class: 'amount-seal', 'aria-hidden': 'true' }, noteSvg(o.address)), h('span', { class: 'amount-ref-label' }, o.refLabel), explorerRef('address', o.address, shortId(o.address))),
     );
 }

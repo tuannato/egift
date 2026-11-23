@@ -304,7 +304,18 @@ describe('package screen', () => {
         a.chain.steal(l.key.address);
         await flush();
         expect(main(a).textContent).toContain(t('pkg.taken'));
-        expect(main(a).querySelectorAll('button')).toHaveLength(0);
+        // Nothing to press that acts on the gift. The one button left is the package's reference, which only shows
+        // its public address on the explorer, in a new tab that is told nothing of this page.
+        expect([...main(a).querySelectorAll('button')].filter(b => !b.classList.contains('ref-out'))).toHaveLength(0);
+        expect(main(a).querySelectorAll('.ref-out')).toHaveLength(1);
+        expect(main(a).querySelector('.ref-copy')).toBeNull();
+        const opened: unknown[][] = [];
+        vi.spyOn(window, 'open').mockImplementation(((...x: unknown[]) => void opened.push(x)) as unknown as typeof window.open);
+        (main(a).querySelector('.ref-out') as HTMLButtonElement).click();
+        expect(opened).toEqual([[`https://explorer.e.cash/address/${l.key.address}`, '_blank', 'noopener,noreferrer']]);
+        // No link element, and the page's own link is nowhere in what was opened.
+        expect(main(a).querySelectorAll('a')).toHaveLength(0);
+        expect(String(opened[0]![0])).not.toContain('#');
     });
 
     it('the-screen-never-assumes-who-is-reading', async () => {
@@ -654,6 +665,24 @@ describe('closing the tab on the funding step', () => {
         buttonByText(after, t('link.copy')).click();
         await flush();
         expect(asksBeforeLeaving()).toBe(false);
+    });
+
+    it('the gift\'s reference copies its address on a press, and opens nothing', async () => {
+        const clip = stubClipboard();
+        app = boot();
+        await createGift(app.root);
+        const opened: unknown[] = [];
+        vi.spyOn(window, 'open').mockImplementation(((u: unknown) => void opened.push(u)) as unknown as typeof window.open);
+        const ref = app.root.querySelector('.amount-ref .ref-copy') as HTMLButtonElement;
+        ref.click();
+        await flush();
+        // The address: where the gift is. Never the link, which is its key.
+        expect(clip.written).toEqual([getMade()!.key.address]);
+        expect(clip.written[0]).not.toContain('#');
+        expect(app.root.querySelector('.amount-ref .ref-said')!.textContent).toBe(t('link.copied'));
+        expect(opened).toEqual([]);
+        // Copying an address is not saving the link: leaving still asks.
+        expect(getMade()!.saved).toBe(false);
     });
 
     it('stops-asking-once-the-person-starts-over', async () => {

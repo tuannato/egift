@@ -1,6 +1,7 @@
 import { buildGiftSweep, buildSweep, formatXec, holdings, isValidDestination, takeHome } from '../../core';
 import type { Chain, PackageKey, PackageState, SweepErrorCode, ChainErrorCode, TakeResult } from '../../core';
 import { clear, h, openOut } from '../dom';
+import { explorerButton } from '../explorer';
 import { fold } from '../layout';
 import { track } from '../busy';
 import { getLang, t } from '../../i18n';
@@ -82,6 +83,8 @@ type TakePhase = 'form' | 'working' | 'pending' | 'done' | 'lost' | 'error';
 interface TakeSession {
     draft: string;
     sweptTo: string;
+    /** The transaction that took the gift home, once it is final: public, shown as a way to the explorer. */
+    txid?: string;
     phase: TakePhase;
     t0: number;
     /** A node has accepted the transaction: the watch runs from then. */
@@ -166,6 +169,7 @@ function run(s: TakeSession, o: TakeHomeOpts, timed: boolean): void {
             if (r.to !== undefined) rememberDest(r.to);
             tick();
             cue.final();
+            s.txid = r.txid;
             cur.onDone(r.sentSats, s.left, s.tokenLeft, {
                 txid: r.txid,
                 ...(s.fee !== undefined && s.feeFor === r.sentSats ? { fee: s.fee } : {}),
@@ -407,6 +411,7 @@ export function takeHomePanel(o: TakeHomeOpts): HTMLElement {
                     // The fee is said only when it is the one that was shown before the press.
                     s.fee !== undefined && s.sats !== undefined && s.feeFor === s.sats ? h('p', null, t('take.done.fee', { amount: formatXec(s.sats, lang), fee: formatXec(s.fee, lang) })) : null,
                     h('p', null, t('take.done.body')),
+                    s.txid !== undefined ? explorerButton('tx', s.txid, t('take.done.explorer')) : null,
                     s.tokenHome === true ? h('p', { class: 'strong' }, t('take.done.token')) : null,
                     s.tokenLeft === true ? h('p', { class: 'warning' }, t((s.tokenRest ?? 0) > 0 ? 'take.done.tokenrest' : 'take.done.tokenleft')) : null,
                     rest ? h('p', { class: 'warning' }, t('rest.left', { n: s.left })) : null,
