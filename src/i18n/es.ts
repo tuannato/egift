@@ -374,6 +374,8 @@ export const es: Record<keyof typeof vi, string> = {
     'batch.tok.locked': "Primero guarda en el paso 1 y deposita todos los regalos en el paso 2, luego escribe un id. de token y una cantidad.",
     'batch.tok.one': "Un solo tipo de token por pago. Un NFT es único: no se puede enviar a varios regalos.",
     'batch.row.token': "con un token",
+    'batch.tok.two': "Hay más de un tipo de token en: {who}. Un destinatario solo puede llevarse un tipo; el otro quedará atrapado.",
+    'batch.row.tokens': "con más de un tipo de token",
     'home.by': "De {credit}",
     'home.go': "Envolver un regalo",
     'home.use': "Envolver un regalo con este",

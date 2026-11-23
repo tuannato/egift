@@ -690,9 +690,17 @@ describe('several gifts on the created step', () => {
         web.click();
         expect(opened.length).toBe(3);
         // A gift that holds a token says so in its row.
-        app!.chain.fund(b.gifts[0]!.key.address, 546n, { token: true });
+        const tok = (tokenId: string) => ({ token: true, tokenInfo: { tokenId, kind: 'alp' as const, atoms: 525n, baton: false } });
+        app!.chain.fund(b.gifts[0]!.key.address, 546n, tok(ID));
         await until(() => all('.batch-row')[0]!.textContent!.includes(t('batch.row.token')));
         expect(all('.batch-row')[1]!.textContent).not.toContain(t('batch.row.token'));
+        expect($('.batch-two').hidden).toBe(true);
+        // A second kind of token in the same gift: one of them will be stuck, said in view and by name.
+        app!.chain.fund(b.gifts[0]!.key.address, 546n, tok('cd'.repeat(32)));
+        await until(() => !$('.batch-two').hidden);
+        expect($('.batch-two').textContent).toBe(t('batch.tok.two', { who: t('people.nth', { n: 1 }) }));
+        expect($('.batch-two').closest('details')).toBeNull();
+        expect(all('.batch-row')[0]!.textContent).toContain(t('batch.row.tokens'));
     });
 
     it('several gifts that will carry a token: the giver may cover the higher fee, and the token step stands open', async () => {

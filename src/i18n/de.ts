@@ -374,6 +374,8 @@ export const de: Record<keyof typeof vi, string> = {
     'batch.tok.locked': "Sichere zuerst in Schritt 1 und zahle in Schritt 2 alle Geschenke ein, dann trag eine Token-ID und eine Menge ein.",
     'batch.tok.one': "Eine Token-Art pro Zahlung. Ein NFT gibt es nur einmal: Es kann nicht an mehrere Geschenke geschickt werden.",
     'batch.row.token': "mit Token",
+    'batch.tok.two': "In diesen Geschenken ist mehr als eine Token-Art: {who}. Ein Empfänger kann nur eine Art mitnehmen; die andere bleibt stecken.",
+    'batch.row.tokens': "mit mehr als einer Token-Art",
     'home.by': "Von {credit}",
     'home.go': "Ein Geschenk verpacken",
     'home.use': "Ein Geschenk darin verpacken",

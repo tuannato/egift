@@ -374,6 +374,8 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'batch.tok.locked': "請先在第 1 步儲存，並在第 2 步為所有禮物存入，然後填寫代幣 ID 和數量。",
     'batch.tok.one': "每次付款只能傳送一種代幣。NFT 只有一個，不能傳送到多份禮物。",
     'batch.row.token': "含代幣",
+    'batch.tok.two': "這些禮物裡有不只一種代幣：{who}。收禮人只能帶走一種；另一種會卡在裡面。",
+    'batch.row.tokens': "含不只一種代幣",
     'home.by': "作者：{credit}",
     'home.go': "包一份禮物",
     'home.use': "用這個封套包禮物",

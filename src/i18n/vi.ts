@@ -372,6 +372,8 @@ export const vi = {
     'batch.tok.locked': "Hãy lưu ở bước 1 và nạp XEC cho cả lượt ở bước 2 trước, rồi điền mã token và số lượng.",
     'batch.tok.one': "Mỗi lần gửi một loại token. NFT chỉ có một bản nên không gửi được cho nhiều quà.",
     'batch.row.token': "có token",
+    'batch.tok.two': "Đang có hơn một loại token trong: {who}. Người nhận chỉ mang về được một loại; loại kia sẽ kẹt lại.",
+    'batch.row.tokens': "có hơn một loại token",
     'home.by': 'Của {credit}',
     'home.go': 'Gói một món quà',
     'home.use': 'Gói quà bằng vỏ này',

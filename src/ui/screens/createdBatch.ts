@@ -360,6 +360,12 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     const statusText = h('span', null, t('batch.status.waiting'));
     const status = h('p', { class: 'status status--waiting', role: 'status', 'aria-live': 'polite' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), statusText);
     const stampNote = h('p', { class: 'note', hidden: true });
+    // A gift with two kinds of token in it: the recipient can take one kind home, the other stays stuck. Said in
+    // view, above the list, naming the gifts.
+    const twoKinds = h('p', { class: 'warning batch-two', role: 'status', hidden: true });
+    /** How many kinds of token a gift holds (mint batons are not a gift's token). */
+    const kindsIn = (s: PackageState | null | undefined): number =>
+        s === null || s === undefined ? 0 : new Set(s.coins.filter(c => c.token && c.tokenInfo !== undefined && !c.tokenInfo.baton).map(c => c.tokenInfo!.tokenId)).size;
     // Funded: what is left to do is to send, said where the status is.
     const nextStep = h('p', { class: 'strong batch-next', hidden: true }, t(batch.kind === 'answers' ? 'batch.next.one' : 'batch.next.links'));
     const topUpHost = h('div', { class: 'stack batch-topup', hidden: true });
@@ -469,10 +475,13 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         rows.forEach((r, i) => {
             const s = states[i];
             const key = s === null || s === undefined ? 'batch.row.waiting' : s.kind === 'taken' ? 'batch.row.taken' : seenFunded[i] ? 'batch.row.funded' : 'batch.row.waiting';
-            r.state.textContent = t(key) + (s !== null && s !== undefined && s.hasToken ? ' · ' + t('batch.row.token') : '');
+            r.state.textContent = t(key) + (s !== null && s !== undefined && s.hasToken ? ' · ' + t(kindsIn(s) > 1 ? 'batch.row.tokens' : 'batch.row.token') : '');
             r.el.dataset.state = key.slice('batch.row.'.length);
         });
         const all = k === n;
+        const mixed = batch!.gifts.map((g, i) => (kindsIn(states[i]) > 1 ? label(g, i) : '')).filter(x => x !== '');
+        twoKinds.hidden = mixed.length === 0;
+        if (mixed.length > 0) setUserText(twoKinds, t('batch.tok.two', { who: mixed.join(', ') }));
         nextStep.hidden = !all;
         paintTok();
         status.className = 'status ' + (all ? 'status--ok' : 'status--waiting');
@@ -613,7 +622,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                 body: [
                     amountBlock({ text: formatXec(total, lang), label: t('batch.total.label'), size: 'small' }),
                     offer.kind === 'paid' ? h('p', { class: 'note' }, t('batch.total.price', { gifts: formatXec(giftSum, lang), price: formatXec(offer.sats, lang) })) : null,
-                    h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), stampNote, nextStep),
+                    h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), stampNote, twoKinds, nextStep),
                     stepRow(1, t(batch.kind === 'answers' ? 'created.step1.title' : 'batch.step1.title'), ...saveStep, riddleNote),
                     stepRow(
                         2,

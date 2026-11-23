@@ -222,7 +222,10 @@
 :root[data-material="plate"] .home-filter-chip[aria-pressed="true"], :root[data-material="plate"] .home-filter-chip[aria-pressed="true"]:hover { background: var(--accent); color: var(--on-accent); box-shadow: none; }
 .home-filter-chip[aria-pressed="true"] .heart { color: currentColor; }
 .home-filter-chip:disabled { opacity: 0.4; }
-.home-filter-on { margin-left: 8px; color: var(--ink); font-weight: 600; }
+/* The line that opens the filter: in the ink, a little heavier than a folded note, with its mark. */
+.home-filter > .fold-sum { color: var(--ink); font-weight: 600; font-size: 14.5px; }
+.home-filter-mark { flex: none; color: var(--accent); }
+.home-filter-on { color: var(--dim); font-weight: 500; }
 .home-filter-shown { margin: 0; }
 .home-filter-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .home-filter-clear { min-height: 32px; padding: 0 12px; }

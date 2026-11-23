@@ -374,6 +374,8 @@ export const ko: Record<keyof typeof vi, string> = {
     'batch.tok.locked': "먼저 1단계에서 저장하고 2단계에서 모든 선물에 입금한 다음, 토큰 ID와 수량을 입력하세요.",
     'batch.tok.one': "결제 한 번에 토큰은 한 종류예요. NFT는 하나뿐이라 여러 선물에 보낼 수 없어요.",
     'batch.row.token': "토큰 포함",
+    'batch.tok.two': "다음 선물에 토큰이 두 종류 이상 들어 있어요: {who}. 받는 사람은 한 종류만 가져갈 수 있고, 나머지는 묶여서 남아요.",
+    'batch.row.tokens': "토큰 두 종류 이상 포함",
     'home.by': "만든 이: {credit}",
     'home.go': "선물 포장하기",
     'home.use': "이 포장으로 선물하기",

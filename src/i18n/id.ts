@@ -374,6 +374,8 @@ export const id: Record<keyof typeof vi, string> = {
     'batch.tok.locked': "Simpan dulu di langkah 1 dan isi semua hadiah di langkah 2, lalu isi ID token dan jumlahnya.",
     'batch.tok.one': "Satu jenis token untuk tiap pembayaran. NFT hanya ada satu: tidak bisa dikirim ke beberapa hadiah.",
     'batch.row.token': "dengan token",
+    'batch.tok.two': "Ada lebih dari satu jenis token di: {who}. Penerima hanya bisa membawa pulang satu jenis; jenis lainnya akan tertahan.",
+    'batch.row.tokens': "dengan lebih dari satu jenis token",
     'home.by': "Oleh {credit}",
     'home.go': "Bungkus sebuah hadiah",
     'home.use': "Bungkus hadiah dengan ini",

@@ -297,6 +297,15 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
      * (not offered until there is a heart), holiday wrappers only, and free or paid. A choice that would leave
      * the shelf empty cannot be pressed.
      */
+    const filterMark = (): SVGElement =>
+        svg(
+            'svg',
+            { viewBox: '0 0 24 24', width: 18, height: 18, class: 'home-filter-mark', 'aria-hidden': 'true', focusable: 'false' },
+            svg('path', { d: 'M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round' }),
+            svg('circle', { cx: 15, cy: 7, r: 2, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }),
+            svg('circle', { cx: 9, cy: 12, r: 2, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }),
+            svg('circle', { cx: 17, cy: 17, r: 2, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }),
+        );
     function shelfFilter(): HTMLElement {
         const favs: ReadonlySet<string> = new Set(loadFavs());
         // The panel is built again on every press: the switch that was pressed gets the focus back, by its name.
@@ -325,7 +334,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         // What is on the shelf now: what fits, and the wrapper that is worn even when it does not.
         const inView = doors.filter(d => !d.el.hidden).length;
         const el = fold(
-            on ? [t('home.filter'), h('span', { class: 'home-filter-on' }, names.join(', '))] : t('home.filter'),
+            // A small mark of three sliders before the words, so the line is seen for what it is.
+            [filterMark(), h('span', { class: 'home-filter-word' }, t('home.filter')), ...(on ? [h('span', { class: 'home-filter-on' }, names.join(', '))] : [])],
             { id: 'home.filter', still: true },
             h('div', { class: 'chips home-filter-row' }, favChip, chip('holiday', t('home.filter.holiday'), narrow.holiday, { ...narrow, holiday: !narrow.holiday })),
             h('div', { class: 'chips home-filter-row', role: 'group', 'aria-label': t('home.filter.price') }, price('all', 'home.filter.any'), price('free', 'home.price.free'), price('paid', 'home.filter.paid')),

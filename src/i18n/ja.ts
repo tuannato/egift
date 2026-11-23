@@ -374,6 +374,8 @@ export const ja: Record<keyof typeof vi, string> = {
     'batch.tok.locked': "先にステップ 1 で保存し、ステップ 2 ですべてのギフトに入金してから、トークン ID と数量を入力してください。",
     'batch.tok.one': "1 回の支払いにつきトークンは 1 種類です。NFT は 1 つしかないため、複数のギフトには送れません。",
     'batch.row.token': "トークン付き",
+    'batch.tok.two': "次のギフトに 2 種類以上のトークンが入っています: {who}。受け取る人が持ち帰れるのは 1 種類だけで、もう一方は取り残されます。",
+    'batch.row.tokens': "2 種類以上のトークン付き",
     'home.by': "作:{credit}",
     'home.go': "ギフトを包む",
     'home.use': "これでギフトを包む",
