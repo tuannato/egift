@@ -37,7 +37,9 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
     const oneRow = h('label', { class: 'check people-one', for: 'f-onelink', hidden: true }, oneBox, h('span', null, h('span', null, t('people.one')), h('span', { class: 'check-why' }, ' ' + t('people.one.why'))));
     // What one shared link costs is said in view, never behind a press: the answer is then the only lock.
     const oneWarn = h('p', { class: 'warning people-one-warn', hidden: true }, t('people.one.warn'));
-    const body = h('div', { class: 'people-body', hidden: !draft.peopleOpen }, h('p', { class: 'note people-lead' }, t('people.lead', { max: BATCH_MAX })), list, add, oneRow, oneWarn);
+    // One link for all needs a riddle: said where the rows are, since the riddle's switch is further down.
+    const oneHint = h('p', { class: 'note people-one-hint', hidden: true }, t('people.one.hint'));
+    const body = h('div', { class: 'people-body', hidden: !draft.peopleOpen }, h('p', { class: 'note people-lead' }, t('people.lead', { max: BATCH_MAX })), list, add, oneHint, oneRow, oneWarn);
     const mark = h('span', { class: 'people-mark', 'aria-hidden': 'true' }, draft.peopleOpen ? '−' : '+');
     const toggle = h(
         'button',
@@ -74,7 +76,7 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
             p.answer = answer.value;
             opts.onChange();
         });
-        return h('div', { class: 'people-row', 'data-i': String(i) }, h('span', { class: 'people-n', 'aria-hidden': 'true' }, String(i + 1)), name, amount, remove, answer);
+        return h('div', { class: 'people-row', 'data-i': String(i) }, name, amount, remove, answer);
     }
     function paintRows(): void {
         list.replaceChildren(...draft.people.map(row));
@@ -90,14 +92,16 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
             oneBox.checked = false;
         }
         oneRow.hidden = !canOne;
+        oneHint.hidden = riddleOn || n < 2;
         oneWarn.hidden = !(canOne && draft.oneLink);
         oneBox.disabled = working;
         [...list.children].forEach((r, i) => {
-            const [, name, amount, remove, answer] = [...r.children] as [HTMLElement, HTMLInputElement, HTMLInputElement, HTMLButtonElement, HTMLInputElement];
+            const [name, amount, remove, answer] = [...r.children] as [HTMLInputElement, HTMLInputElement, HTMLButtonElement, HTMLInputElement];
             for (const f of [name, amount, answer]) f.disabled = working;
             remove.disabled = working || n <= 1;
             amount.classList.toggle('input--bad', bad.has(i));
-            answer.hidden = !riddleOn;
+            // An answer of its own is for telling several gifts apart: one gift has the one answer, typed twice below.
+            answer.hidden = !riddleOn || n < 2;
             answer.placeholder = answerHint();
             answer.classList.toggle('input--bad', badAnswers.has(i));
         });

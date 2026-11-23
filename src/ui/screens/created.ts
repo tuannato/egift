@@ -601,6 +601,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
             sats: String(made.sats),
             ...(made.wish ? { wish: made.wish } : {}),
             ...(made.tokenOnly === true ? { tokenOnly: true } : {}),
+            ...(made.name !== undefined ? { name: made.name } : {}),
         });
     const remember = h(
         'button',

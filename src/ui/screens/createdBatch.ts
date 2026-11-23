@@ -72,6 +72,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     let keptSinceFunded = false;
     const unlock = (): void => {
         batch.saved = true;
+        download.classList.replace('btn-primary', 'btn-secondary');
         if (fundedCount() > 0) keptSinceFunded = true;
         fundBtns.forEach(b => (b.disabled = false));
         fundHint.hidden = true;
@@ -98,7 +99,8 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         'button',
         {
             type: 'button',
-            class: 'btn btn-secondary',
+            // The thing to press first, until something is saved.
+            class: 'btn btn-primary',
             onclick: () => {
                 try {
                     const url = URL.createObjectURL(new Blob([lines() + '\n'], { type: 'text/plain;charset=utf-8' }));
@@ -165,19 +167,29 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     );
     const saveStep =
         batch.kind === 'answers'
-            ? [h('p', null, t('batch.one.body', { n })), linkBox({ link: batch.link!, onSaved: unlock }), h('p', { class: 'warning' }, t('batch.one.warn'))]
+            ? [h('p', null, t('batch.one.body', { n })), linkBox({ link: batch.link!, onSaved: unlock })]
             : [h('p', null, t('batch.save.body', { n })), h('p', { class: 'warning' }, t('batch.save.warn', { n })), h('div', { class: 'btn-row btn-row--equal' }, download, copyAll), saveMsg, allBox, manual];
 
     // ---- Step 2: one request for all ----
-    const links = fundAll(batch.gifts);
+    let links: FundLinks;
+    try {
+        links = fundAll(batch.gifts);
+    } catch {
+        // Cannot be: the create step refuses what the request cannot hold. If it ever is, the keys are let go rather than the screen stuck.
+        card.destroy();
+        clearBatch();
+        ctx.nav.toCreate();
+        return () => {};
+    }
     const openAsk = h('p', { class: 'warning', hidden: true }, t('batch.fund.again'));
     const fundBtn = (text: string, url: () => string): HTMLButtonElement => {
         const b = h('button', { type: 'button', class: 'btn btn-primary', disabled: !batch.saved }, text);
         let armed = false;
         b.addEventListener('click', () => {
-            if (!batch.saved) return;
+            // Once any gift is funded the whole request is never sent again (the buttons are also put away).
+            if (!batch.saved || fundedCount() > 0) return;
             // A second press of the same request would fund everything twice: asked first, every time.
-            if (batch.opened && fundedCount() === 0 && !armed) {
+            if (batch.opened && !armed) {
                 armed = true;
                 openAsk.hidden = false;
                 b.textContent = t('batch.fund.sure');
@@ -207,7 +219,10 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                       class: 'btn btn-secondary',
                       disabled: !batch.saved,
                       onclick: () => {
+                          if (!batch.saved || fundedCount() > 0) return;
                           qrOpen = !qrOpen;
+                          // A wallet may pay from the QR: the buttons then ask before opening one again.
+                          if (qrOpen) batch.opened = true;
                           qrHost.replaceChildren(...(qrOpen ? [qrPanel({ text: links.bip21, title: t('batch.fund.qr.title', { n }) })] : []));
                       },
                   },
@@ -237,11 +252,15 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     const statusText = h('span', null, t('batch.status.waiting'));
     const status = h('p', { class: 'status status--waiting', role: 'status', 'aria-live': 'polite' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), statusText);
     const stampNote = h('p', { class: 'note', hidden: true });
+    // Funded: what is left to do is to send, said where the status is.
+    const nextStep = h('p', { class: 'strong batch-next', hidden: true }, t(batch.kind === 'answers' ? 'batch.next.one' : 'batch.next.links'));
     const topUpHost = h('div', { class: 'stack batch-topup', hidden: true });
+    /** A whole round of reads, none failed, that began after a gift was already seen funded: only then is "left out" known. */
+    let settled = false;
     function paintTopUp(): void {
         const missing = batch!.gifts.filter((_, i) => states[i] !== null && !seenFunded[i]);
-        const known = states.every(s => s !== null);
-        // Only once some gift is funded and every gift was read: a wallet that sends the request whole leaves nothing out.
+        const known = settled && states.every(s => s !== null);
+        // Only once some gift is funded and every gift was read afterwards: a payment still arriving leaves nothing out.
         if (!known || fundedCount() === 0 || missing.length === 0) {
             topUpHost.hidden = true;
             if (missing.length === 0) watchMissing([]);
@@ -252,14 +271,31 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         // The gifts left out are funded by a request of their own: each is watched, so its arrival is seen at once.
         watchMissing(missing);
         const more = fundAll(missing);
+        // The same care as the main request: once a wallet was opened with it, a second opening is asked about first.
+        let topOpened = false;
+        const ask = h('p', { class: 'warning', hidden: true }, t('batch.fund.again'));
+        const topBtn = (text: string, url: () => string): HTMLButtonElement => {
+            const b = h('button', { type: 'button', class: 'btn btn-secondary' }, text);
+            let armed = false;
+            b.addEventListener('click', () => {
+                if (topOpened && !armed) {
+                    armed = true;
+                    ask.hidden = false;
+                    b.textContent = t('batch.fund.sure');
+                    return;
+                }
+                armed = false;
+                b.textContent = text;
+                ask.hidden = true;
+                topOpened = true;
+                openOut(url());
+            });
+            return b;
+        };
         topUpHost.replaceChildren(
             h('p', { class: 'warning' }, t(offer.kind === 'paid' ? 'batch.topup.paid' : 'batch.topup.body', { n: missing.length })),
-            h(
-                'div',
-                { class: 'btn-row btn-row--equal' },
-                h('button', { type: 'button', class: 'btn btn-secondary', onclick: () => openOut(more.web) }, t('created.fund.web')),
-                h('button', { type: 'button', class: 'btn btn-secondary', onclick: () => openOut(appRoad(more)) }, t('created.fund.app')),
-            ),
+            h('div', { class: 'btn-row btn-row--equal' }, topBtn(t('created.fund.web'), () => more.web), topBtn(t('created.fund.app'), () => appRoad(more))),
+            ask,
         );
         topUpHost.hidden = false;
     }
@@ -288,7 +324,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             { class: 'batch-sum' },
             h('span', { class: 'label batch-n' }, `${i + 1}/${n}`),
             who,
-            h('span', { class: 'batch-amt mono' }, `${formatXec(g.sats, lang)}`),
+            h('span', { class: 'batch-amt mono' }, `${formatXec(g.sats, lang)} XEC`),
             state,
         );
         const body = h('div', { class: 'stack batch-body' });
@@ -302,7 +338,9 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         } else {
             body.append(h('p', { class: 'note' }, t('batch.row.answer')));
         }
-        body.append(h('p', { class: 'note' }, `${formatXec(g.sats, lang)} XEC · ${t('gift.ref.label')} ${g.key.address.slice(6, 10)}…${g.key.address.slice(-4)}`));
+        // Which answer opens it, never the answer itself: the page does not keep answers.
+        if (batch.riddle !== undefined && batch.kind === 'links') body.append(h('p', { class: 'note' }, t(g.own === true ? 'batch.row.own' : 'batch.row.shared')));
+        body.append(h('p', { class: 'note' }, `${t('gift.ref.label')} ${g.key.address.slice(6, 10)}…${g.key.address.slice(-4)}`));
         const el = h('details', { class: 'batch-row' }, head, body);
         return { el, state };
     });
@@ -316,6 +354,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             r.el.dataset.state = key.slice('batch.row.'.length);
         });
         const all = k === n;
+        nextStep.hidden = !all;
         status.className = 'status ' + (all ? 'status--ok' : 'status--waiting');
         statusText.textContent = k === 0 ? t('batch.status.waiting') : t(all ? 'batch.status.all' : 'batch.status.some', { k, n });
         // Funded: the request is not to be sent again.
@@ -349,9 +388,17 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
     let disposed = false;
     let reading = false;
     let stampAsked = false;
+    let again = false;
     async function refresh(): Promise<void> {
-        if (disposed || reading) return;
+        if (disposed) return;
+        if (reading) {
+            // Something changed while a round was under way: what it read first may already be old. Asked once more.
+            again = true;
+            return;
+        }
         reading = true;
+        const fundedAtStart = fundedCount() > 0;
+        let clean = true;
         try {
             // One after another: nine questions at once is nine connections on a phone.
             for (let i = 0; i < n; i++) {
@@ -364,11 +411,17 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                         record(i);
                     }
                 } catch {
-                    /* asked again on the next round */
+                    // Not known now: an old answer must not stand for "still empty".
+                    states[i] = null;
+                    clean = false;
                 }
             }
             if (disposed) return;
+            if (fundedCount() === 0) settled = false;
+            else if (clean && fundedAtStart && !again) settled = true;
             paint();
+            // Funding was first seen in this very round: one more round, soon, settles what (if anything) was left out.
+            if (!settled && fundedCount() > 0 && fundedCount() < n && !again) setTimeout(() => void refresh(), 1500);
             // A paid wrapper: say once whether the one payment is seen (read from the first gift's coins).
             const first = states[0];
             if (!stampAsked && offer.kind === 'paid' && def && first && first.kind === 'funded') {
@@ -381,6 +434,10 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
             }
         } finally {
             reading = false;
+            if (again && !disposed) {
+                again = false;
+                void refresh();
+            }
         }
     }
     let unwatch: () => void = () => {};
@@ -436,7 +493,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                 body: [
                     amountBlock({ text: formatXec(total, lang), label: t('batch.total.label'), size: 'small' }),
                     offer.kind === 'paid' ? h('p', { class: 'note' }, t('batch.total.price', { gifts: formatXec(giftSum, lang), price: formatXec(offer.sats, lang) })) : null,
-                    h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), stampNote),
+                    h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), stampNote, nextStep),
                     stepRow(1, t(batch.kind === 'answers' ? 'created.step1.title' : 'batch.step1.title'), ...saveStep, riddleNote),
                     stepRow(
                         2,

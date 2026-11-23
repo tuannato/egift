@@ -2,7 +2,7 @@ import { applyTheme } from '../theme';
 import type { WrapperDef } from '../../stage';
 import type { Recipe, RecipeFace } from '../../core';
 import { coversFee, setCoversFee } from '../prefs';
-import { CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatRecipe, formatXec, newSecret, parseRecipe, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
+import { CAP_SATS, CONFIRM_SATS, DEFAULT_WRAPPER, FLOOR_SATS, RIDDLE_MAX_BYTES, WISH_MAX_BYTES, deriveKey, encodeLink, formatRecipe, formatXec, newSecret, parseRecipe, takeFeeEstimate, normaliseAnswer, parseXec, riddleBytes, riddleRoot, whyNotXec, wishBytes } from '../../core';
 import { WRAPPERS, offerOf, wrapperById, inLang } from '../../wrappers';
 import { thumbUrl } from '../../wrappers/artUrl';
 import { ACCENTS, COLOURWAYS, accentFor, colourwaysOf, dressed } from '../../wrappers/looks';
@@ -263,7 +263,19 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     /** The amount of the one gift this form makes: the big figure, or the only row of the table. Null for several, or none. */
     const oneAmount = (v: { sats: bigint | null; rowSats: readonly bigint[] | null; multi: boolean }): bigint | null => (v.multi ? (v.rowSats !== null && v.rowSats.length === 1 ? v.rowSats[0]! : null) : v.sats);
     /** What the table as it stands would make: every amount and answer, to compare with what was confirmed. */
-    const tableSig = (): string => JSON.stringify([draft.oneLink, draft.coverFee, people.rows().map(r => [r.name.trim(), r.amount.trim(), normaliseAnswer(r.answer)])]);
+    const tableSig = (): string =>
+        JSON.stringify([
+            draft.oneLink,
+            draft.coverFee,
+            draft.riddleOn,
+            draft.riddleHide,
+            draft.wrapper,
+            draft.recipe,
+            question.value.trim(),
+            wish.value.trim(),
+            normaliseAnswer(answer.value),
+            people.rows().map(r => [r.name.trim(), r.amount.trim(), normaliseAnswer(r.answer)]),
+        ]);
     function validate(): { sats: bigint | null; wishOk: boolean; riddleOk: boolean; rowSats: bigint[] | null; multi: boolean } {
         const raw = amount.value.trim();
         let sats: bigint | null = null;
@@ -292,6 +304,11 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 if (x === null || x < FLOOR_SATS) badAmounts.add(i);
             });
             rowSats = badAmounts.size === 0 ? (parsed as bigint[]) : null;
+            // All of them together are held to the cap of one gift (with the fee the giver may add to each).
+            if (rowSats !== null && rowSats.reduce((a, b) => a + b + fee(), 0n) > CAP_SATS) {
+                rowSats.forEach((_, i) => badAmounts.add(i));
+                rowSats = null;
+            }
             msg = '';
         }
         amountField.hidden = multi;
@@ -806,7 +823,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             const wrapper = draft.wrapper || DEFAULT_WRAPPER;
             const text = wish.value.trim();
             const riddle = draft.riddleOn ? question.value.trim() : undefined;
-            // The table with one row: one gift, with the name the giver gave it and, if typed, its own answer.
+            // The table with one row: one gift, with the name the giver gave it.
             const only = people.active() && people.rows().length === 1 ? people.rows()[0]! : null;
             const name = only !== null ? keepableName(only.name) : undefined;
             let root = secret;
@@ -814,7 +831,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 // A locked gift: the key comes from the secret and the answer, through a deliberately slow hash.
                 working = true;
                 showSubmit();
-                root = await track(riddleRoot(secret, only !== null && only.answer.trim() !== '' ? only.answer : answer.value));
+                root = await track(riddleRoot(secret, answer.value));
                 if (disposed) return;
             }
             const key = deriveKey(root);
@@ -871,11 +888,12 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 const secret = shared ?? newSecret();
                 let root = secret;
                 // A locked gift: the slow hash, once for each (the salt is each gift's own secret, or the answer differs).
-                if (riddle !== undefined) root = await track(riddleRoot(secret, row.answer.trim() !== '' ? row.answer : answer.value));
+                const own = riddle !== undefined && normaliseAnswer(row.answer) !== '';
+                if (riddle !== undefined) root = await track(riddleRoot(secret, own ? row.answer : answer.value));
                 if (disposed) return;
                 const key = deriveKey(root);
                 const link = one ? undefined : encodeLink({ ...common, secret, ...(riddle !== undefined && !draft.riddleHide ? { spot: key.pkh } : {}) }, location.origin);
-                gifts.push({ name: keepableName(row.name) ?? '', key, sats: rowSats[i]! + covered, ...(link !== undefined ? { link } : {}) });
+                gifts.push({ name: keepableName(row.name) ?? '', key, sats: rowSats[i]! + covered, ...(link !== undefined ? { link } : {}), ...(own ? { own: true } : {}) });
             }
             // Two gifts at one address would be one gift: it cannot happen with distinct answers, and is refused if it does.
             if (new Set(gifts.map(g => g.key.address)).size !== gifts.length) throw new Error('Two gifts share a key');
@@ -931,30 +949,47 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             },
         });
         const back = h('button', { type: 'button', class: 'btn btn-quiet', onclick: showSubmit }, t('create.confirm.cancel'));
+        const anyOwn = draft.riddleOn && people.rows().some(r => normaliseAnswer(r.answer) !== '');
         const lines = people.rows().map((r, i) => {
-            const own = draft.riddleOn && r.answer.trim() !== '';
+            const own = draft.riddleOn && normaliseAnswer(r.answer) !== '';
             return h(
                 'li',
                 { class: 'confirm-row' },
                 h('span', { class: 'confirm-who' }, keepableName(r.name) ?? t('people.nth', { n: i + 1 })),
-                h('span', { class: 'confirm-amt mono' }, `${formatXec(rowSats[i]! + covered, lang)} XEC`),
-                own ? h('span', { class: 'confirm-ans' }, t('people.confirm.answer', { answer: normaliseAnswer(r.answer) })) : null,
+                // The gift itself, as typed; the fee the giver adds is said once, with the total.
+                h('span', { class: 'confirm-amt mono' }, `${formatXec(rowSats[i]!, lang)} XEC`),
+                own ? h('span', { class: 'confirm-ans' }, t('people.confirm.answer', { answer: normaliseAnswer(r.answer) })) : draft.riddleOn ? h('span', { class: 'confirm-ans' }, t('people.confirm.shared')) : null,
             );
         });
+        const totalRow = h(
+            'li',
+            { class: 'confirm-row confirm-total' },
+            h('span', { class: 'confirm-who' }, t('people.confirm.total')),
+            h('span', { class: 'confirm-amt mono' }, `${formatXec(total, lang)} XEC`),
+            covered > 0n ? h('span', { class: 'confirm-ans' }, t('people.confirm.fee', { fee: formatXec(covered * BigInt(rowSats.length), lang) })) : null,
+        );
+        // Answers that are a row's own are shown here for the last time: the press waits for the giver to say they are written down.
+        const wrote = h('input', { id: 'f-wrote', class: 'check-box', type: 'checkbox' });
+        const wroteRow = anyOwn ? h('label', { class: 'check', for: 'f-wrote' }, wrote, h('span', null, t('people.confirm.wrote'))) : null;
+        if (anyOwn) {
+            hold.disabled = true;
+            wrote.addEventListener('change', () => (hold.disabled = !wrote.checked));
+        }
         finishHost.replaceChildren(
             h(
                 'div',
                 { class: 'confirm-step', role: 'group', 'aria-label': t('create.confirm.title') },
                 label(t('create.confirm.title')),
                 h('p', { class: 'confirm-body' }, t('people.confirm.body', { n: rowSats.length, total: formatXec(total, lang), wrapper: nameOf(wrapperById(draft.wrapper)) })),
-                h('ol', { class: 'confirm-list' }, ...lines),
-                draft.riddleOn && people.rows().some(r => r.answer.trim() !== '') ? h('p', { class: 'warning' }, t('people.confirm.answers')) : null,
+                h('ol', { class: 'confirm-list' }, ...lines, totalRow),
+                anyOwn ? h('p', { class: 'warning danger' }, t('people.confirm.answers')) : null,
+                wroteRow,
                 hold,
                 back,
             ),
         );
         form.classList.add('is-confirming');
-        hold.focus();
+        (anyOwn ? wrote : hold).focus();
     }
 
     function showSubmit(): void {

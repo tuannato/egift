@@ -55,6 +55,8 @@ export interface BatchGift {
     readonly sats: bigint;
     /** Its own link. Absent when the whole batch shares one link (`MadeBatch.link`). */
     readonly link?: string;
+    /** Locked with an answer of its own rather than the one all share. Only that it is so: never the answer. */
+    readonly own?: boolean;
 }
 
 /**

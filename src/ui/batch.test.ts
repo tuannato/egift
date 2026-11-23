@@ -66,6 +66,13 @@ function riddle(question: string, shared?: string): void {
 async function confirmBatch(): Promise<void> {
     submit();
     const hold = buttonByText(app!.root, t('create.confirm.hold'));
+    // Answers that are a row's own: the press waits for "I have written them down".
+    const wrote = app!.root.querySelector<HTMLInputElement>('#f-wrote');
+    if (wrote) {
+        expect(hold.disabled).toBe(true);
+        wrote.checked = true;
+        wrote.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     hold.click();
     hold.click();
     await until(() => getBatch() !== null);
@@ -155,6 +162,13 @@ describe('several people on the create step', () => {
         app = boot();
         await flush();
         people([{ name: 'Mẹ', amount: '100' }]);
+        // One gift has one answer, typed twice below: a row's own answer is for telling several apart.
+        const lockBox = $<HTMLInputElement>('#f-riddle');
+        lockBox.checked = true;
+        lockBox.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(all<HTMLInputElement>('.people-answer')[0]!.hidden).toBe(true);
+        lockBox.checked = false;
+        lockBox.dispatchEvent(new Event('change', { bubbles: true }));
         submit();
         await until(() => getMade() !== null);
         expect(getBatch()).toBeNull();
@@ -184,6 +198,34 @@ describe('several people on the create step', () => {
         expect((await unlockKey(links[1]!, 'hanoi')).address).not.toBe(b.gifts[1]!.key.address);
         // No answer is anywhere in what the page holds.
         expect(JSON.stringify(b, (_k, v) => (typeof v === 'bigint' ? String(v) : v))).not.toMatch(/blue door|hanoi/i);
+    });
+
+    it('what was read back is what is made: the lock switched after the read-back goes back to the form', async () => {
+        app = boot();
+        await flush();
+        people([{ name: 'A', amount: '20' }, { name: 'B', amount: '20' }]);
+        submit();
+        // The lock comes on under the read-back: that is not what was confirmed.
+        riddle('Q?', 'shared one');
+        const hold = buttonByText(app.root, t('create.confirm.hold'));
+        hold.click();
+        hold.click();
+        await flush();
+        expect(getBatch()).toBeNull();
+        expect(newSecret).not.toHaveBeenCalled();
+        // Read back again with the lock: the rows say which answer opens them.
+        submit();
+        expect($('.confirm-step').textContent).toContain(t('people.confirm.shared'));
+        expect(app.root.querySelector('#f-wrote')).toBeNull();
+    });
+
+    it('all the gifts together are held to the cap of one', async () => {
+        app = boot();
+        await flush();
+        people([{ amount: '20000000000000' }, { amount: '20000000000000' }]);
+        expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(true);
+        type(all<HTMLInputElement>('.people-amount')[1]!, '20');
+        expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(false);
     });
 
     it('one link for everyone: each answer opens its own gift, and two rows cannot share an answer', async () => {
@@ -225,7 +267,7 @@ describe('several people on the create step', () => {
         // A wrong answer is a key to an address that holds nothing.
         expect(b.gifts.map(g => g.key.address)).not.toContain((await unlockKey(link, 'red kit')).address);
         expect(app.root.textContent).toContain(t('batch.title.one', { n: 3 }));
-        expect(app.root.textContent).toContain(t('batch.one.warn'));
+        expect(app.root.textContent).toContain(t('batch.riddle.one'));
     });
 });
 
@@ -301,12 +343,22 @@ describe('several gifts on the created step', () => {
         await until(() => app!.root.textContent!.includes(t('batch.status.some', { k: 2, n: 3 })));
         expect(web.disabled).toBe(true);
         expect(all('.batch-row').map(r => r.dataset.state)).toEqual(['funded', 'waiting', 'funded']);
-        // Only the one left out is asked for, by its own request.
+        // Once anything is funded the whole request is not sent again, even by a press that slips through.
+        web.disabled = false;
+        web.click();
+        expect(opened.length).toBe(2);
+        // Only the one left out is asked for, by its own request: offered after one more full look, not at first sight.
+        await until(() => !$('.batch-topup').hidden, 8000);
         expect(app!.root.textContent).toContain(t('batch.topup.body', { n: 1 }));
         const top = $('.batch-topup');
-        buttonByText(top, t('created.fund.web')).click();
+        const topWeb = buttonByText(top, t('created.fund.web'));
+        topWeb.click();
         expect(opened[2]).toContain(b.gifts[1]!.key.address);
         expect(opened[2]).not.toContain(b.gifts[0]!.key.address);
+        // The same care as the main request: a second press asks first.
+        topWeb.click();
+        expect(opened.length).toBe(3);
+        expect(top.textContent).toContain(t('batch.fund.again'));
         app!.chain.fund(b.gifts[1]!.key.address, b.gifts[1]!.sats);
         await until(() => app!.root.textContent!.includes(t('batch.status.all', { n: 3 })));
         expect($('.batch-topup').hidden).toBe(true);
@@ -316,6 +368,8 @@ describe('several gifts on the created step', () => {
         expect(sent.map(s => s.part).sort()).toEqual(['1/3', '2/3', '3/3']);
         expect(sent.find(s => s.part === '1/3')!.name).toBe('Anh Hai');
         expect(sent.find(s => s.part === '2/3')!.name).toBeUndefined();
+        // Every row opens, and says what is left to do.
+        expect(app!.root.textContent).toContain(t('batch.next.links'));
         const stored = JSON.stringify(Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])));
         for (const g of b.gifts) expect(stored).not.toContain(g.link!.slice(g.link!.indexOf('#') + 5, g.link!.indexOf('#') + 20));
         expect(Object.keys(localStorage).sort()).toEqual(['gift.sent']);
@@ -342,6 +396,37 @@ describe('several gifts on the created step', () => {
         expect(opened).toEqual([want.web]);
         expect(want.bip21.match(/op_return_raw=/g)!.length).toBe(1);
         expect(want.bip21.match(new RegExp(maker.address, 'g'))!.length).toBe(1);
+    });
+
+    it('a payment that is still arriving is not taken for gifts left out', async () => {
+        stubClipboard();
+        await made([{ amount: '20' }, { amount: '30' }, { amount: '40' }]);
+        const b = getBatch()!;
+        // The three arrive one after another while the page is reading them.
+        for (const g of b.gifts) {
+            app!.chain.fund(g.key.address, g.sats);
+            await flush(1);
+        }
+        await until(() => app!.root.textContent!.includes(t('batch.status.all', { n: 3 })));
+        expect($('.batch-topup').hidden).toBe(true);
+        expect(app!.root.textContent).toContain(t('batch.next.links'));
+    });
+
+    it('a QR that was shown counts as a wallet opened: the button then asks first', async () => {
+        stubClipboard();
+        const opened: string[] = [];
+        vi.spyOn(window, 'open').mockImplementation(((u: string) => void opened.push(u)) as unknown as typeof window.open);
+        await made([{ amount: '20' }, { amount: '30' }]);
+        buttonByText(app!.root, t('batch.save.copy')).click();
+        await flush();
+        buttonByText(app!.root, t('created.fund.qr')).click();
+        expect(app!.root.querySelector('.qr-svg')).not.toBeNull();
+        const web = buttonByText(app!.root, t('created.fund.web'));
+        web.click();
+        expect(opened).toEqual([]);
+        expect(app!.root.textContent).toContain(t('batch.fund.again'));
+        web.click();
+        expect(opened.length).toBe(1);
     });
 
     it('a request too long to scan is not offered as a QR', async () => {
