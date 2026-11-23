@@ -142,6 +142,7 @@ export const pt: Record<keyof typeof vi, string> = {
     'created.title': "Seu presente está pronto",
     'ref.explorer': "Ver {id} no explorer.e.cash (abre uma nova aba)",
     'ref.copy': "Copiar o endereço {id}",
+    'ref.copyfail': "Não foi possível copiar. Tente de novo.",
     'take.done.explorer': "Ver a transação no explorer.e.cash",
     'list.prev': "Anterior",
     'list.next': "Seguinte",

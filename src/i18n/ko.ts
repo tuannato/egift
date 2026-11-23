@@ -142,6 +142,7 @@ export const ko: Record<keyof typeof vi, string> = {
     'created.title': "선물이 준비됐어요",
     'ref.explorer': "explorer.e.cash에서 {id} 보기 (새 탭에서 열림)",
     'ref.copy': "주소 {id} 복사",
+    'ref.copyfail': "복사하지 못했습니다. 다시 시도해 주세요.",
     'take.done.explorer': "explorer.e.cash에서 거래 보기",
     'list.prev': "이전",
     'list.next': "다음",

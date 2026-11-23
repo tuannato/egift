@@ -681,6 +681,12 @@ describe('closing the tab on the funding step', () => {
         expect(clip.written[0]).not.toContain('#');
         expect(app.root.querySelector('.amount-ref .ref-said')!.textContent).toBe(t('link.copied'));
         expect(opened).toEqual([]);
+        // A browser that will not copy: the page says so, and never prints the whole address.
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => Promise.reject(new Error('no')) } });
+        ref.click();
+        await flush();
+        expect(app.root.querySelector('.amount-ref .ref-said')!.textContent).toBe(t('ref.copyfail'));
+        expect(app.root.querySelector('.amount-ref')!.textContent).not.toContain(getMade()!.key.address.slice(6));
         // Copying an address is not saving the link: leaving still asks.
         expect(getMade()!.saved).toBe(false);
     });

@@ -142,6 +142,7 @@ export const ja: Record<keyof typeof vi, string> = {
     'created.title': "ギフトの準備ができました",
     'ref.explorer': "{id} を explorer.e.cash で見る（新しいタブが開きます）",
     'ref.copy': "アドレス {id} をコピー",
+    'ref.copyfail': "コピーできませんでした。もう一度お試しください。",
     'take.done.explorer': "取引を explorer.e.cash で見る",
     'list.prev': "前へ",
     'list.next': "次へ",

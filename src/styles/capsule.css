@@ -1052,7 +1052,6 @@ button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin:
 
 .ref-copy-wrap { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
 .ref-said { font-family: var(--text); letter-spacing: 0; text-transform: none; color: var(--dim); }
-.ref-said--whole { font-family: var(--mono); overflow-wrap: anywhere; white-space: normal; user-select: all; -webkit-user-select: all; }
 
 /* A button that leaves for another site says so with its arrow. */
 .btn-out::after { content: "↗"; }

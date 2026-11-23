@@ -140,6 +140,7 @@ export const vi = {
     'created.title': 'Món quà đã sẵn sàng',
     'ref.explorer': "Xem {id} trên explorer.e.cash (mở tab mới)",
     'ref.copy': "Chép địa chỉ {id}",
+    'ref.copyfail': "Chưa chép được. Hãy thử lại.",
     'take.done.explorer': "Xem giao dịch trên explorer.e.cash",
     'list.prev': "Trước",
     'list.next': "Sau",

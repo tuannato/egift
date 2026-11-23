@@ -142,6 +142,7 @@ export const fr: Record<keyof typeof vi, string> = {
     'created.title': "Votre cadeau est prêt",
     'ref.explorer': "Voir {id} sur explorer.e.cash (ouvre un nouvel onglet)",
     'ref.copy': "Copier l’adresse {id}",
+    'ref.copyfail': "Copie impossible. Réessayez.",
     'take.done.explorer': "Voir la transaction sur explorer.e.cash",
     'list.prev': "Précédent",
     'list.next': "Suivant",

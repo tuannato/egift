@@ -142,6 +142,7 @@ export const ru: Record<keyof typeof vi, string> = {
     'created.title': "Ваш подарок готов",
     'ref.explorer': "Открыть {id} на explorer.e.cash (в новой вкладке)",
     'ref.copy': "Скопировать адрес {id}",
+    'ref.copyfail': "Не удалось скопировать. Попробуйте ещё раз.",
     'take.done.explorer': "Посмотреть транзакцию на explorer.e.cash",
     'list.prev': "Назад",
     'list.next': "Далее",

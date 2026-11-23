@@ -142,6 +142,7 @@ export const th: Record<keyof typeof vi, string> = {
     'created.title': "ของขวัญของคุณพร้อมแล้ว",
     'ref.explorer': "ดู {id} บน explorer.e.cash (เปิดแท็บใหม่)",
     'ref.copy': "คัดลอกที่อยู่ {id}",
+    'ref.copyfail': "คัดลอกไม่สำเร็จ ลองอีกครั้ง",
     'take.done.explorer': "ดูธุรกรรมบน explorer.e.cash",
     'list.prev': "ก่อนหน้า",
     'list.next': "ถัดไป",

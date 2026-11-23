@@ -5,7 +5,7 @@ import { copyText } from './linkBox';
 /**
  * A package's short reference (`qz8t…05zx`) that copies the whole address on a press: on the giver's own screens
  * only, where the address is theirs to hand to a wallet. An address is public: it is where a gift is, never its key.
- * If the browser will not copy, the whole address is shown beside it, to be copied by hand.
+ * The whole address is never printed: if the browser will not copy, the page says so and the press can be tried again.
  */
 export function copyRef(address: string, text: string): HTMLElement {
     const said = h('span', { class: 'ref-said', role: 'status', 'aria-live': 'polite' });
@@ -19,9 +19,8 @@ export function copyRef(address: string, text: string): HTMLElement {
             onclick: () => {
                 void copyText(address).then(ok => {
                     clearTimeout(back);
-                    said.classList.toggle('ref-said--whole', !ok);
-                    said.textContent = ok ? t('link.copied') : address;
-                    if (ok) back = setTimeout(() => (said.textContent = ''), 2500);
+                    said.textContent = t(ok ? 'link.copied' : 'ref.copyfail');
+                    back = setTimeout(() => (said.textContent = ''), ok ? 2500 : 4000);
                 });
             },
         },

@@ -142,6 +142,7 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'created.title': "禮物準備好了",
     'ref.explorer': "在 explorer.e.cash 查看 {id}（在新分頁開啟）",
     'ref.copy': "複製地址 {id}",
+    'ref.copyfail': "複製失敗，請再試一次。",
     'take.done.explorer': "在 explorer.e.cash 查看這筆交易",
     'list.prev': "上一頁",
     'list.next': "下一頁",

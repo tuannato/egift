@@ -142,6 +142,7 @@ export const id: Record<keyof typeof vi, string> = {
     'created.title': "Hadiah Anda sudah siap",
     'ref.explorer': "Lihat {id} di explorer.e.cash (membuka tab baru)",
     'ref.copy': "Salin alamat {id}",
+    'ref.copyfail': "Tidak bisa menyalin. Coba lagi.",
     'take.done.explorer': "Lihat transaksi di explorer.e.cash",
     'list.prev': "Sebelumnya",
     'list.next': "Berikutnya",
