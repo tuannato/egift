@@ -1,4 +1,4 @@
-import { BATCH_MAX } from '../core';
+import { BATCH_MAX, normaliseAnswer } from '../core';
 import { t } from '../i18n';
 import { h } from './dom';
 import { draft } from './draft';
@@ -37,9 +37,11 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
     const oneRow = h('label', { class: 'check people-one', for: 'f-onelink', hidden: true }, oneBox, h('span', null, h('span', null, t('people.one')), h('span', { class: 'check-why' }, ' ' + t('people.one.why'))));
     // What one shared link costs is said in view, never behind a press: the answer is then the only lock.
     const oneWarn = h('p', { class: 'warning people-one-warn', hidden: true }, t('people.one.warn'));
+    // Rows with the same answer are several gifts for that answer: what that means is said as soon as it is so.
+    const sameWarn = h('p', { class: 'warning people-same-warn', hidden: true }, t('people.one.same'));
     // One link for all needs a riddle: said where the rows are, since the riddle's switch is further down.
     const oneHint = h('p', { class: 'note people-one-hint', hidden: true }, t('people.one.hint'));
-    const body = h('div', { class: 'people-body', hidden: !draft.peopleOpen }, h('p', { class: 'note people-lead' }, t('people.lead', { max: BATCH_MAX })), list, add, oneHint, oneRow, oneWarn);
+    const body = h('div', { class: 'people-body', hidden: !draft.peopleOpen }, h('p', { class: 'note people-lead' }, t('people.lead', { max: BATCH_MAX })), list, add, oneHint, oneRow, oneWarn, sameWarn);
     const mark = h('span', { class: 'people-mark', 'aria-hidden': 'true' }, draft.peopleOpen ? '−' : '+');
     const toggle = h(
         'button',
@@ -94,6 +96,8 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
         oneRow.hidden = !canOne;
         oneHint.hidden = riddleOn || n < 2;
         oneWarn.hidden = !(canOne && draft.oneLink);
+        const typed = draft.people.map(p => normaliseAnswer(p.answer)).filter(a => a !== '');
+        sameWarn.hidden = !(canOne && draft.oneLink && new Set(typed).size < typed.length);
         oneBox.disabled = working;
         [...list.children].forEach((r, i) => {
             const [name, amount, remove, answer] = [...r.children] as [HTMLInputElement, HTMLInputElement, HTMLButtonElement, HTMLInputElement];

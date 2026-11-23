@@ -1,4 +1,4 @@
-import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, addressOfPkh, deriveKey, encodeLink, entitlement, isStamp, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey } from '../../core';
+import { DEFAULT_WRAPPER, FLOOR_SATS, MAX_SWEEP_INPUTS, numberMarks, addressOfPkh, deriveKey, encodeLink, entitlement, isStamp, formatXec, giftTokens, holdings, normaliseAnswer, unlockKey, riddleRoot, BATCH_MAX } from '../../core';
 import type { GiftToken, PackageKey, PackageLink, PackageState, TokenMeta } from '../../core';
 import { otherTokens, tokenCard } from '../tokens';
 import { offerOf, wrapperById, inLang, LOCK_WRAPPER } from '../../wrappers';
@@ -160,8 +160,35 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         let outcome: 'right' | 'wrong' | 'taken' | 'gone' | 'offline' = 'offline';
         let key: PackageKey | null = null;
         try {
-            key = await track(unlockKey(link, answer.value));
-            if (spot && !atSpot(key.pkh)) {
+            if (link.many === true) {
+                // One link with several gifts: an answer may have several gifts behind it, one in each slot. The
+                // slow hash runs once; each slot is another key from its result. Nothing ever in the first two slots:
+                // not an answer of this link, and the network is asked no more (two questions, so that a gift whose
+                // first slot a wallet left out is still found). Otherwise the first slot that holds a gift is opened;
+                // a slot with only crumbs in it (less than the least gift) is passed over, so it cannot block the rest.
+                const root = await track(riddleRoot(link.secret, answer.value));
+                let taken: PackageKey | null = null;
+                /** Some slot so far was funded at some time: this is an answer of the link, and every slot is looked at. */
+                let used = false;
+                outcome = 'wrong';
+                for (let slot = 0; slot < BATCH_MAX; slot++) {
+                    const k = deriveKey(root, slot);
+                    const state = await track(ctx.chain.read(k.address));
+                    if (state.kind === 'funded' && state.xecSats >= FLOOR_SATS) {
+                        key = k;
+                        outcome = 'right';
+                        break;
+                    }
+                    if (state.kind !== 'empty') {
+                        used = true;
+                        if (state.kind === 'taken') taken = taken ?? k;
+                    } else if (slot >= 1 && !used) break;
+                }
+                if (outcome !== 'right' && taken !== null) {
+                    key = taken;
+                    outcome = 'taken';
+                }
+            } else if (((key = await track(unlockKey(link, answer.value))), spot && !atSpot(key.pkh))) {
                 // Not the key of the address the link names: a wrong answer, and the network is not asked.
                 outcome = 'wrong';
             } else {
@@ -191,7 +218,8 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             return;
         }
         if (outcome === 'right' && key) {
-            unlocked.set(secretId(link.secret), key);
+            // Not for a link with several gifts: the answer was this person's, the next one must be asked again.
+            if (link.many !== true) unlocked.set(secretId(link.secret), key);
             // The lock turns and opens (a second and a half at most), then the gift's own wrapper takes the stage.
             cue.open();
             try {
@@ -213,7 +241,8 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             // taken home, in its own wrapper.
             const wanted = wrapperById(link.wrapper);
             const offer = wanted ? offerOf(wanted) : ({ kind: 'free' } as const);
-            if (wanted && offer.kind === 'paid' && ctx.chain.past) {
+            // (Not for a link with several gifts: "taken" there is said of the answer, not shown as one gift.)
+            if (link.many !== true && wanted && offer.kind === 'paid' && ctx.chain.past) {
                 try {
                     const txs = await ctx.chain.past(key.address);
                     if (disposed) return;
@@ -1055,6 +1084,9 @@ function openPackage(root: HTMLElement, ctx: Ctx, link: PackageLink, key: Packag
             if (state.hasToken) below.append(h('p', { class: 'note token' }, t('pkg.token')));
         } else if (state.kind === 'taken') {
             below.append(h('p', { class: 'state-title' }, t('pkg.taken')), h('p', { class: 'state-next' }, t('pkg.taken.next')));
+            // One link with several gifts: this one went to someone quicker, another may be left for the same answer.
+            if (link !== null && link.many === true)
+                below.append(h('p', { class: 'strong' }, t('pkg.many.again')), h('div', null, h('button', { type: 'button', class: 'btn btn-secondary', onclick: () => location.reload() }, t('pkg.many.retry'))));
             if (state.takenAt) below.append(h('p', { class: 'note' }, t('pkg.taken.at', { time: fmtTime(state.takenAt) })));
             // The words came in the link, not in the package: they can still be read after the gift has gone.
             below.append(...keepsake());

@@ -10,7 +10,7 @@ vi.mock('../core', async orig => {
     return { ...real, newSecret: vi.fn(real.newSecret) };
 });
 
-import { FLOOR_SATS, batchFundLinks, createDemoChain, decodeFragment, deriveKey, encodeLink, newSecret, unlockKey } from '../core';
+import { FLOOR_SATS, batchFundLinks, createDemoChain, decodeFragment, deriveKey, encodeLink, newSecret, riddleRoot, unlockKey } from '../core';
 import { t } from '../i18n';
 import { WRAPPERS, setOfferForDev } from '../wrappers';
 import { getBatch, getMade } from './session';
@@ -228,7 +228,7 @@ describe('several people on the create step', () => {
         expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(false);
     });
 
-    it('one link for everyone: each answer opens its own gift, and two rows cannot share an answer', async () => {
+    it('one link for all: each answer opens a gift; rows that share an answer are several gifts behind it', async () => {
         app = boot();
         await flush();
         people([{ name: 'A', amount: '20', answer: 'red kite' }, { name: 'B', amount: '30', answer: 'red kite' }, { name: 'C', amount: '40', answer: '' }]);
@@ -242,13 +242,17 @@ describe('several people on the create step', () => {
         // What it costs is in view at once, not behind a press.
         expect($('.people-one-warn').hidden).toBe(false);
         expect($('.people-one-warn').closest('details')).toBeNull();
-        // The shared answer has no part here; a missing answer and a repeated one both stop the gift.
+        // The shared answer has no part here; a row with no answer stops the gift.
         expect($('#f-riddle-a').parentElement!.hidden).toBe(true);
         expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(true);
+        // Two rows with one answer: allowed, and what it means is said in view at once.
+        expect($('.people-same-warn').hidden).toBe(false);
+        expect($('.people-same-warn').closest('details')).toBeNull();
         type(all<HTMLInputElement>('.people-answer')[2]!, 'green hill');
-        expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(true);
-        type(all<HTMLInputElement>('.people-answer')[1]!, ' Blue  Sea ');
         expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(false);
+        // Accents and capitals do not tell answers apart.
+        type(all<HTMLInputElement>('.people-answer')[1]!, ' RED  Kíte ');
+        expect($('.people-same-warn').hidden).toBe(false);
         feeOff();
         await confirmBatch();
         const b = getBatch()!;
@@ -262,8 +266,10 @@ describe('several people on the create step', () => {
         expect(link.spot).toBeUndefined();
         // And says that it is shared, so the page can tell whoever opens it.
         expect(link.many).toBe(true);
-        const answers = ['red kite', 'blue sea', 'Green Hill'];
-        for (let i = 0; i < 3; i++) expect((await unlockKey(link, answers[i]!)).address).toBe(b.gifts[i]!.key.address);
+        // The first row of an answer is what the answer alone gives; the next row with it is its second slot.
+        expect((await unlockKey(link, 'red kite')).address).toBe(b.gifts[0]!.key.address);
+        expect(deriveKey(await riddleRoot(link.secret, 'Red Kite'), 1).address).toBe(b.gifts[1]!.key.address);
+        expect((await unlockKey(link, 'Green Hill')).address).toBe(b.gifts[2]!.key.address);
         expect(new Set(b.gifts.map(g => g.key.address)).size).toBe(3);
         expect(b.gifts.map(g => g.sats)).toEqual([2_000n, 3_000n, 4_000n]);
         // A wrong answer is a key to an address that holds nothing.
@@ -280,7 +286,11 @@ describe('opening one link shared by several', () => {
         const link = { version: 1 as const, secret, wrapper: 'signal', riddle: 'Your word?', many: true as const };
         const mine = await unlockKey(link, 'red kite');
         const gone = await unlockKey(link, 'blue sea');
+        // "red kite" has two gifts behind it: the first was taken, the second is still there.
+        const second = deriveKey(await riddleRoot(secret, 'red kite'), 1);
         chain.fund(mine.address, 5_000n);
+        chain.steal(mine.address);
+        chain.fund(second.address, 7_000n);
         // Another part, funded and already taken home.
         chain.fund(gone.address, 5_000n);
         chain.steal(gone.address);
@@ -291,23 +301,91 @@ describe('opening one link shared by several', () => {
         expect(app.root.textContent).toContain(t('pkg.riddle.lead.many'));
         expect(app.root.textContent).not.toContain(t('pkg.riddle.lead'));
         const answer = $<HTMLInputElement>('#rd-answer');
+        // A wrong answer costs two questions to the network, not nine.
+        let asked = 0;
+        const read0 = chain.read.bind(chain);
+        chain.read = async (a: string) => (asked++, read0(a));
         type(answer, 'green hill');
         buttonByText(app.root, t('pkg.riddle.submit')).click();
         await until(() => app!.root.textContent!.includes(t('pkg.riddle.wrong')));
+        expect(asked).toBe(2);
         expect(app.root.textContent).toContain(t('pkg.riddle.wrong.many'));
         // The answer of a part that someone already took home.
         type($<HTMLInputElement>('#rd-answer'), 'Blue Sea');
         buttonByText(app.root, t('pkg.riddle.submit')).click();
         await until(() => app!.root.textContent!.includes(t('pkg.riddle.taken.many')));
-        // The right answer opens that person's own part.
+        // The right answer opens the gift of that answer that is still there: here the second.
+        const reads: string[] = [];
+        const read = chain.read.bind(chain);
+        chain.read = async (a: string) => (reads.push(a), read(a));
         type($<HTMLInputElement>('#rd-answer'), 'red kite');
         buttonByText(app.root, t('pkg.riddle.submit')).click();
         await until(() => app!.root.querySelector('#rd-answer') === null);
+        expect(reads.slice(0, 2)).toEqual([mine.address, second.address]);
+
         // The same link opened again in this tab asks again: the answer was one person's, not the link's.
         app.stop();
         app = boot(chain);
         await flush(12);
         expect(app.root.querySelector('#rd-answer')).not.toBeNull();
+    });
+});
+
+describe('several gifts behind one answer', () => {
+    const open = async (chain: ReturnType<typeof createDemoChain>, secret: Uint8Array, answer: string): Promise<string[]> => {
+        const url = encodeLink({ version: 1, secret, wrapper: 'signal', riddle: 'Your word?', many: true }, location.origin);
+        history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
+        app = boot(chain);
+        await flush(12);
+        const reads: string[] = [];
+        const read = chain.read.bind(chain);
+        chain.read = async (a: string) => (reads.push(a), read(a));
+        type($<HTMLInputElement>('#rd-answer'), answer);
+        buttonByText(app.root, t('pkg.riddle.submit')).click();
+        return reads;
+    };
+    const slotsOf = async (secret: Uint8Array, answer: string, n: number) => {
+        const root = await riddleRoot(secret, answer);
+        return Array.from({ length: n }, (_, i) => deriveKey(root, i));
+    };
+
+    it('a gift whose first slot was left out is still found', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const s = await slotsOf(secret, 'kite', 3);
+        chain.fund(s[1]!.address, 6_000n);
+        const reads = await open(chain, secret, 'kite');
+        await until(() => app!.root.querySelector('#rd-answer') === null);
+        expect(reads.slice(0, 2)).toEqual([s[0]!.address, s[1]!.address]);
+    });
+
+    it('crumbs in a slot do not block the gifts after it; a gap is passed over; the last of nine is reached', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const s = await slotsOf(secret, 'kite', 9);
+        // Less than the least gift in the first slot, then taken, never funded, taken... and a gift in the ninth.
+        chain.fund(s[0]!.address, 600n);
+        for (const i of [1, 3, 4, 5, 6, 7]) {
+            chain.fund(s[i]!.address, 5_000n);
+            chain.steal(s[i]!.address);
+        }
+        chain.fund(s[8]!.address, 9_000n);
+        const reads = await open(chain, secret, 'kite');
+        await until(() => app!.root.querySelector('#rd-answer') === null);
+        expect(reads.slice(0, 9)).toEqual(s.map(k => k.address));
+    });
+
+    it('all taken: said of the answer; the screen of a gift lost to someone quicker offers to answer again', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const s = await slotsOf(secret, 'kite', 2);
+        for (const k of s) {
+            chain.fund(k.address, 5_000n);
+            chain.steal(k.address);
+        }
+        await open(chain, secret, 'kite');
+        await until(() => app!.root.textContent!.includes(t('pkg.riddle.taken.many')));
+        expect(app!.root.querySelector('#rd-answer')).not.toBeNull();
     });
 });
 

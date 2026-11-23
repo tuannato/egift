@@ -367,7 +367,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         const own = multi ? people.rows().map(r => normaliseAnswer(r.answer)) : [];
         const one = multi && draft.riddleOn && draft.oneLink;
         const badAnswers = new Set<number>();
-        if (one) own.forEach((a, i) => (a === '' || own.indexOf(a) !== i || own.lastIndexOf(a) !== i ? badAnswers.add(i) : undefined));
+        // Rows that share an answer are several gifts behind that answer, opened one at a time.
+        if (one) own.forEach((a, i) => (a === '' ? badAnswers.add(i) : undefined));
         const allOwn = several && own.every(a => a !== '');
         const sharedOk = one ? badAnswers.size === 0 : same || (allOwn && answer.value.trim() === '' && answer2.value.trim() === '');
         const riddleOk = !draft.riddleOn || (qBytes > 0 && !qOver && sharedOk);
@@ -881,6 +882,9 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             const shared = one ? newSecret() : null;
             const common = { version: 1 as const, wrapper, recipe, wish: text === '' ? undefined : text, riddle };
             const gifts: BatchGift[] = [];
+            // One link for all: the slow hash once for each different answer, and a slot for each row that uses it.
+            const roots = new Map<string, Uint8Array>();
+            const slots = new Map<string, number>();
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i]!;
                 submitWhy.textContent = t('people.making', { i: i + 1, n: rows.length });
@@ -889,13 +893,21 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 let root = secret;
                 // A locked gift: the slow hash, once for each (the salt is each gift's own secret, or the answer differs).
                 const own = riddle !== undefined && normaliseAnswer(row.answer) !== '';
-                if (riddle !== undefined) root = await track(riddleRoot(secret, own ? row.answer : answer.value));
+                let slot = 0;
+                if (one) {
+                    const a = normaliseAnswer(row.answer);
+                    const known = roots.get(a);
+                    root = known ?? (await track(riddleRoot(secret, row.answer)));
+                    roots.set(a, root);
+                    slot = slots.get(a) ?? 0;
+                    slots.set(a, slot + 1);
+                } else if (riddle !== undefined) root = await track(riddleRoot(secret, own ? row.answer : answer.value));
                 if (disposed) return;
-                const key = deriveKey(root);
+                const key = deriveKey(root, slot);
                 const link = one ? undefined : encodeLink({ ...common, secret, ...(riddle !== undefined && !draft.riddleHide ? { spot: key.pkh } : {}) }, location.origin);
                 gifts.push({ name: keepableName(row.name) ?? '', key, sats: rowSats[i]! + covered, ...(link !== undefined ? { link } : {}), ...(own ? { own: true } : {}) });
             }
-            // Two gifts at one address would be one gift: it cannot happen with distinct answers, and is refused if it does.
+            // Two gifts at one address would be one gift: each row has its own secret, answer or slot, and it is refused if it ever happens.
             if (new Set(gifts.map(g => g.key.address)).size !== gifts.length) throw new Error('Two gifts share a key');
             setBatch({
                 kind: one ? 'answers' : 'links',
@@ -950,6 +962,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         });
         const back = h('button', { type: 'button', class: 'btn btn-quiet', onclick: showSubmit }, t('create.confirm.cancel'));
         const anyOwn = draft.riddleOn && people.rows().some(r => normaliseAnswer(r.answer) !== '');
+        /** How many rows have this row's answer. */
+        const sameAs = (i: number): number => people.rows().filter(r => normaliseAnswer(r.answer) === normaliseAnswer(people.rows()[i]!.answer)).length;
         const lines = people.rows().map((r, i) => {
             const own = draft.riddleOn && normaliseAnswer(r.answer) !== '';
             return h(
@@ -959,6 +973,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 // The gift itself, as typed; the fee the giver adds is said once, with the total.
                 h('span', { class: 'confirm-amt mono' }, `${formatXec(rowSats[i]!, lang)} XEC`),
                 own ? h('span', { class: 'confirm-ans' }, t('people.confirm.answer', { answer: normaliseAnswer(r.answer) })) : draft.riddleOn ? h('span', { class: 'confirm-ans' }, t('people.confirm.shared')) : null,
+                // One link for all: a row whose answer another row has too is one of several gifts behind that answer.
+                draft.oneLink && own && sameAs(i) > 1 ? h('span', { class: 'confirm-ans' }, t('people.confirm.slot', { n: sameAs(i) })) : null,
             );
         });
         const totalRow = h(
