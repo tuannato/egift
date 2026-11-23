@@ -580,7 +580,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 h('p', { class: 'kept-line' }, h('span', { class: 'kept-amount' }, k.tokenOnly ? t('create.tokenonly') : `${formatXec(BigInt(k.sats), lang)} XEC`)),
                 status,
                 readBtn,
-                h('p', { class: 'note' }, [keptWhen(k, lang), name, `${t('gift.ref.label')} ${k.address.slice(6, 10)}…${k.address.slice(-4)}`].filter(x => x !== '').join(' · ')),
+                // The giver's own name for it and its place in a batch come first: they are what tells nine gifts apart.
+                h('p', { class: 'note' }, [k.name ?? '', k.part ?? '', keptWhen(k, lang), name, `${t('gift.ref.label')} ${k.address.slice(6, 10)}…${k.address.slice(-4)}`].filter(x => x !== '').join(' · ')),
                 h(
                     'div',
                     { class: 'btn-row' },

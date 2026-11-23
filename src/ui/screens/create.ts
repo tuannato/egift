@@ -12,7 +12,10 @@ import { h } from '../dom';
 import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
 import { getLang, t } from '../../i18n';
-import { setMade } from '../session';
+import { setBatch, setMade } from '../session';
+import type { BatchGift } from '../session';
+import { peopleBlock } from '../people';
+import { keepableName } from '../kept';
 import { layout, label, fold } from '../layout';
 import { loadLooks, removeLook, saveLook } from '../looks';
 import { cue, score } from '../sound';
@@ -43,6 +46,9 @@ export function resetCreate(): void {
     draft.riddleHide = false;
     draft.question = '';
     draft.answer = '';
+    draft.people = [];
+    draft.peopleOpen = false;
+    draft.oneLink = false;
 }
 
 /** Amounts people like to give, in sats: 88, 888, 8,888 and 88,888 XEC. */
@@ -123,6 +129,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             t('create.tokenonly'),
         ),
     );
+    // Several people: a table of who gets how much, in place of the one amount. Closed, nothing here changes.
+    const people = peopleBlock({ firstAmount: () => amount.value.trim(), onChange: () => validate() });
     // The network fee, said before the gift exists: what the recipient will get, and a way for the giver to pay it.
     // A gift that will also carry a token costs more to take home: the giver says so here, so the figures are right.
     const fee = (): bigint => takeFeeEstimate(draft.withToken);
@@ -252,7 +260,11 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     let working = false;
     /** The screen was left: a derivation still running must not make a gift behind the giver's back. */
     let disposed = false;
-    function validate(): { sats: bigint | null; wishOk: boolean; riddleOk: boolean } {
+    /** The amount of the one gift this form makes: the big figure, or the only row of the table. Null for several, or none. */
+    const oneAmount = (v: { sats: bigint | null; rowSats: readonly bigint[] | null; multi: boolean }): bigint | null => (v.multi ? (v.rowSats !== null && v.rowSats.length === 1 ? v.rowSats[0]! : null) : v.sats);
+    /** What the table as it stands would make: every amount and answer, to compare with what was confirmed. */
+    const tableSig = (): string => JSON.stringify([draft.oneLink, draft.coverFee, people.rows().map(r => [r.name.trim(), r.amount.trim(), normaliseAnswer(r.answer)])]);
+    function validate(): { sats: bigint | null; wishOk: boolean; riddleOk: boolean; rowSats: bigint[] | null; multi: boolean } {
         const raw = amount.value.trim();
         let sats: bigint | null = null;
         let msg = '';
@@ -267,17 +279,41 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             } else if (p < FLOOR_SATS) msg = t('create.err.floor', { min: formatXec(FLOOR_SATS, lang), fee: formatXec(takeFeeEstimate(), lang) });
             else sats = p;
         }
+        // Several people: each row is a gift of its own; the big figure and what belongs to one gift step aside.
+        const multi = people.active();
+        let rowSats: bigint[] | null = null;
+        const badAmounts = new Set<number>();
+        if (multi) {
+            draft.tokenOnly = false;
+            draft.withToken = false;
+            tokBox.checked = false;
+            const parsed = people.rows().map(r => parseXec(r.amount.trim()));
+            parsed.forEach((x, i) => {
+                if (x === null || x < FLOOR_SATS) badAmounts.add(i);
+            });
+            rowSats = badAmounts.size === 0 ? (parsed as bigint[]) : null;
+            msg = '';
+        }
+        amountField.hidden = multi;
+        chips.hidden = multi;
+        amountMsg.hidden = multi;
         // "Token only" holds while the amount is the least one; any other figure is an ordinary gift again.
         if (sats !== FLOOR_SATS) draft.tokenOnly = false;
         tokenOnlyNote.hidden = !draft.tokenOnly;
         // An ordinary gift says what arrives. (A token-only gift's XEC is all fee; its own note says so.)
-        const showFee = sats !== null && !draft.tokenOnly;
+        const showFee = multi ? rowSats !== null : sats !== null && !draft.tokenOnly;
         feeNote.hidden = !showFee;
         feeRow.hidden = !showFee;
-        tokRow.hidden = !showFee;
+        tokRow.hidden = !showFee || multi;
         const FEE = fee();
         feeLabel.textContent = t('create.fee.toggle', { fee: formatXec(FEE, lang) });
-        if (sats !== null && showFee)
+        if (multi && rowSats !== null) {
+            const sum = rowSats.reduce((a, b) => a + b, 0n);
+            const fees = FEE * BigInt(rowSats.length);
+            feeNote.textContent = draft.coverFee
+                ? t('people.fee.on', { total: formatXec(sum + fees, lang), n: rowSats.length, fee: formatXec(fees, lang) })
+                : t('people.fee.off', { total: formatXec(sum, lang), n: rowSats.length, fee: formatXec(FEE, lang) });
+        } else if (sats !== null && showFee)
             feeNote.textContent = draft.coverFee
                 ? t('create.fee.on', { total: formatXec(sats + FEE, lang), amount: formatXec(sats, lang), fee: formatXec(FEE, lang) })
                 : t('create.fee.off', { net: formatXec(sats - FEE, lang), fee: formatXec(FEE, lang) });
@@ -289,10 +325,12 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         amount.style.setProperty('--chars', String(figureWidth(raw === '' ? '0' : raw)));
 
         // From a million up the question is always asked; the toggle shows it and cannot be switched off.
-        const forced = sats !== null && funded(sats) >= CONFIRM_SATS;
+        // Several gifts are always read back before they are made: the amounts, the names, the answers.
+        const several = multi && people.rows().length >= 2;
+        const forced = several || (multi ? rowSats !== null && rowSats.length === 1 && funded(rowSats[0]!) >= CONFIRM_SATS : sats !== null && funded(sats) >= CONFIRM_SATS);
         confirmBox.disabled = forced;
         confirmBox.checked = forced || wantConfirm;
-        confirmWhy.textContent = forced ? ' ' + t('create.confirm.forced', { min: formatXec(CONFIRM_SATS, lang) }) : '';
+        confirmWhy.textContent = !forced ? '' : several ? ' ' + t('people.confirm.forced') : ' ' + t('create.confirm.forced', { min: formatXec(CONFIRM_SATS, lang) });
 
         const n = wishBytes(wish.value.trim());
         const wishOk = n <= WISH_MAX_BYTES;
@@ -307,7 +345,18 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         const qOver = qBytes > RIDDLE_MAX_BYTES;
         const norm = normaliseAnswer(answer.value);
         const same = norm !== '' && normaliseAnswer(answer2.value) === norm;
-        const riddleOk = !draft.riddleOn || (qBytes > 0 && !qOver && same);
+        // A row may have an answer of its own; without one it takes the answer all share. One link for all: every
+        // row needs its own, and no two the same (the answer is what tells the gifts apart).
+        const own = multi ? people.rows().map(r => normaliseAnswer(r.answer)) : [];
+        const one = multi && draft.riddleOn && draft.oneLink;
+        const badAnswers = new Set<number>();
+        if (one) own.forEach((a, i) => (a === '' || own.indexOf(a) !== i || own.lastIndexOf(a) !== i ? badAnswers.add(i) : undefined));
+        const allOwn = several && own.every(a => a !== '');
+        const sharedOk = one ? badAnswers.size === 0 : same || (allOwn && answer.value.trim() === '' && answer2.value.trim() === '');
+        const riddleOk = !draft.riddleOn || (qBytes > 0 && !qOver && sharedOk);
+        // The answer all share has no part in a gift whose every row answers for itself through one link.
+        for (const f of [answer, answer2]) if (f.parentElement) f.parentElement.hidden = one;
+        people.sync({ riddleOn: draft.riddleOn, working, badAmounts, badAnswers });
         const mismatch = draft.riddleOn && answer2.value.trim() !== '' && !same;
         answer2Msg.textContent = mismatch ? t('create.riddle.a2.diff') : '';
         answerWeak.hidden = !(draft.riddleOn && isWeakAnswer(answer.value));
@@ -316,10 +365,12 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         for (const f of [question, answer, answer2, riddleBox, hideBox]) f.disabled = working;
         riddleMsg.textContent = draft.riddleOn && qOver ? t('create.riddle.over') : '';
         riddleMsg.classList.toggle('field-msg--bad', draft.riddleOn && qOver);
-        submit.disabled = working || sats === null || !wishOk || !riddleOk;
+        submit.disabled = working || (multi ? rowSats === null : sats === null) || !wishOk || !riddleOk;
         submitWhy.textContent = working
             ? t('create.working')
-            : sats === null
+            : multi && rowSats === null
+              ? t('people.need.amounts', { min: formatXec(FLOOR_SATS, lang) })
+              : !multi && sats === null
               ? raw === ''
                   ? t('create.need.amount')
                   : t('create.need.fix')
@@ -333,10 +384,10 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         const chosen = wrapperById(draft.wrapper);
         const offer = chosen ? offerOf(chosen) : ({ kind: 'free' } as const);
         priceNote.hidden = offer.kind !== 'paid';
-        priceNote.textContent = offer.kind === 'paid' ? t('create.price', { price: formatXec(offer.sats, lang) }) : '';
+        priceNote.textContent = offer.kind !== 'paid' ? '' : several ? t('people.price.once', { price: formatXec(offer.sats, lang) }) : t('create.price', { price: formatXec(offer.sats, lang) });
         priceChip.textContent = chosen ? priceOf(chosen) : '';
         priceChip.hidden = !chosen;
-        return { sats, wishOk, riddleOk };
+        return { sats, wishOk, riddleOk, rowSats, multi };
     }
     amount.addEventListener('input', () => {
         draft.amount = amount.value;
@@ -755,19 +806,22 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             const wrapper = draft.wrapper || DEFAULT_WRAPPER;
             const text = wish.value.trim();
             const riddle = draft.riddleOn ? question.value.trim() : undefined;
+            // The table with one row: one gift, with the name the giver gave it and, if typed, its own answer.
+            const only = people.active() && people.rows().length === 1 ? people.rows()[0]! : null;
+            const name = only !== null ? keepableName(only.name) : undefined;
             let root = secret;
             if (riddle !== undefined) {
                 // A locked gift: the key comes from the secret and the answer, through a deliberately slow hash.
                 working = true;
                 showSubmit();
-                root = await track(riddleRoot(secret, answer.value));
+                root = await track(riddleRoot(secret, only !== null && only.answer.trim() !== '' ? only.answer : answer.value));
                 if (disposed) return;
             }
             const key = deriveKey(root);
             // The look goes into the link in its one spelling, or not at all.
             const recipe = formatRecipe(parseRecipe(draft.recipe));
             const link = encodeLink({ version: 1, secret, wrapper, recipe, wish: text === '' ? undefined : text, riddle, ...(riddle !== undefined && !draft.riddleHide ? { spot: key.pkh } : {}) }, location.origin);
-            setMade({ secret, key, link, sats, wrapper, riddle, ...(recipe !== undefined ? { recipe } : {}), ...(text !== '' ? { wish: text } : {}), ...(tokenOnly ? { tokenOnly: true } : {}), ...(covered > 0n ? { feeCovered: covered } : {}), ...(draft.withToken && !tokenOnly ? { withToken: true } : {}), saved: false });
+            setMade({ secret, key, link, sats, wrapper, riddle, ...(recipe !== undefined ? { recipe } : {}), ...(text !== '' ? { wish: text } : {}), ...(tokenOnly ? { tokenOnly: true } : {}), ...(covered > 0n ? { feeCovered: covered } : {}), ...(draft.withToken && !tokenOnly ? { withToken: true } : {}), ...(name !== undefined ? { name } : {}), saved: false });
         } catch {
             working = false;
             if (disposed) return;
@@ -785,7 +839,122 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         draft.riddleHide = false;
         draft.question = '';
         draft.answer = '';
+        draft.people = [];
+        draft.peopleOpen = false;
+        draft.oneLink = false;
         ctx.nav.toCreated();
+    }
+
+    /**
+     * Several gifts by one press. `rowSats` are the gifts themselves; the fee the giver covers is added to each.
+     * Each gift gets its own secret and link, or (one link for all) one secret and a key from each row's answer.
+     */
+    async function createBatch(rowSats: readonly bigint[]): Promise<void> {
+        errBox.textContent = '';
+        const rows = people.rows().map(r => ({ ...r }));
+        const covered = draft.coverFee ? fee() : 0n;
+        try {
+            working = true;
+            showSubmit();
+            const wrapper = draft.wrapper || DEFAULT_WRAPPER;
+            const text = wish.value.trim();
+            const riddle = draft.riddleOn ? question.value.trim() : undefined;
+            const recipe = formatRecipe(parseRecipe(draft.recipe));
+            const one = riddle !== undefined && draft.oneLink;
+            const shared = one ? newSecret() : null;
+            const common = { version: 1 as const, wrapper, recipe, wish: text === '' ? undefined : text, riddle };
+            const gifts: BatchGift[] = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i]!;
+                submitWhy.textContent = t('people.making', { i: i + 1, n: rows.length });
+                // The keys are made here, on the deliberate press, and nowhere earlier.
+                const secret = shared ?? newSecret();
+                let root = secret;
+                // A locked gift: the slow hash, once for each (the salt is each gift's own secret, or the answer differs).
+                if (riddle !== undefined) root = await track(riddleRoot(secret, row.answer.trim() !== '' ? row.answer : answer.value));
+                if (disposed) return;
+                const key = deriveKey(root);
+                const link = one ? undefined : encodeLink({ ...common, secret, ...(riddle !== undefined && !draft.riddleHide ? { spot: key.pkh } : {}) }, location.origin);
+                gifts.push({ name: keepableName(row.name) ?? '', key, sats: rowSats[i]! + covered, ...(link !== undefined ? { link } : {}) });
+            }
+            // Two gifts at one address would be one gift: it cannot happen with distinct answers, and is refused if it does.
+            if (new Set(gifts.map(g => g.key.address)).size !== gifts.length) throw new Error('Two gifts share a key');
+            setBatch({
+                kind: one ? 'answers' : 'links',
+                gifts,
+                // One link for all carries no address: there are several.
+                ...(one ? { link: encodeLink({ ...common, secret: shared! }, location.origin) } : {}),
+                wrapper,
+                ...(recipe !== undefined ? { recipe } : {}),
+                ...(text !== '' ? { wish: text } : {}),
+                ...(riddle !== undefined ? { riddle } : {}),
+                ...(covered > 0n ? { feeCovered: covered } : {}),
+                at: Date.now(),
+                saved: false,
+                opened: false,
+            });
+        } catch {
+            working = false;
+            if (disposed) return;
+            errBox.textContent = t('create.error');
+            showSubmit();
+            return;
+        }
+        working = false;
+        draft.amount = '';
+        draft.coverFee = coversFee();
+        draft.wish = '';
+        draft.riddleOn = false;
+        draft.riddleHide = false;
+        draft.question = '';
+        draft.answer = '';
+        draft.people = [];
+        draft.peopleOpen = false;
+        draft.oneLink = false;
+        ctx.nav.toCreated();
+    }
+
+    /** Several gifts, read back before they are made: who, how much, and each answer that is a row's own. */
+    function showConfirmBatch(rowSats: readonly bigint[]): void {
+        const sig = tableSig();
+        const covered = draft.coverFee ? fee() : 0n;
+        const total = rowSats.reduce((a, b) => a + b + covered, 0n);
+        const hold = holdButton({
+            label: t('create.confirm.hold'),
+            again: t('create.confirm.again'),
+            twoPress: prefersReducedMotion(),
+            onDone: () => {
+                // Made from the form as it now stands: it must still be valid, and still what was read back.
+                const v = validate();
+                if (!v.multi || v.rowSats === null || v.rowSats.length < 2 || !v.wishOk || !v.riddleOk || tableSig() !== sig) return showSubmit();
+                void createBatch(v.rowSats);
+            },
+        });
+        const back = h('button', { type: 'button', class: 'btn btn-quiet', onclick: showSubmit }, t('create.confirm.cancel'));
+        const lines = people.rows().map((r, i) => {
+            const own = draft.riddleOn && r.answer.trim() !== '';
+            return h(
+                'li',
+                { class: 'confirm-row' },
+                h('span', { class: 'confirm-who' }, keepableName(r.name) ?? t('people.nth', { n: i + 1 })),
+                h('span', { class: 'confirm-amt mono' }, `${formatXec(rowSats[i]! + covered, lang)} XEC`),
+                own ? h('span', { class: 'confirm-ans' }, t('people.confirm.answer', { answer: normaliseAnswer(r.answer) })) : null,
+            );
+        });
+        finishHost.replaceChildren(
+            h(
+                'div',
+                { class: 'confirm-step', role: 'group', 'aria-label': t('create.confirm.title') },
+                label(t('create.confirm.title')),
+                h('p', { class: 'confirm-body' }, t('people.confirm.body', { n: rowSats.length, total: formatXec(total, lang), wrapper: nameOf(wrapperById(draft.wrapper)) })),
+                h('ol', { class: 'confirm-list' }, ...lines),
+                draft.riddleOn && people.rows().some(r => r.answer.trim() !== '') ? h('p', { class: 'warning' }, t('people.confirm.answers')) : null,
+                hold,
+                back,
+            ),
+        );
+        form.classList.add('is-confirming');
+        hold.focus();
     }
 
     function showSubmit(): void {
@@ -805,7 +974,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 // The form stays editable under the question. The gift is made from the form as it now stands, so it must
                 // still be valid (a changed riddle answer still matches its repeat) and the amount must be the one confirmed.
                 const v = validate();
-                if (v.sats === null || !v.wishOk || !v.riddleOk || funded(v.sats) !== sats) return showSubmit();
+                const amt = oneAmount(v);
+                if (amt === null || !v.wishOk || !v.riddleOk || funded(amt) !== sats) return showSubmit();
                 void create(sats, covered);
             },
         });
@@ -831,8 +1001,12 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             novalidate: true,
             onsubmit: (e: Event) => {
                 e.preventDefault();
-                const { sats, wishOk, riddleOk } = validate();
-                if (working || sats === null || !wishOk || !riddleOk) return;
+                const v = validate();
+                if (working || !v.wishOk || !v.riddleOk) return;
+                // Two rows or more: several gifts, always read back first.
+                if (v.multi && v.rowSats !== null && v.rowSats.length >= 2) return showConfirmBatch(v.rowSats);
+                const sats = oneAmount(v);
+                if (sats === null) return;
                 const total = funded(sats);
                 if (needsConfirm(total)) showConfirm(total, total - sats);
                 else void create(total, total - sats);
@@ -847,7 +1021,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             ],
             body: [
                 picker,
-                h('div', { class: 'beat' }, amountField, chips, amountMsg, tokenOnlyNote, feeNote, tokRow, feeRow),
+                h('div', { class: 'beat' }, amountField, chips, amountMsg, people.el, tokenOnlyNote, feeNote, tokRow, feeRow),
                 h('div', { class: 'beat field' }, h('label', { class: 'label', for: 'f-wish' }, t('create.wish.label')), wish, meter, wishCount),
                 h('div', { class: 'beat riddle' }, riddleRow, riddleFields),
                 truths,

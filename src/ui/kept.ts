@@ -204,7 +204,25 @@ export interface Sent {
     readonly tokenOnly?: boolean;
     /** How the giver dressed the wrapper (a recipe in its one spelling). */
     readonly dress?: string;
+    /** What the giver called this gift (their own word for it, never a link). */
+    readonly name?: string;
+    /** Its place in a batch made by one press, as "3/9". */
+    readonly part?: string;
 }
+
+/** A name for a gift, fit to keep: short, plain text, and nothing that looks like a link or a key. */
+export function keepableName(name: string | undefined): string | undefined {
+    if (name === undefined) return undefined;
+    const n = cut(cleanUserText(name).replace(/\s+/g, ' ').trim(), NAME_MAX);
+    if (n === '') return undefined;
+    if (/#\s*1\./.test(n) || /[A-Za-z0-9_-]{22,}/.test(n) || /:\/\//.test(n)) return undefined;
+    return n;
+}
+/** The longest name kept for a gift, in characters. */
+export const NAME_MAX = 40;
+const PART = /^[1-9]\/[2-9]$/;
+/** More sent gifts are kept than received ones: a batch is up to nine at once. */
+export const SENT_MAX = 120;
 
 function cleanSent(x: unknown): Sent | null {
     if (typeof x !== 'object' || x === null) return null;
@@ -221,6 +239,8 @@ function cleanSent(x: unknown): Sent | null {
         ...(wish !== undefined ? { wish } : {}),
         ...(r.tokenOnly === true ? { tokenOnly: true } : {}),
         ...(dressOf(r.dress) !== undefined ? { dress: dressOf(r.dress)! } : {}),
+        ...(typeof r.name === 'string' && keepableName(r.name) !== undefined ? { name: keepableName(r.name)! } : {}),
+        ...(typeof r.part === 'string' && PART.test(r.part) ? { part: r.part } : {}),
     };
 }
 
@@ -230,14 +250,14 @@ export function loadSent(): Sent[] {
         .map(cleanSent)
         .filter((k): k is Sent => k !== null)
         .sort((a, b) => b.at - a.at)
-        .slice(0, KEPT_MAX);
+        .slice(0, SENT_MAX);
 }
 
 /** Remember a gift. One per package. False when the browser would not store it. */
 export function rememberSent(record: Sent): boolean {
     const k = cleanSent(record);
     if (k === null) return false;
-    return write(SENT_KEY, [k, ...loadSent().filter(x => x.address !== k.address)].slice(0, KEPT_MAX));
+    return write(SENT_KEY, [k, ...loadSent().filter(x => x.address !== k.address)].slice(0, SENT_MAX));
 }
 
 export function isSentRemembered(address: string): boolean {

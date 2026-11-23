@@ -6,7 +6,7 @@ import type { Ctx, DemoCtx } from './ctx';
 import { LANGS, LANG_INFO, getLang, hasLang, loadLang, onLangChange, setLang, t } from '../i18n';
 import { isInAppBrowser } from './inapp';
 import { ribbon } from './ribbon';
-import { getMade } from './session';
+import { hasMade } from './session';
 import { prefersReducedMotion } from './stageCard';
 import { isBusy, onBusyChange } from './busy';
 import { mountHome } from './screens/home';
@@ -85,7 +85,7 @@ export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefi
                 render();
             },
             toCreated() {
-                route = getMade() ? { kind: 'created' } : { kind: 'create' };
+                route = hasMade() ? { kind: 'created' } : { kind: 'create' };
                 render();
             },
         },
@@ -397,14 +397,14 @@ export function startApp(root: HTMLElement, chain: Chain, demo: DemoCtx | undefi
 
     const onHash = () => {
         // The created screen holds the only copy of a key: Back and a cleared fragment never take it away.
-        route = hasFragment() ? { kind: 'package', link: linkFromHash(location.hash) } : getMade() ? { kind: 'created' } : chooseRoute();
+        route = hasFragment() ? { kind: 'package', link: linkFromHash(location.hash) } : hasMade() ? { kind: 'created' } : chooseRoute();
         render();
     };
     /** Back or Forward between the shop and the create screen: the address is the same, only the history entry differs. */
     const onPop = () => {
         if (hasFragment()) return; // a gift link: `hashchange` handles it
         // A gift made in this tab and not yet left behind: its screen is the only way back to its key.
-        const next: Route = getMade() && (route.kind === 'created' || route.kind === 'package') ? { kind: 'created' } : chooseRoute();
+        const next: Route = hasMade() && (route.kind === 'created' || route.kind === 'package') ? { kind: 'created' } : chooseRoute();
         if (next.kind === route.kind) return;
         route = next;
         render();

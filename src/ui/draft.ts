@@ -6,8 +6,25 @@ import { coversFee } from './prefs';
  * What the person has typed on the create step, kept so a language switch does not empty the form. Never the secret.
  * `coverFee` starts as the giver last left it (`prefs.ts`): on, unless they switched it off.
  * `recipe` is how they dressed the chosen wrapper (`core/recipe.ts`), in its one spelling; empty for the wrapper as it is.
+ * `people` are the rows of "several people" (a name, an amount, an answer of their own), `peopleOpen` whether that
+ * table stands in for the one amount, `oneLink` whether all of them share one link.
  */
-export const draft = { amount: '', wish: '', wrapper: '', riddleOn: false, riddleHide: false, question: '', answer: '', tokenOnly: false, coverFee: coversFee(), withToken: false, recipe: '' };
+export const draft = {
+    amount: '',
+    wish: '',
+    wrapper: '',
+    riddleOn: false,
+    riddleHide: false,
+    question: '',
+    answer: '',
+    tokenOnly: false,
+    coverFee: coversFee(),
+    withToken: false,
+    recipe: '',
+    people: [] as { name: string; amount: string; answer: string }[],
+    peopleOpen: false,
+    oneLink: false,
+};
 
 /** The wrapper the shop handed over (or the last one picked on the create step). */
 export function chooseWrapper(id: string): void {

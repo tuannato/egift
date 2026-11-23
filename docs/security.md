@@ -48,6 +48,16 @@ was sent keeps naming the same address.
   the part after `#`.
 - A record kept in your browser holds the amount, the time and
   the gift's address (only part of it for a gift you received), never the link.
+  For a gift you made it also holds the name you gave it, if you gave one, and
+  its place among gifts made together ("3/9"). Anyone who uses the same
+  browser can read these.
+- Several gifts made together are funded by one transaction, so anyone can
+  see on the chain that they belong together. With a paid wrapper that
+  transaction also lists the address of each of them.
+- The list of links you download for several gifts is plain text. Whoever
+  reads the file can take every gift in it.
+- With one link shared by several people, each person's answer is the only
+  thing between the others and their part.
 - The link of a riddle gift names the gift's address, so that the page can
   say whether the gift is still there before anyone answers. Whoever has the
   link can therefore look that address up on the chain: what it holds, and

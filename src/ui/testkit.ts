@@ -10,7 +10,7 @@ import { resetFolds } from './layout';
 import type { DemoChain } from '../core';
 import { startApp } from './app';
 import * as ALL from './screens/all';
-import { clearMade } from './session';
+import { clearBatch, clearMade } from './session';
 import '../i18n/all';
 import { initLang, setLang } from '../i18n';
 import type { Lang } from '../i18n';
@@ -37,6 +37,7 @@ export function resetPage(lang: Lang = 'en'): void {
         throw new Error('no network in tests');
     };
     clearMade();
+    clearBatch();
     forgetTakes();
     forgetPackages();
     resetCreate();
