@@ -26,10 +26,16 @@ export interface PackageLink {
      */
     readonly riddle?: string;
     /**
-     * Only with a riddle, and never with a spot: this one link was given to several people, and each of their
-     * answers opens a gift of its own. It changes no key: it only lets the page say so to whoever opens the link.
+     * Only with a riddle, and never with a single spot: this one link holds several gifts, and each right answer
+     * opens one of them. It changes no key: it only lets the page say so to whoever opens the link.
      */
     readonly many?: true;
+    /**
+     * Only with `many`: the public key hashes of every gift behind the link (two to nine, no one twice), so that a
+     * page can say how many are still there before anyone answers. They name where the gifts are; they open
+     * nothing. Untrusted, like `spot`: an answer's own key is held against them.
+     */
+    readonly spots?: readonly Uint8Array[];
     /**
      * Only with a riddle: the 20-byte public key hash of the gift's address, so that a page can ask the chain whether
      * the gift is still there before anyone has answered. It names where the gift is; it opens nothing. Untrusted:

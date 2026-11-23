@@ -1,5 +1,6 @@
 import { rich } from '../ecash';
 import { downloadKeepsake, forgetSent, keptRef, keptTokenText, keptWhen, loadKept, loadSent, removeKept } from '../kept';
+import type { Sent } from '../kept';
 import { dressed } from '../../wrappers/looks';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
@@ -530,7 +531,106 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
      */
     function sent(): Node[] {
         const list = loadSent();
-        const items = list.map((k, i) => {
+        /** The batch a record belongs to, from its place ("3/9") and its time: gifts made by one press are a second apart at most. */
+        const batchOf = (k: Sent): string | null => {
+            const m = /^([1-9])\/([2-9])$/.exec(k.part ?? '');
+            return m ? `${k.at - (Number(m[1]) - 1)}|${m[2]}|${k.wrapper}` : null;
+        };
+        const read = (address: string, fresh: boolean): Promise<PackageState> => {
+            if (fresh) sentStates.delete(address);
+            let p = sentStates.get(address);
+            if (!p) {
+                p = ctx.chain.read(address);
+                sentStates.set(address, p);
+            }
+            return p;
+        };
+        /** Gifts made together, as one card: how many are still there, and a line for each. */
+        const group = (ks: readonly Sent[], at: number): HTMLElement => {
+            const sorted = [...ks].sort((a, b) => Number(a.part![0]) - Number(b.part![0]));
+            const n = Number(sorted[0]!.part!.slice(2));
+            const item = h('li', { class: 'kept-card sent-group' });
+            if (sorted[0]!.wish) {
+                const wish = h('blockquote', { class: 'wish-text kept-wish' });
+                setUserText(wish, sorted[0]!.wish);
+                item.append(wish);
+            }
+            const status = h('p', { class: 'status status--waiting' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), h('span', null, ''));
+            const readBtn = h('button', { type: 'button', class: 'btn btn-quiet btn-small', hidden: true, onclick: () => ask(true) }, t('sent.status.read'));
+            const rows = sorted.map(k => {
+                const who = h('span', { class: 'sent-row-who' });
+                setUserText(who, k.name ?? t('people.nth', { n: Number(k.part![0]) }));
+                const state = h('span', { class: 'sent-row-state' }, t('sent.row.unknown'));
+                const el = h('li', { class: 'sent-row' }, h('span', { class: 'label sent-row-n' }, k.part!), who, h('span', { class: 'sent-row-amt mono' }, `${formatXec(BigInt(k.sats), lang)} XEC`), state);
+                return { k, el, state };
+            });
+            const ask = (fresh: boolean): void => {
+                status.lastElementChild!.textContent = t('sent.group.reading');
+                status.className = 'status status--waiting';
+                readBtn.hidden = true;
+                // One after another: a batch is up to nine questions.
+                void (async () => {
+                    let there = 0;
+                    let failed = false;
+                    for (const r of rows) {
+                        try {
+                            const st = await read(r.k.address, fresh);
+                            const kind = st.kind === 'taken' ? 'taken' : st.kind === 'funded' ? 'there' : 'empty';
+                            if (kind === 'there') there++;
+                            r.state.textContent = t(`sent.row.${kind}`);
+                            r.el.dataset.state = kind;
+                        } catch {
+                            sentStates.delete(r.k.address);
+                            failed = true;
+                        }
+                    }
+                    if (failed) {
+                        status.lastElementChild!.textContent = t('sent.status.error');
+                        status.className = 'status status--bad';
+                        readBtn.hidden = false;
+                        return;
+                    }
+                    status.lastElementChild!.textContent = t('sent.group.left', { k: there, n: sorted.length });
+                    status.className = 'status ' + (there > 0 ? 'status--ok' : 'status--waiting');
+                })();
+            };
+            // The first few cards are asked about at once; the rest on a press.
+            if (at < 3 || sorted.every(k => sentStates.has(k.address))) ask(false);
+            else {
+                status.lastElementChild!.textContent = t('sent.status.later');
+                readBtn.hidden = false;
+            }
+            item.append(
+                h('p', { class: 'kept-line' }, t('sent.group.title', { n: sorted.length === n ? n : sorted.length })),
+                status,
+                readBtn,
+                h('ul', { class: 'sent-rows' }, ...rows.map(r => r.el)),
+                h('p', { class: 'note' }, [keptWhen(sorted[0]!, lang), nameOf(wrapperById(sorted[0]!.wrapper))].filter(x => x !== '').join(' · ')),
+                h(
+                    'div',
+                    { class: 'btn-row' },
+                    h(
+                        'button',
+                        {
+                            type: 'button',
+                            class: 'btn btn-quiet btn-small',
+                            onclick: () => {
+                                if (!window.confirm(t('sent.group.forget.confirm', { n: sorted.length }))) return;
+                                for (const k of sorted) {
+                                    forgetSent(k.address);
+                                    sentStates.delete(k.address);
+                                }
+                                if (loadSent().length === 0) view = 'shelf';
+                                renderBody();
+                            },
+                        },
+                        t('sent.group.forget'),
+                    ),
+                ),
+            );
+            return item;
+        };
+        const single = (k: Sent, i: number): HTMLElement => {
             const name = nameOf(wrapperById(k.wrapper));
             const item = h('li', { class: 'kept-card' });
             if (k.wish) {
@@ -603,6 +703,25 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 ),
             );
             return item;
+        };
+        // Gifts made together stand as one card, where the first of them was in the list; the others one by one.
+        const groups = new Map<string, Sent[]>();
+        const order: (Sent | string)[] = [];
+        for (const k of list) {
+            const key = batchOf(k);
+            if (key === null) order.push(k);
+            else {
+                if (!groups.has(key)) {
+                    groups.set(key, []);
+                    order.push(key);
+                }
+                groups.get(key)!.push(k);
+            }
+        }
+        const items = order.map((x, i) => {
+            if (typeof x !== 'string') return single(x, i);
+            const ks = groups.get(x)!;
+            return ks.length > 1 ? group(ks, i) : single(ks[0]!, i);
         });
         return page(t('sent.page.title'), h('p', { class: 'note' }, t('sent.page.lead')), h('ul', { class: 'kept-list' }, ...items), fold(t('sent.warn.sum'), { id: 'home.sent.warn' }, h('p', { class: 'note' }, t('sent.warn'))));
     }

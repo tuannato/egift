@@ -64,6 +64,9 @@ was sent keeps naming the same address.
   when it was funded or taken. Nobody signs a link, so what a link says about
   a gift's status is only as good as the hands it passed through. The giver
   can leave the address out ("Hide the gift's status") when making the gift.
+  One link that holds several gifts names the address of each of them in the
+  same way, unless the giver hides it: whoever has the link can see how many
+  gifts there are, what each holds, and which were taken.
 
 None of this gives access to a gift.
 

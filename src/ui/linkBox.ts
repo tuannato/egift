@@ -3,11 +3,49 @@ import { h, clear } from './dom';
 import { t } from '../i18n';
 import { qrPanel } from './screens/qr';
 
-async function copyText(text: string): Promise<boolean> {
+/** How long the browser's clipboard is waited for before the copy counts as failed. */
+const COPY_WAIT_MS = 1500;
+
+/** The older way to copy, done at once inside the press: a hidden field, selected, and the browser's own "copy". */
+function copyByHand(text: string): boolean {
+    if (typeof document.execCommand !== 'function') return false;
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const field = document.createElement('textarea');
     try {
-        if (!navigator.clipboard?.writeText) return false;
-        await navigator.clipboard.writeText(text);
-        return true;
+        field.value = text;
+        field.readOnly = true;
+        field.className = 'copy-field';
+        document.body.append(field);
+        field.select();
+        field.setSelectionRange(0, text.length);
+        return document.execCommand('copy') === true;
+    } catch {
+        return false;
+    } finally {
+        field.remove();
+        // The press came from a button: the focus goes back to it.
+        before?.focus({ preventScroll: true });
+    }
+}
+
+/**
+ * Put `text` on the clipboard. True only when it is known to be there.
+ *
+ * The older way first, at once, while the press still counts as the person's own: on a phone, after a download,
+ * the browser's clipboard may neither succeed nor fail, and by the time that is clear the older way is refused
+ * too. Only when the older way cannot copy is the browser's clipboard asked, and never waited on for ever.
+ */
+export async function copyText(text: string): Promise<boolean> {
+    if (copyByHand(text)) return true;
+    try {
+        if (typeof navigator === 'undefined' || typeof navigator.clipboard?.writeText !== 'function') return false;
+        return await Promise.race([
+            navigator.clipboard.writeText(text).then(
+                () => true,
+                () => false,
+            ),
+            new Promise<boolean>(res => setTimeout(() => res(false), COPY_WAIT_MS)),
+        ]);
     } catch {
         return false;
     }

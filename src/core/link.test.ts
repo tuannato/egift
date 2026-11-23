@@ -276,6 +276,39 @@ describe('the spot of a riddle link', () => {
         expect(decodeFragment('#1.072.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ')).toBeNull();
     });
 
+    it('a shared link may name where all its gifts are: two to nine, none twice, in one field', () => {
+        const pk = (n: number) => new Uint8Array(20).fill(n);
+        const url = encodeLink({ ...base, riddle: 'Your word?', many: true, spots: [pk(1), pk(2), pk(3)] }, origin);
+        const f = url.slice(url.indexOf('#') + 1).split('.');
+        // Riddle 8 + spot 16 + shared 32.
+        expect(f[1]).toBe('56');
+        expect(f).toHaveLength(6);
+        expect(f[5]).toHaveLength(80);
+        const back = decodeFragment(url.slice(url.indexOf('#')))!;
+        expect(back.many).toBe(true);
+        expect(back.spot).toBeUndefined();
+        expect(back.spots).toEqual([pk(1), pk(2), pk(3)]);
+        expect(encodeLink(back, origin)).toBe(url);
+        // Nine at the most, with the longest wish and question: still one link that reads back.
+        const nine = Array.from({ length: 9 }, (_, i) => pk(i + 1));
+        const long = encodeLink({ ...base, wish: 'w'.repeat(180), riddle: 'q'.repeat(120), many: true, spots: nine }, origin);
+        expect(decodeFragment(long.slice(long.indexOf('#')))!.spots).toEqual(nine);
+        // What is refused, written or read.
+        expect(() => encodeLink({ ...base, riddle: 'q', many: true, spots: [pk(1)] }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', many: true, spots: [...nine, pk(10)] }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', many: true, spots: [pk(1), pk(1)] }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', many: true, spots: [pk(1), new Uint8Array(19)] }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', spots: [pk(1), pk(2)] }, origin)).toThrow();
+        const frag = (bytes: number[]) => '#1.56.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ.' + Buffer.from(bytes).toString('base64url');
+        expect(decodeFragment(frag([...pk(1), ...pk(2)]))!.spots).toHaveLength(2);
+        expect(decodeFragment(frag([...pk(1)]))).toBeNull();
+        expect(decodeFragment(frag([...pk(1), ...pk(1)]))).toBeNull();
+        expect(decodeFragment(frag([...pk(1), ...pk(2), 7]))).toBeNull();
+        expect(decodeFragment(frag(Array.from({ length: 200 }, (_, i) => i)))).toBeNull();
+        // A link that is not shared still has one spot of twenty bytes, as ever.
+        expect(decodeFragment('#1.24.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ.' + Buffer.from([...pk(1), ...pk(2)]).toString('base64url'))).toBeNull();
+    });
+
     it('a riddle link written before there was a spot still reads the same, and has none', () => {
         const old = decodeFragment('#1.8.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ');
         expect(old).not.toBeNull();

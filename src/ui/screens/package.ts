@@ -136,6 +136,35 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
     const spot = spotAddress !== undefined ? link.spot : undefined;
     const atSpot = (pkh: Uint8Array): boolean => spot !== undefined && pkh.length === spot.length && pkh.every((b, i) => b === spot[i]);
 
+    // A link with several gifts may name where each of them is: used only to look, and to tell an answer of this
+    // link from one that is not, without asking the network.
+    const spotsHex: ReadonlySet<string> = new Set((link.many === true ? (link.spots ?? []) : []).map(s => [...s].map(b => b.toString(16).padStart(2, '0')).join('')));
+    const hexOf = (pkh: Uint8Array): string => [...pkh].map(b => b.toString(16).padStart(2, '0')).join('');
+    /** "3 of 9 gifts are still here", when the link says where they are. */
+    const left = h('p', { class: 'strong many-left', role: 'status', 'aria-live': 'polite', hidden: true });
+    let counting = 0;
+    async function countLeft(): Promise<void> {
+        if (link.many !== true || link.spots === undefined) return;
+        // A later count wins: an earlier one that comes back after it says nothing.
+        const mine = ++counting;
+        let there = 0;
+        try {
+            // One after another: nine questions at once is nine connections on a phone.
+            for (const s of link.spots) {
+                const state = await ctx.chain.read(addressOfPkh(s));
+                if (disposed || mine !== counting) return;
+                if (state.kind === 'funded' && state.xecSats >= FLOOR_SATS) there++;
+            }
+        } catch {
+            // Not known now: nothing is said rather than something wrong.
+            if (mine === counting) left.hidden = true;
+            return;
+        }
+        left.textContent = there === 0 ? t('pkg.many.none') : t('pkg.many.left', { k: there, n: link.spots.length });
+        left.hidden = false;
+    }
+    void countLeft();
+
     const q = h('blockquote', { class: 'riddle-q' });
     setUserText(q, link.riddle ?? '');
     const answer = h('input', { id: 'rd-answer', class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', enterkeyhint: 'go', 'aria-describedby': 'rd-msg' });
@@ -173,6 +202,8 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
                 outcome = 'wrong';
                 for (let slot = 0; slot < BATCH_MAX; slot++) {
                     const k = deriveKey(root, slot);
+                    // The link names its gifts: a key that is none of them is not asked about at all.
+                    if (spotsHex.size > 0 && !spotsHex.has(hexOf(k.pkh))) continue;
                     const state = await track(ctx.chain.read(k.address));
                     if (state.kind === 'funded' && state.xecSats >= FLOOR_SATS) {
                         key = k;
@@ -256,6 +287,9 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
                 }
             }
         }
+        // A gift of this answer has gone since the page counted: the count is read again. (Not after a wrong answer:
+        // that would be nine questions to the network for every guess.)
+        if (link.many === true && outcome === 'taken') void countLeft();
         if (outcome === 'taken') {
             // An address with a history and no money: this answer's gift is gone. It is not remembered as "the" answer:
             // someone who has the link but not the answer could have set this up, so another answer may still be tried.
@@ -387,7 +421,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             layout({
                 kind: 'locked',
                 plate: plate(card, def),
-                head: [title, lead],
+                head: [title, lead, left],
                 body: [slot, h('p', { class: 'warning danger recovery' }, t('pkg.recovery'))],
             }),
         ),

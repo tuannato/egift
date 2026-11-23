@@ -7,8 +7,9 @@ import { RIDDLE_MAX_BYTES, WISH_MAX_BYTES } from './limits';
  *   1.<flags>.<secret>.<wrapper>[.<item>][.<recipe>][.<wish>][.<riddle>][.<spot>]
  *
  * flags: a decimal number 0..63 with no leading zero; bit0 item, bit1 recipe,
- * bit2 wish, bit3 riddle, bit4 spot (only together with a riddle), bit5 "shared by several" (only with a riddle,
- * never with a spot, and with no field of its own). Optional
+ * bit2 wish, bit3 riddle, bit4 spot (only together with a riddle), bit5 "shared by several" (only with a riddle;
+ * no field of its own; with it, the spot field holds the hashes of all the gifts, two to nine of them, end to
+ * end, instead of one). Optional
  * fields appear in that order, exactly when their bit is set. Every field has one canonical spelling, so a link decodes
  * to one value and back to the same string; anything else decodes to `null`.
  *
@@ -20,7 +21,10 @@ import { RIDDLE_MAX_BYTES, WISH_MAX_BYTES } from './limits';
  * names the address.
  */
 
-const MAX_FRAGMENT_CHARS = 720;
+// The longest link: every field at its limit, and the nine addresses a shared link may name.
+const MAX_FRAGMENT_CHARS = 1024;
+/** A shared link names at least two gifts and at most this many. */
+const MAX_SPOTS = 9;
 const SECRET_BYTES = 16;
 const MAX_ITEM_SATS = 2_100_000_000_000_000n;
 
@@ -163,9 +167,20 @@ export function encodeLink(link: PackageLink, origin: string): string {
     }
     if (link.many !== undefined) {
         if (link.many !== true) throw new Error('Invalid mark');
-        // Several gifts behind one link have several addresses: there is no one spot to name.
+        // Several gifts behind one link have several addresses: there is no one spot to name, only all of them.
         if (link.riddle === undefined || link.spot !== undefined) throw new Error('Only a riddle link without a spot is shared by several');
         flags |= FLAG_MANY;
+    }
+    if (link.spots !== undefined) {
+        if (link.many !== true) throw new Error('Only a shared link names several spots');
+        const list = link.spots;
+        if (!Array.isArray(list) || list.length < 2 || list.length > MAX_SPOTS) throw new Error('Invalid spots');
+        if (list.some(s => !(s instanceof Uint8Array) || s.length !== PKH_BYTES)) throw new Error('Invalid spots');
+        if (new Set(list.map(s => b64urlEncode(s))).size !== list.length) throw new Error('A spot is named twice');
+        const all = new Uint8Array(list.length * PKH_BYTES);
+        list.forEach((s, i) => all.set(s, i * PKH_BYTES));
+        flags |= FLAG_SPOT;
+        tail.push(b64urlEncode(all));
     }
     const fragment = ['1', String(flags), b64urlEncode(link.secret), link.wrapper, ...tail].join('.');
     return `${origin.replace(/\/+$/, '')}/${link.wrapper}/#${fragment}`;
@@ -190,8 +205,8 @@ function decodeStrict(hash: string): PackageLink | null {
     const flags = Number(parts[1]);
     // A spot belongs to a riddle: without one it would say nothing the secret does not.
     if (flags & FLAG_SPOT && !(flags & FLAG_RIDDLE)) return null;
-    // Shared by several: a riddle link, and one that names no single address.
-    if (flags & FLAG_MANY && (!(flags & FLAG_RIDDLE) || flags & FLAG_SPOT)) return null;
+    // Shared by several: a riddle link. (With the spot bit its spot field names all the gifts, not one.)
+    if (flags & FLAG_MANY && !(flags & FLAG_RIDDLE)) return null;
     const optionalCount = (flags & 1) + ((flags >> 1) & 1) + ((flags >> 2) & 1) + ((flags >> 3) & 1) + ((flags >> 4) & 1);
     if (parts.length !== 4 + optionalCount) return null;
 
@@ -239,10 +254,19 @@ function decodeStrict(hash: string): PackageLink | null {
         if (normaliseWish(text) !== text) return null;
         riddle = text;
     }
+    let spots: Uint8Array[] | undefined;
     if (flags & FLAG_SPOT) {
         const bytes = b64urlDecode(parts[next++]!);
-        if (bytes === null || bytes.length !== PKH_BYTES) return null;
-        spot = bytes;
+        if (bytes === null) return null;
+        if (flags & FLAG_MANY) {
+            const n = bytes.length / PKH_BYTES;
+            if (!Number.isInteger(n) || n < 2 || n > MAX_SPOTS) return null;
+            spots = Array.from({ length: n }, (_, i) => bytes.slice(i * PKH_BYTES, (i + 1) * PKH_BYTES));
+            if (new Set(spots.map(s => b64urlEncode(s))).size !== n) return null;
+        } else {
+            if (bytes.length !== PKH_BYTES) return null;
+            spot = bytes;
+        }
     }
 
     const link: { -readonly [K in keyof PackageLink]: PackageLink[K] } = { version: 1, secret, wrapper };
@@ -252,5 +276,6 @@ function decodeStrict(hash: string): PackageLink | null {
     if (riddle !== undefined) link.riddle = riddle;
     if (spot !== undefined) link.spot = spot;
     if (flags & FLAG_MANY) link.many = true;
+    if (spots !== undefined) link.spots = spots;
     return link;
 }

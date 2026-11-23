@@ -622,3 +622,6 @@ html { touch-action: pan-x pan-y; }
 .batch-sent { font-size: 13px; color: var(--dim); }
 .batch-skip { justify-self: start; }
 .batch-skip-ask { display: grid; gap: 8px; justify-items: start; }
+
+/* The field a copy is made from when the browser's clipboard does not answer: on the page for an instant, out of sight. */
+.copy-field { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0; }

@@ -38,10 +38,12 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
     // What one shared link costs is said in view, never behind a press: the answer is then the only lock.
     const oneWarn = h('p', { class: 'warning people-one-warn', hidden: true }, t('people.one.warn'));
     // Rows with the same answer are several gifts for that answer: what that means is said as soon as it is so.
+    // What the link will let anyone who has it see, and where to switch that off.
+    const oneStatus = h('p', { class: 'note people-one-status', hidden: true }, t('people.one.status'));
     const sameWarn = h('p', { class: 'warning people-same-warn', hidden: true }, t('people.one.same'));
     // One link for all needs a riddle: said where the rows are, since the riddle's switch is further down.
     const oneHint = h('p', { class: 'note people-one-hint', hidden: true }, t('people.one.hint'));
-    const body = h('div', { class: 'people-body', hidden: !draft.peopleOpen }, h('p', { class: 'note people-lead' }, t('people.lead', { max: BATCH_MAX })), list, add, oneHint, oneRow, oneWarn, sameWarn);
+    const body = h('div', { class: 'people-body', hidden: !draft.peopleOpen }, h('p', { class: 'note people-lead' }, t('people.lead', { max: BATCH_MAX })), list, add, oneHint, oneRow, oneWarn, oneStatus, sameWarn);
     const mark = h('span', { class: 'people-mark', 'aria-hidden': 'true' }, draft.peopleOpen ? '−' : '+');
     const toggle = h(
         'button',
@@ -96,6 +98,7 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
         oneRow.hidden = !canOne;
         oneHint.hidden = riddleOn || n < 2;
         oneWarn.hidden = !(canOne && draft.oneLink);
+        oneStatus.hidden = !(canOne && draft.oneLink) || draft.riddleHide;
         const typed = draft.people.map(p => normaliseAnswer(p.answer)).filter(a => a !== '');
         sameWarn.hidden = !(canOne && draft.oneLink && new Set(typed).size < typed.length);
         oneBox.disabled = working;

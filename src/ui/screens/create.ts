@@ -195,7 +195,11 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     // before anyone answers. The giver may leave that out: then nothing is known until the right answer.
     const hideBox = h('input', { id: 'f-riddle-hide', class: 'check-box', type: 'checkbox' });
     hideBox.checked = draft.riddleHide;
-    hideBox.addEventListener('change', () => (draft.riddleHide = hideBox.checked));
+    hideBox.addEventListener('change', () => {
+        draft.riddleHide = hideBox.checked;
+        // The table says what a shared link will show: it follows this switch.
+        validate();
+    });
     const hideRow = h('label', { class: 'check check--riddle', for: 'f-riddle-hide' }, hideBox, h('span', null, h('span', null, t('create.riddle.hide')), h('span', { class: 'check-why' }, ' ' + t('create.riddle.hide.why'))));
     const riddleFields = h(
         'div',
@@ -913,7 +917,8 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 kind: one ? 'answers' : 'links',
                 gifts,
                 // One link for all carries no address: there are several.
-                ...(one ? { link: encodeLink({ ...common, secret: shared!, many: true }, location.origin) } : {}),
+                // Unless the giver hides it, the link names where every gift is, so that a page can say how many are left.
+                ...(one ? { link: encodeLink({ ...common, secret: shared!, many: true, ...(draft.riddleHide ? {} : { spots: gifts.map(g => g.key.pkh) }) }, location.origin) } : {}),
                 wrapper,
                 ...(recipe !== undefined ? { recipe } : {}),
                 ...(text !== '' ? { wish: text } : {}),

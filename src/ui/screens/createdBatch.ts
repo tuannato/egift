@@ -11,7 +11,7 @@ import type { Ctx } from '../ctx';
 import { getLang, t } from '../../i18n';
 import { clearBatch, getBatch } from '../session';
 import type { BatchGift } from '../session';
-import { linkBox, linkButtons } from '../linkBox';
+import { copyText, linkBox, linkButtons } from '../linkBox';
 import { qrPanel } from './qr';
 import { plate } from '../plate';
 import { layout, stepRow } from '../layout';
@@ -133,15 +133,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                     unlock();
                     saveMsg.textContent = t('batch.save.copied');
                 };
-                try {
-                    if (!navigator.clipboard?.writeText) return done(false);
-                    void navigator.clipboard.writeText(lines()).then(
-                        () => done(true),
-                        () => done(false),
-                    );
-                } catch {
-                    done(false);
-                }
+                void copyText(lines()).then(done, () => done(false));
             },
         },
         t('batch.save.copy'),

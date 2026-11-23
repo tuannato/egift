@@ -15,7 +15,7 @@ import { t } from '../i18n';
 import { WRAPPERS, setOfferForDev } from '../wrappers';
 import { getBatch, getMade } from './session';
 import { chooseWrapper } from './draft';
-import { loadSent } from './kept';
+import { loadSent, rememberSent } from './kept';
 import { FUND_QR_MAX_CHARS } from './screens/createdBatch';
 import { boot, buttonByText, flush, resetPage, stubClipboard, type, type Booted } from './testkit';
 
@@ -266,6 +266,8 @@ describe('several people on the create step', () => {
         expect(link.spot).toBeUndefined();
         // And says that it is shared, so the page can tell whoever opens it.
         expect(link.many).toBe(true);
+        // Unless the giver hid it, the link names where each gift is: a page can then say how many are left.
+        expect(link.spots!.map(x => [...x])).toEqual(b.gifts.map(g => [...g.key.pkh]));
         // The first row of an answer is what the answer alone gives; the next row with it is its second slot.
         expect((await unlockKey(link, 'red kite')).address).toBe(b.gifts[0]!.key.address);
         expect(deriveKey(await riddleRoot(link.secret, 'Red Kite'), 1).address).toBe(b.gifts[1]!.key.address);
@@ -386,6 +388,98 @@ describe('several gifts behind one answer', () => {
         await open(chain, secret, 'kite');
         await until(() => app!.root.textContent!.includes(t('pkg.riddle.taken.many')));
         expect(app!.root.querySelector('#rd-answer')).not.toBeNull();
+    });
+});
+
+describe('copying', () => {
+    it('is done at once inside the press where the browser can; otherwise its clipboard is asked, and never waited on for ever', async () => {
+        const { copyText } = await import('./linkBox');
+        // A clipboard that neither succeeds nor fails (a phone, after a download took the page out of focus).
+        const hang = vi.fn(() => new Promise<void>(() => {}));
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: hang } });
+        const exec = vi.fn(() => true);
+        (document as unknown as { execCommand: unknown }).execCommand = exec;
+        const button = document.createElement('button');
+        document.body.append(button);
+        button.focus();
+        // The older way works: done before anything is awaited, the clipboard is not asked, the focus is back.
+        expect(await copyText('the link')).toBe(true);
+        expect(exec).toHaveBeenCalledWith('copy');
+        expect(hang).not.toHaveBeenCalled();
+        expect(document.querySelector('.copy-field')).toBeNull();
+        expect(document.activeElement).toBe(button);
+        // It refuses, and the clipboard hangs: said to have failed after a moment, not never.
+        exec.mockReturnValue(false);
+        vi.useFakeTimers();
+        const q = copyText('the link');
+        await vi.advanceTimersByTimeAsync(1600);
+        expect(await q).toBe(false);
+        vi.useRealTimers();
+        // It throws: nothing is left on the page.
+        exec.mockImplementation(() => {
+            throw new Error('no');
+        });
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } });
+        expect(await copyText('the link')).toBe(true);
+        expect(document.querySelector('.copy-field')).toBeNull();
+        delete (document as unknown as { execCommand?: unknown }).execCommand;
+        button.remove();
+    });
+});
+
+describe('a shared link that names its gifts', () => {
+    it('says how many are still there before any answer, and asks the network nothing for an answer that is none of them', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const root = await riddleRoot(secret, 'kite');
+        const s = [deriveKey(root, 0), deriveKey(root, 1), deriveKey(await riddleRoot(secret, 'hill'), 0)];
+        for (const k of s) chain.fund(k.address, 5_000n);
+        chain.steal(s[0]!.address);
+        const url = encodeLink({ version: 1, secret, wrapper: 'signal', riddle: 'Your word?', many: true, spots: s.map(k => k.pkh) }, location.origin);
+        history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
+        app = boot(chain);
+        await until(() => app!.root.textContent!.includes(t('pkg.many.left', { k: 2, n: 3 })));
+        let asked = 0;
+        const read = chain.read.bind(chain);
+        chain.read = async (a: string) => (asked++, read(a));
+        type($<HTMLInputElement>('#rd-answer'), 'wrong one');
+        buttonByText(app.root, t('pkg.riddle.submit')).click();
+        await until(() => app!.root.textContent!.includes(t('pkg.riddle.wrong')));
+        // The answer cost nothing: a key that is none of the link's gifts is not asked about, and the count is not read again.
+        await flush(12);
+        expect(asked).toBe(0);
+        // The right answer goes straight to the gift of it that is left.
+        type($<HTMLInputElement>('#rd-answer'), 'kite');
+        buttonByText(app.root, t('pkg.riddle.submit')).click();
+        await until(() => app!.root.querySelector('#rd-answer') === null);
+    });
+});
+
+describe('gifts made together on the sent page', () => {
+    it('stand as one card that says how many are still there, with a line for each; the others stay one by one', async () => {
+        const chain = createDemoChain();
+        const at = Date.now() - 60_000;
+        const keys = [1, 2, 3].map(i => deriveKey(new Uint8Array(16).fill(i)));
+        keys.forEach((k, i) => expect(rememberSent({ address: k.address, at: at + i, wrapper: 'lixi', sats: '2000', part: `${i + 1}/3`, ...(i === 0 ? { name: 'Anh Hai' } : {}) })).toBe(true));
+        const alone = deriveKey(new Uint8Array(16).fill(9));
+        expect(rememberSent({ address: alone.address, at: at - 5_000, wrapper: 'lixi', sats: '3000' })).toBe(true);
+        for (const k of keys) chain.fund(k.address, 2_000n);
+        chain.steal(keys[1]!.address);
+        app = boot(chain, { stay: true });
+        await flush();
+        buttonByText(app.root, t('sent.nav')).click();
+        const groups = all('.sent-group');
+        expect(groups.length).toBe(1);
+        expect(all('.sent-row').length).toBe(3);
+        expect(all('.kept-card').length).toBe(2);
+        expect(groups[0]!.textContent).toContain(t('sent.group.title', { n: 3 }));
+        expect(groups[0]!.textContent).toContain('Anh Hai');
+        await until(() => groups[0]!.textContent!.includes(t('sent.group.left', { k: 2, n: 3 })));
+        expect(all('.sent-row').map(r => r.dataset.state)).toEqual(['there', 'taken', 'there']);
+        // Taken out of the list together, after one question.
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        buttonByText(groups[0]!, t('sent.group.forget')).click();
+        expect(loadSent().map(x => x.address)).toEqual([alone.address]);
     });
 });
 
