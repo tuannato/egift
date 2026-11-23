@@ -140,6 +140,9 @@ export const th: Record<keyof typeof vi, string> = {
     'create.error': "สร้างลิงก์ไม่ได้ โปรดลองอีกครั้ง",
 
     'created.title': "ของขวัญของคุณพร้อมแล้ว",
+    'create.opt.label': "ตัวเลือกเพิ่มเติม",
+    'create.opt.token': "แนบโทเคน",
+    'create.opt.cancel': "ยกเลิก",
     'ref.explorer': "ดู {id} บน explorer.e.cash (เปิดแท็บใหม่)",
     'ref.copy': "คัดลอกที่อยู่ {id}",
     'ref.copyfail': "คัดลอกไม่สำเร็จ ลองอีกครั้ง",

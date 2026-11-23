@@ -140,6 +140,9 @@ export const ru: Record<keyof typeof vi, string> = {
     'create.error': "Не удалось создать ссылку. Попробуйте ещё раз.",
 
     'created.title': "Ваш подарок готов",
+    'create.opt.label': "Другие параметры",
+    'create.opt.token': "Добавить токен",
+    'create.opt.cancel': "Отмена",
     'ref.explorer': "Открыть {id} на explorer.e.cash (в новой вкладке)",
     'ref.copy': "Скопировать адрес {id}",
     'ref.copyfail': "Не удалось скопировать. Попробуйте ещё раз.",

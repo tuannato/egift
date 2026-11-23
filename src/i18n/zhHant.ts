@@ -140,6 +140,9 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'create.error': "無法產生連結。請再試一次。",
 
     'created.title': "禮物準備好了",
+    'create.opt.label': "更多選項",
+    'create.opt.token': "附帶代幣",
+    'create.opt.cancel': "取消",
     'ref.explorer': "在 explorer.e.cash 查看 {id}（在新分頁開啟）",
     'ref.copy': "複製地址 {id}",
     'ref.copyfail': "複製失敗，請再試一次。",

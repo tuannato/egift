@@ -140,6 +140,9 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'create.error': "没能生成链接。请再试一次。",
 
     'created.title': "礼物准备好了",
+    'create.opt.label': "更多选项",
+    'create.opt.token': "附带代币",
+    'create.opt.cancel': "取消",
     'ref.explorer': "在 explorer.e.cash 查看 {id}（在新标签页打开）",
     'ref.copy': "复制地址 {id}",
     'ref.copyfail': "复制失败，请再试一次。",

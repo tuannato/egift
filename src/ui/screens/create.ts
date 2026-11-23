@@ -113,21 +113,21 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 formatXec(sats, lang),
             ),
         ),
-        // A gift that is a token: the package holds only the least XEC, which pays the recipient's way home.
-        h(
-            'button',
-            {
-                type: 'button',
-                class: 'chip chip--token',
-                onclick: () => {
-                    amount.value = String(FLOOR_SATS / 100n);
-                    draft.amount = amount.value;
-                    draft.tokenOnly = true;
-                    validate();
-                },
+    );
+    // A gift that is a token: the package holds only the least XEC, which pays the recipient's way home.
+    const tokenOnlyBtn = h(
+        'button',
+        {
+            type: 'button',
+            class: 'chip chip--token',
+            onclick: () => {
+                amount.value = String(FLOOR_SATS / 100n);
+                draft.amount = amount.value;
+                draft.tokenOnly = true;
+                validate();
             },
-            t('create.tokenonly'),
-        ),
+        },
+        t('create.tokenonly'),
     );
     // Several people: a table of who gets how much, in place of the one amount. Closed, nothing here changes.
     const people = peopleBlock({ firstAmount: () => amount.value.trim(), onChange: () => validate() });
@@ -136,7 +136,9 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
     const fee = (): bigint => takeFeeEstimate(draft.withToken);
     const tokBox = h('input', { id: 'f-withtoken', class: 'check-box', type: 'checkbox' });
     tokBox.checked = draft.withToken;
-    const tokRow = h('label', { class: 'check check--fee', for: 'f-withtoken', hidden: true }, tokBox, h('span', null, t('create.fee.token')));
+    // The box holds the choice out of sight; the token panel being open is what shows it, with this sentence in it.
+    tokBox.hidden = true;
+    const tokRow = h('p', { class: 'note opt-token-say' }, tokBox, t('create.fee.token'));
     tokBox.addEventListener('change', () => {
         draft.withToken = tokBox.checked;
         validate();
@@ -213,15 +215,10 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         h('p', { class: 'warning danger' }, t('create.riddle.forget')),
     );
     riddleFields.hidden = !draft.riddleOn;
-    const riddleRow = h('label', { class: 'check check--riddle', for: 'f-riddle' }, riddleBox, h('span', null, h('span', null, t('create.riddle.toggle')), h('span', { class: 'check-why' }, ' ' + t('create.riddle.why'))));
     riddleBox.addEventListener('change', () => {
         draft.riddleOn = riddleBox.checked;
         riddleFields.hidden = !draft.riddleOn;
         validate();
-        if (draft.riddleOn) {
-            riddleFields.dispatchEvent(new CustomEvent('cap:show', { bubbles: true }));
-            question.focus();
-        }
     });
     question.addEventListener('input', () => {
         draft.question = question.value;
@@ -232,6 +229,98 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         validate();
     });
     answer2.addEventListener('input', () => validate());
+
+    // ---- Options: three quiet buttons under the note. Each opens a panel of its own, with a way to cancel it ----
+    // A closed option is one button in a row with the others; an open one is its panel, above the buttons that are
+    // left. Cancelling empties what was typed there and puts the button back. The boxes that hold each choice
+    // (`f-riddle`, `f-withtoken`) stay in the page, out of sight: a panel being open is what says it.
+    riddleBox.hidden = true;
+    const optPanel = (id: string, title: string, onCancel: () => void, ...content: (Node | null)[]): HTMLElement =>
+        h(
+            'section',
+            { class: 'opt-panel', 'data-opt': id, hidden: true, 'aria-label': title },
+            h('div', { class: 'opt-head' }, h('p', { class: 'opt-title' }, title), h('button', { type: 'button', class: 'btn btn-quiet btn-small opt-cancel', onclick: onCancel }, t('create.opt.cancel'))),
+            ...content,
+        );
+    const optButton = (id: string, label: string, onOpen: () => void): HTMLButtonElement =>
+        h('button', { type: 'button', class: 'opt-btn', 'data-opt': id, onclick: onOpen }, h('span', { class: 'opt-plus', 'aria-hidden': 'true' }, '+'), h('span', null, label));
+    const reveal = (panel: HTMLElement, focus?: HTMLElement | null): void => {
+        validate();
+        panel.dispatchEvent(new CustomEvent('cap:show', { bubbles: true }));
+        focus?.focus();
+    };
+    const peoplePanel = optPanel('people', t('people.title'), () => {
+        people.clear();
+        validate();
+        peopleBtn.focus();
+    }, people.el);
+    const tokenOnlyRow = h('div', { class: 'opt-row' }, tokenOnlyBtn);
+    const tokenPanel = optPanel(
+        'token',
+        t('create.opt.token'),
+        () => {
+            draft.withToken = false;
+            draft.tokenOnly = false;
+            tokBox.checked = false;
+            validate();
+            tokenBtn.focus();
+        },
+        tokRow,
+        tokenOnlyRow,
+        tokenOnlyNote,
+    );
+    const riddlePanel = optPanel(
+        'riddle',
+        t('create.riddle.toggle'),
+        () => {
+            for (const f of [question, answer, answer2]) f.value = '';
+            draft.question = '';
+            draft.answer = '';
+            for (const row of draft.people) row.answer = '';
+            people.redraw();
+            draft.riddleHide = false;
+            hideBox.checked = false;
+            if (riddleBox.checked) riddleBox.click();
+            validate();
+            riddleBtn.focus();
+        },
+        riddleBox,
+        h('p', { class: 'note' }, t('create.riddle.why')),
+        riddleFields,
+    );
+    const peopleBtn = optButton('people', t('people.title'), () => {
+        people.open();
+        reveal(peoplePanel);
+    });
+    const tokenBtn = optButton('token', t('create.opt.token'), () => {
+        draft.withToken = true;
+        tokBox.checked = true;
+        reveal(tokenPanel, tokenPanel.querySelector<HTMLElement>('.opt-cancel'));
+    });
+    const riddleBtn = optButton('riddle', t('create.riddle.toggle'), () => {
+        if (!riddleBox.checked) riddleBox.click();
+        reveal(riddlePanel, question);
+    });
+    const amountBeat = h('div', { class: 'beat' }, amountField, chips, amountMsg, feeNote, feeRow);
+    const optButtons = h('div', { class: 'opt-btns', role: 'group', 'aria-label': t('create.opt.label') }, peopleBtn, tokenBtn, riddleBtn);
+    const options = h('div', { class: 'beat opts' }, peoplePanel, tokenPanel, riddlePanel, optButtons);
+    /** Which options are open, from what the giver has chosen: called by every repaint. */
+    const paintOptions = (working: boolean): void => {
+        const open = { people: draft.peopleOpen, token: draft.withToken || draft.tokenOnly, riddle: draft.riddleOn };
+        peoplePanel.hidden = !open.people;
+        tokenPanel.hidden = !open.token;
+        riddlePanel.hidden = !open.riddle;
+        peopleBtn.hidden = open.people;
+        tokenBtn.hidden = open.token;
+        riddleBtn.hidden = open.riddle;
+        optButtons.hidden = open.people && open.token && open.riddle;
+        for (const b of [peopleBtn, tokenBtn, riddleBtn, tokenOnlyBtn, ...options.querySelectorAll<HTMLButtonElement>('.opt-cancel')]) b.disabled = working;
+        // A gift that is only a token is one gift's choice: not offered while there are several.
+        tokenOnlyRow.hidden = draft.peopleOpen;
+        // What several gifts come to, and who pays their fees, is said with the rows; for one gift, under its amount.
+        const home = open.people ? peoplePanel : amountBeat;
+        if (feeNote.parentElement !== home) home.append(feeNote, feeRow);
+    };
 
     // ---- Confirmation: the giver's choice below a million, always on from a million ----
     const confirmBox = h('input', { id: 'f-confirm', class: 'check-box', type: 'checkbox' });
@@ -325,7 +414,6 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         const showFee = multi ? rowSats !== null : sats !== null && !draft.tokenOnly;
         feeNote.hidden = !showFee;
         feeRow.hidden = !showFee;
-        tokRow.hidden = !showFee;
         const FEE = fee();
         feeLabel.textContent = t('create.fee.toggle', { fee: formatXec(FEE, lang) });
         if (multi && rowSats !== null) {
@@ -379,12 +467,13 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         // The answer all share has no part in a gift whose every row answers for itself through one link.
         for (const f of [answer, answer2]) if (f.parentElement) f.parentElement.hidden = one;
         people.sync({ riddleOn: draft.riddleOn, working, badAmounts, badAnswers });
+        paintOptions(working);
         const mismatch = draft.riddleOn && answer2.value.trim() !== '' && !same;
         answer2Msg.textContent = mismatch ? t('create.riddle.a2.diff') : '';
         answerWeak.hidden = !(draft.riddleOn && isWeakAnswer(answer.value));
         answerShown.hidden = !(draft.riddleOn && isShownAnswer(answer.value, wish.value, question.value));
         answer2Msg.classList.toggle('field-msg--bad', mismatch);
-        for (const f of [question, answer, answer2, riddleBox, hideBox]) f.disabled = working;
+        for (const f of [question, answer, answer2, riddleBox, hideBox, tokBox, feeBox]) f.disabled = working;
         riddleMsg.textContent = draft.riddleOn && qOver ? t('create.riddle.over') : '';
         riddleMsg.classList.toggle('field-msg--bad', draft.riddleOn && qOver);
         submit.disabled = working || (multi ? rowSats === null : sats === null) || !wishOk || !riddleOk;
@@ -1079,9 +1168,9 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
             ],
             body: [
                 picker,
-                h('div', { class: 'beat' }, amountField, chips, amountMsg, people.el, tokenOnlyNote, feeNote, tokRow, feeRow),
+                amountBeat,
                 h('div', { class: 'beat field' }, h('label', { class: 'label', for: 'f-wish' }, t('create.wish.label')), wish, meter, wishCount),
-                h('div', { class: 'beat riddle' }, riddleRow, riddleFields),
+                options,
                 truths,
                 confirmRow,
                 errBox,

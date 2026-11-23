@@ -98,7 +98,7 @@ describe('several people on the create step', () => {
         expect(all<HTMLInputElement>('.people-amount').map(i => i.value)).toEqual(['50', '50']);
         expect($('#f-amount').closest<HTMLElement>('.field')!.hidden).toBe(true);
         // Several gifts may each carry a token: the giver can say so, as for one.
-        expect($('#f-withtoken').closest<HTMLElement>('label')!.hidden).toBe(false);
+        expect($<HTMLButtonElement>('.opt-btn[data-opt="token"]').hidden).toBe(false);
         // A row under the floor: said, and nothing can be made.
         type(all<HTMLInputElement>('.people-amount')[1]!, '1');
         expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(true);
@@ -798,10 +798,10 @@ describe('several gifts on the created step', () => {
         app = boot();
         await flush();
         people([{ amount: '20' }, { amount: '30' }]);
-        const tok = $<HTMLInputElement>('#f-withtoken');
-        expect(tok.closest<HTMLElement>('label')!.hidden).toBe(false);
-        tok.checked = true;
-        tok.dispatchEvent(new Event('change', { bubbles: true }));
+        // The token option, opened by its button: the panel being open is the choice.
+        $<HTMLButtonElement>('.opt-btn[data-opt="token"]').click();
+        expect($<HTMLInputElement>('#f-withtoken').checked).toBe(true);
+        expect($('.opt-panel[data-opt="token"]').hidden).toBe(false);
         const fee = $<HTMLInputElement>('#f-fee');
         fee.checked = true;
         fee.dispatchEvent(new Event('change', { bubbles: true }));

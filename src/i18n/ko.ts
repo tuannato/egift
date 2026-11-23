@@ -140,6 +140,9 @@ export const ko: Record<keyof typeof vi, string> = {
     'create.error': "링크를 만들지 못했어요. 다시 시도해 주세요.",
 
     'created.title': "선물이 준비됐어요",
+    'create.opt.label': "추가 옵션",
+    'create.opt.token': "토큰 함께 넣기",
+    'create.opt.cancel': "취소",
     'ref.explorer': "explorer.e.cash에서 {id} 보기 (새 탭에서 열림)",
     'ref.copy': "주소 {id} 복사",
     'ref.copyfail': "복사하지 못했습니다. 다시 시도해 주세요.",

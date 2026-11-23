@@ -140,6 +140,9 @@ export const ja: Record<keyof typeof vi, string> = {
     'create.error': "リンクを作れませんでした。もう一度お試しください。",
 
     'created.title': "ギフトの準備ができました",
+    'create.opt.label': "その他のオプション",
+    'create.opt.token': "トークンを添える",
+    'create.opt.cancel': "キャンセル",
     'ref.explorer': "{id} を explorer.e.cash で見る（新しいタブが開きます）",
     'ref.copy': "アドレス {id} をコピー",
     'ref.copyfail': "コピーできませんでした。もう一度お試しください。",

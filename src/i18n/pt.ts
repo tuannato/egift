@@ -140,6 +140,9 @@ export const pt: Record<keyof typeof vi, string> = {
     'create.error': "Não foi possível criar o link. Tente de novo.",
 
     'created.title': "Seu presente está pronto",
+    'create.opt.label': "Mais opções",
+    'create.opt.token': "Juntar um token",
+    'create.opt.cancel': "Cancelar",
     'ref.explorer': "Ver {id} no explorer.e.cash (abre uma nova aba)",
     'ref.copy': "Copiar o endereço {id}",
     'ref.copyfail': "Não foi possível copiar. Tente de novo.",

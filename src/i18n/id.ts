@@ -140,6 +140,9 @@ export const id: Record<keyof typeof vi, string> = {
     'create.error': "Tautan tidak bisa dibuat. Silakan coba lagi.",
 
     'created.title': "Hadiah Anda sudah siap",
+    'create.opt.label': "Opsi lainnya",
+    'create.opt.token': "Sertakan token",
+    'create.opt.cancel': "Batal",
     'ref.explorer': "Lihat {id} di explorer.e.cash (membuka tab baru)",
     'ref.copy': "Salin alamat {id}",
     'ref.copyfail': "Tidak bisa menyalin. Coba lagi.",

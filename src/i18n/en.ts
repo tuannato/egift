@@ -140,6 +140,9 @@ export const en: Record<keyof typeof vi, string> = {
     'create.error': 'Could not make the link. Please try again.',
 
     'created.title': 'Your gift is ready',
+    'create.opt.label': "More options",
+    'create.opt.token': "Add a token",
+    'create.opt.cancel': "Cancel",
     'ref.explorer': "See {id} on explorer.e.cash (opens a new tab)",
     'ref.copy': "Copy the address {id}",
     'ref.copyfail': "Could not copy. Try again.",

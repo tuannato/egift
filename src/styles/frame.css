@@ -630,3 +630,29 @@ html { touch-action: pan-x pan-y; }
 
 /* The field a copy is made from when the browser's clipboard does not answer: on the page for an instant, out of sight. */
 .copy-field { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0; }
+
+/* ---------- Options on the create step: three quiet buttons, each opening a panel of its own ---------- */
+.opts { gap: 12px; }
+.opt-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt-btn {
+    flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 14px;
+    border: 0; border-radius: var(--r-ctl, 14px); background: none; color: var(--ink); cursor: pointer;
+    font: 600 14px / 1.2 var(--text); box-shadow: inset 0 0 0 1px var(--line-strong, var(--line)); -webkit-tap-highlight-color: transparent;
+}
+.opt-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt-btn:disabled { opacity: 0.45; cursor: default; }
+.opt-plus { font: 600 17px / 1 var(--text); color: var(--accent); }
+@media (hover: hover) {
+    .opt-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+}
+.opt-panel { display: grid; gap: 12px; padding: 12px 14px 16px; border-radius: var(--r-field, 14px); box-shadow: inset 0 0 0 1px var(--line); min-width: 0; }
+.opt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.opt-title { margin: 0; font-weight: 600; font-size: 15px; }
+.opt-cancel { min-height: 40px; padding: 0 12px; margin-right: -8px; }
+.opt-cancel::after { content: none; }
+.opt-panel > p, .opt-panel .riddle-fields { margin: 0; }
+.opt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* The table of several people brings its own switch and frame: inside its panel the panel is both. */
+.opt-panel .people-toggle { display: none; }
+.opt-panel .people { box-shadow: none; border: 0; background: none; padding: 0; margin: 0; }
+.opt-panel .people-body { padding: 0; }

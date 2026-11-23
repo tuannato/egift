@@ -23,6 +23,12 @@ export interface PeopleBlock {
     /** The table is open: the gifts are its rows, not the one amount. */
     active(): boolean;
     rows(): readonly Person[];
+    /** Open the table (two rows to start with), as a press on its own toggle would. */
+    open(): void;
+    /** Empty the table and close it: the gift is one gift again. */
+    clear(): void;
+    /** Draw the rows again from what is kept (after something outside emptied a field of theirs). */
+    redraw(): void;
     /** Repaint for what changed outside: the riddle switched on or off, the form busy, a row's amount found wrong. */
     sync(o: { riddleOn: boolean; working: boolean; badAmounts: ReadonlySet<number>; badAnswers: ReadonlySet<number> }): void;
 }
@@ -157,6 +163,17 @@ export function peopleBlock(opts: { firstAmount: () => string; onChange: () => v
         el,
         active: () => draft.peopleOpen && draft.people.length > 0,
         rows: () => draft.people,
+        open() {
+            if (!draft.peopleOpen) toggle.click();
+        },
+        clear() {
+            draft.people.length = 0;
+            draft.oneLink = false;
+            oneBox.checked = false;
+            if (draft.peopleOpen) toggle.click();
+            else paintRows();
+        },
+        redraw: () => paintRows(),
         sync(o) {
             riddleOn = o.riddleOn;
             working = o.working;

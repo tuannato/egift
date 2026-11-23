@@ -140,6 +140,9 @@ export const fr: Record<keyof typeof vi, string> = {
     'create.error': "Le lien n'a pas pu être créé. Merci de réessayer.",
 
     'created.title': "Votre cadeau est prêt",
+    'create.opt.label': "Plus d’options",
+    'create.opt.token': "Ajouter un token",
+    'create.opt.cancel': "Annuler",
     'ref.explorer': "Voir {id} sur explorer.e.cash (ouvre un nouvel onglet)",
     'ref.copy': "Copier l’adresse {id}",
     'ref.copyfail': "Copie impossible. Réessayez.",
