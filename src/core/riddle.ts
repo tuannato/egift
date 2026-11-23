@@ -29,6 +29,13 @@ import type { PackageKey, PackageLink } from './types';
  * the same gift: Vietnamese marks and every other accent are dropped, đ
  * becomes d, case is folded, runs of blanks become one space, and the ends
  * are trimmed. Returns '' when nothing is left.
+ *
+ * Known and left as it is: a few letters have two spellings that this does not bring together. Greek final sigma
+ * ("ς") and sigma ("σ") stay apart, as do German "ß" and "ss", and Turkish dotless "ı" and "i" (an upper-case "I"
+ * typed on a Turkish keyboard is lowered to "i", not "ı"). An answer typed with one and answered with the other is
+ * told it is wrong; no money is lost, and the answer typed the way the giver typed it opens the gift. This cannot
+ * be folded here now: the spelling made here is what every gift already sent was locked with, and a change would
+ * lock those gifts for good. A fix has to keep this function as it is and try the old spelling as well.
  */
 export function normaliseAnswer(answer: string): string {
     if (typeof answer !== 'string') return '';

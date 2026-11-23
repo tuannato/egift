@@ -107,3 +107,19 @@ describe('the riddle lock', () => {
         expect(riddleBytes('  ồ  ')).toBe(3);
     });
 });
+
+describe('the spelling of an answer is for ever', () => {
+    it('gifts already sent were locked with these exact spellings: a change here locks them for good', () => {
+        // Pinned on purpose, with the letters known not to be folded together (see `normaliseAnswer`).
+        expect(normaliseAnswer(' MÈO  Con ')).toBe('meo con');
+        expect(normaliseAnswer('Đà Nẵng')).toBe('da nang');
+        expect(normaliseAnswer('Straße')).toBe('straße');
+        expect(normaliseAnswer('STRASSE')).toBe('strasse');
+        // Upper case lowers to the final sigma at a word's end; a sigma typed there by hand stays as typed.
+        expect(normaliseAnswer('ΟΔΟΣ')).toBe('οδος');
+        expect(normaliseAnswer('οδός')).toBe('οδος');
+        expect(normaliseAnswer('οδοσ')).toBe('οδοσ');
+        expect(normaliseAnswer('ISIK')).toBe('isik');
+        expect(normaliseAnswer('ışık')).toBe('ısık');
+    });
+});

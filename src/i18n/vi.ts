@@ -290,7 +290,6 @@ export const vi = {
     'people.sub': "Mỗi người một số tiền · đặt tên nếu muốn",
     'people.lead': "Tối đa {max} quà một lượt.",
     'people.add': "+ Thêm người",
-    'people.name': "Tên người {n} (không bắt buộc)",
     'people.name.label': "Tên của quà {n}, để bạn tự nhớ",
     'people.amount.label': "Số XEC của quà {n}",
     'people.remove': "Bỏ quà {n}",

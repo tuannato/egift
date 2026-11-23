@@ -242,7 +242,8 @@ function cleanSent(x: unknown): Sent | null {
         ...(r.tokenOnly === true ? { tokenOnly: true } : {}),
         ...(dressOf(r.dress) !== undefined ? { dress: dressOf(r.dress)! } : {}),
         ...(typeof r.name === 'string' && keepableName(r.name) !== undefined ? { name: keepableName(r.name)! } : {}),
-        ...(typeof r.part === 'string' && PART.test(r.part) ? { part: r.part } : {}),
+        // A place in a batch is "k/n" with k no greater than n: anything else is dropped.
+        ...(typeof r.part === 'string' && PART.test(r.part) && Number(r.part[0]) <= Number(r.part[2]) ? { part: r.part } : {}),
     };
 }
 

@@ -35,6 +35,25 @@ describe('public/_headers', () => {
         expect(directives['form-action']).toEqual(["'none'"]);
     });
 
+    it('every page is sent with the headers that keep it from being framed, sniffed, tracked or downgraded', () => {
+        // The block for every path: one line each, exactly as meant. A change here is a change on purpose.
+        const all = text.slice(text.indexOf('\n/*\n'), text.indexOf('\n\n', text.indexOf('\n/*\n') + 1));
+        const header = (name: string): string | undefined => all.split('\n').map(l => l.trim()).find(l => l.startsWith(name + ':'))?.slice(name.length + 1).trim();
+        expect(header('X-Frame-Options')).toBe('DENY');
+        expect(header('X-Content-Type-Options')).toBe('nosniff');
+        expect(header('Referrer-Policy')).toBe('no-referrer');
+        expect(header('Cross-Origin-Opener-Policy')).toBe('same-origin');
+        expect(header('Cross-Origin-Resource-Policy')).toBe('same-origin');
+        expect(header('Strict-Transport-Security')).toMatch(/^max-age=(\d+)/);
+        expect(Number(/max-age=(\d+)/.exec(header('Strict-Transport-Security')!)![1])).toBeGreaterThanOrEqual(31536000);
+        const policy = header('Permissions-Policy')!;
+        for (const feature of ['camera', 'microphone', 'geolocation', 'payment', 'usb', 'bluetooth', 'serial', 'display-capture']) expect(policy, feature).toContain(`${feature}=()`);
+        expect(directives['object-src']).toEqual(["'none'"]);
+        expect(directives['frame-src']).toEqual(["'none'"]);
+        expect(directives['base-uri']).toEqual(["'self'"]);
+        expect(directives['default-src']).toEqual(["'self'"]);
+    });
+
     it('caches the document never and assets forever, on separate paths', () => {
         expect(text).toMatch(/\n\/\n\s+Cache-Control: no-store/);
         expect(text).toMatch(/\n\/assets\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/);

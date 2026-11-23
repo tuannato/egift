@@ -292,7 +292,6 @@ export const pt: Record<keyof typeof vi, string> = {
     'people.sub': "Um valor para cada uma · dê nomes se quiser",
     'people.lead': "Até {max} presentes de uma vez.",
     'people.add': "+ Adicionar uma pessoa",
-    'people.name': "Nome {n} (opcional)",
     'people.name.label': "Nome do presente {n}, para o seu próprio controle",
     'people.amount.label': "XEC para o presente {n}",
     'people.remove': "Remover o presente {n}",

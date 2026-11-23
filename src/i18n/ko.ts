@@ -292,7 +292,6 @@ export const ko: Record<keyof typeof vi, string> = {
     'people.sub': "사람마다 금액 하나 · 원하면 이름도 붙여요",
     'people.lead': "한 번에 선물 {max}개까지 만들 수 있어요.",
     'people.add': "+ 사람 추가",
-    'people.name': "이름 {n} (선택)",
     'people.name.label': "선물 {n}의 이름, 내가 알아보기 위한 것",
     'people.amount.label': "선물 {n}의 XEC",
     'people.remove': "선물 {n} 빼기",

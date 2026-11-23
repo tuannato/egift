@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { openOut } from './dom';
 import { explorerRef, explorerUrl } from './explorer';
 
 const ADDRESS = 'ecash:qpx5prg4egjlzyke989u3n8vj46996y59cavnw7vzp';
@@ -21,5 +22,16 @@ describe('the way out to the explorer', () => {
         const plain = explorerRef('address', 'nope', 'nope');
         expect(plain.tagName).toBe('SPAN');
         expect(plain.querySelector('button')).toBeNull();
+    });
+
+    it('the page opens nothing outside that is not an https address', () => {
+        const opened: unknown[][] = [];
+        const spy = vi.spyOn(window, 'open').mockImplementation(((...x: unknown[]) => void opened.push(x)) as unknown as typeof window.open);
+        for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'http://cashtab.com', '//evil.example', 'https://', ' https://cashtab.com', 'ecash:qz', 'file:///etc/passwd', '']) openOut(bad);
+        expect(opened).toEqual([]);
+        openOut('https://cashtab.com/#/send?bip21=ecash:qz?amount=1');
+        openOut('https://pay.e.cash/?bip21=ecash:qz?amount=1&b=1');
+        expect(opened.map(o => o.slice(1))).toEqual([['_blank', 'noopener,noreferrer'], ['_blank', 'noopener,noreferrer']]);
+        spy.mockRestore();
     });
 });

@@ -292,7 +292,6 @@ export const ru: Record<keyof typeof vi, string> = {
     'people.sub': "Каждому своя сумма · можно подписать имена",
     'people.lead': "До {max} подарков за раз.",
     'people.add': "+ Добавить человека",
-    'people.name': "Имя {n} (необязательно)",
     'people.name.label': "Имя для подарка {n}, для ваших записей",
     'people.amount.label': "XEC для подарка {n}",
     'people.remove': "Убрать подарок {n}",

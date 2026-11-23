@@ -292,7 +292,6 @@ export const ja: Record<keyof typeof vi, string> = {
     'people.sub': "一人ずつ金額を決める · 名前も付けられます",
     'people.lead': "一度に {max} 個までギフトを作れます。",
     'people.add': "+ 人を追加",
-    'people.name': "名前 {n}(任意)",
     'people.name.label': "ギフト {n} の名前(自分用のメモ)",
     'people.amount.label': "ギフト {n} の XEC",
     'people.remove': "ギフト {n} を削除",

@@ -292,7 +292,6 @@ export const id: Record<keyof typeof vi, string> = {
     'people.sub': "Satu jumlah untuk tiap orang · beri nama jika mau",
     'people.lead': "Hingga {max} hadiah sekaligus.",
     'people.add': "+ Tambah orang",
-    'people.name': "Nama {n} (opsional)",
     'people.name.label': "Nama hadiah {n}, untuk catatan Anda sendiri",
     'people.amount.label': "XEC untuk hadiah {n}",
     'people.remove': "Hapus hadiah {n}",

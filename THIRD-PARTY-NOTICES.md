@@ -111,18 +111,43 @@ This site is distributed under the MIT License. The build served to the browser 
 
 ### WebAssembly core of ecash-lib
 
-The compiled core is built from Rust and C sources. The package ships no licence or notice files for them, so for each of the components below the copyright holder and the licence are not stated in the package. The components are those identifiable from the source paths recorded in the binary; the list may be incomplete.
+The compiled core is built from Rust and C sources. The package ships no licence or notice files for them: the components below are those identifiable from the source paths recorded in the binary (the list may be incomplete), and their copyright lines and licences are those published by each project in its own source repository.
 
-- ecash-lib-wasm (version not stated; from the Bitcoin ABC source tree)
-- ecash-secp256k1 and ecash-secp256k1-sys, including the libsecp256k1 C library (versions not stated; from the Bitcoin ABC source tree)
+- ecash-lib-wasm (from the Bitcoin ABC source tree)
+  - Copyright (c) 2009-2026 The Bitcoin developers
+  - Copyright (c) 2009-2017 The Bitcoin Core developers
+  - Licence: MIT License
+- ecash-secp256k1 and ecash-secp256k1-sys (from the Bitcoin ABC source tree)
+  - Dedicated to the public domain by their authors
+  - Licence: CC0 1.0 Universal (no notice required)
+- libsecp256k1, the C library compiled into ecash-secp256k1-sys
+  - Copyright (c) 2013 Pieter Wuille
+  - Licence: MIT License
 - ring 0.17.14
+  - Copyright 2015-2025 Brian Smith.
+  - Parts sourced from BoringSSL, each file under the licence named at its top
+  - Licence: ISC License, and Apache License 2.0 for the parts sourced from BoringSSL under it
 - untrusted 0.9.0
-- sha2 0.10.9
-- ripemd 0.1.3
+  - Copyright 2015-2016 Brian Smith.
+  - Licence: ISC License
+- sha2 0.10.9 and ripemd 0.1.3
+  - Copyright (c) 2016-2026 The RustCrypto Project Developers
+  - Copyright (c) 2016 Artyom Pavlov
+  - Copyright (c) 2009-2013 Mozilla Foundation
+  - Copyright (c) 2006-2009 Graydon Hoare
+  - Licence: MIT License or Apache License 2.0, at the user's choice; used here under the MIT License
 - block-buffer 0.10.4
+  - Copyright (c) 2018-2025 The RustCrypto Project Developers
+  - Licence: MIT License or Apache License 2.0; used here under the MIT License
 - wasm-bindgen 0.2.92
+  - Copyright (c) 2014 Alex Crichton
+  - Licence: MIT License or Apache License 2.0; used here under the MIT License
 - dlmalloc 0.2.7
+  - Copyright (c) 2014 Alex Crichton
+  - Licence: MIT License or Apache License 2.0; used here under the MIT License
 - Rust standard library (core and alloc, rustc 1.87.0)
+  - Copyright (c) The Rust Project Contributors
+  - Licence: MIT License or Apache License 2.0; used here under the MIT License
 
 ## Fonts
 
@@ -426,6 +451,22 @@ Applies to long and to the Roboto Slab font.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+```
+
+### ISC License
+
+```
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
 ### SIL Open Font License 1.1

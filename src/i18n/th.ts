@@ -292,7 +292,6 @@ export const th: Record<keyof typeof vi, string> = {
     'people.sub': "คนละหนึ่งจำนวนเงิน · ใส่ชื่อได้ถ้าต้องการ",
     'people.lead': "ทำได้สูงสุด {max} ชิ้นต่อครั้ง",
     'people.add': "+ เพิ่มคน",
-    'people.name': "ชื่อ {n} (ไม่บังคับ)",
     'people.name.label': "ชื่อของของขวัญ {n} สำหรับให้คุณจำเอง",
     'people.amount.label': "XEC ของของขวัญ {n}",
     'people.remove': "ลบของขวัญ {n}",

@@ -292,7 +292,6 @@ export const de: Record<keyof typeof vi, string> = {
     'people.sub': "Für jede Person ein Betrag · mit Namen, wenn du magst",
     'people.lead': "Bis zu {max} Geschenke auf einmal.",
     'people.add': "+ Person hinzufügen",
-    'people.name': "Name {n} (optional)",
     'people.name.label': "Name von Geschenk {n}, nur für deine Übersicht",
     'people.amount.label': "XEC für Geschenk {n}",
     'people.remove': "Geschenk {n} entfernen",

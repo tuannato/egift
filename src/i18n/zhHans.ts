@@ -292,7 +292,6 @@ export const zhHans: Record<keyof typeof vi, string> = {
     'people.sub': "每人一个金额 · 可以写上名字",
     'people.lead': "一次最多 {max} 份礼物。",
     'people.add': "+ 添加一个人",
-    'people.name': "名字 {n}（可不填）",
     'people.name.label': "礼物 {n} 的名字，供你自己记录",
     'people.amount.label': "礼物 {n} 的 XEC",
     'people.remove': "移除礼物 {n}",
