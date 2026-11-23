@@ -77,11 +77,15 @@ export interface MadeBatch {
     readonly riddle?: string;
     /** What the giver added to EACH gift for the recipient's fee. */
     readonly feeCovered?: bigint;
+    /** The giver said the gifts will also carry a token. */
+    readonly withToken?: boolean;
     /** When the batch was made: one time for all its records. */
     readonly at: number;
     saved: boolean;
     /** A wallet was opened with the request to fund the whole batch. */
     opened: boolean;
+    /** The token request a wallet was last opened with (token id and quantity), so the same one is asked about before it is sent again. */
+    tokenSent?: string;
 }
 
 let batch: MadeBatch | null = null;

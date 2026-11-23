@@ -9,7 +9,7 @@ export { parseRecipe, formatRecipe, type Recipe, type RecipeFace } from './recip
 export { deriveKey, addressOfPkh } from './keys';
 export { normaliseAnswer, riddleRoot, unlockKey } from './riddle';
 export { buildSweep, isValidDestination, takeFeeEstimate } from './tx';
-export { fundLinks, stampedFundLinks, batchFundLinks, tokenFundLinks, bip21Amount } from './bip21';
+export { fundLinks, stampedFundLinks, batchFundLinks, tokenFundLinks, batchTokenFundLinks, bip21Amount } from './bip21';
 export { stampScript, stampOpReturnRaw, batchStampScript, batchOpReturnRaw, BATCH_MAX, isStamp, isValidOffer, licenceOf, isOwnedFunding, entitlement, MAX_STAMP_LOOKUPS, type WrapperOffer, type PastTerms, type Entitlement } from './stamp';
 export { formatXec, parseXec, whyNotXec, type XecRefusal, numberMarks } from './money';
 export { takeHome, forgetSweeps } from './flow';

@@ -111,3 +111,27 @@ export function tokenFundLinks(p: { address: string; tokenId: string; qty: strin
     const bip21 = `${parsed.address}?token_id=${p.tokenId}&token_decimalized_qty=${p.qty}`;
     return roads(bip21);
 }
+
+/**
+ * The roads for sending ONE token to several packages with one transaction:
+ * `ecash:<package 1>?token_id=<id>&token_decimalized_qty=<qty 1>&addr=<package 2>&token_decimalized_qty=<qty 2>…`,
+ * the shape Cashtab's own BIP21 parser reads and a real Cashtab wallet was seen to send as written (each package
+ * its own amount, in order). Such a request carries no XEC amount and no data of ours: the XEC of the gifts, and
+ * a wrapper's price, go by their own request (`batchFundLinks`).
+ *
+ * Two to nine packages, none twice. As with `tokenFundLinks`, nothing but a token id and plain decimal numbers
+ * may reach the link. Throws on anything else.
+ */
+export function batchTokenFundLinks(p: { gifts: readonly { readonly address: string; readonly qty: string }[]; tokenId: string }): FundLinks {
+    if (!Array.isArray(p.gifts) || p.gifts.length < 2 || p.gifts.length > BATCH_MAX) throw new Error('A batch is two to nine gifts');
+    if (typeof p.tokenId !== 'string' || !/^[0-9a-f]{64}$/.test(p.tokenId)) throw new Error('Not a token id');
+    const gifts = p.gifts.map(g => {
+        const parsed = parseEcashAddress(g.address);
+        if (parsed === null || parsed.type !== 'p2pkh') throw new Error('Not a valid ecash: P2PKH address');
+        if (typeof g.qty !== 'string' || g.qty.length > 30 || !/^\d+(\.\d+)?$/.test(g.qty) || /^[0.]+$/.test(g.qty)) throw new Error('Not a quantity');
+        return { address: parsed.address, qty: g.qty };
+    });
+    if (new Set(gifts.map(g => g.address)).size !== gifts.length) throw new Error('A package is listed twice');
+    const [first, ...rest] = gifts;
+    return roads(`${first!.address}?token_id=${p.tokenId}&token_decimalized_qty=${first!.qty}${rest.map(g => `&addr=${g.address}&token_decimalized_qty=${g.qty}`).join('')}`);
+}

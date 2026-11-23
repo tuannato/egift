@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Address } from 'ecash-lib';
-import { bip21Amount, fundLinks } from './bip21';
+import { batchTokenFundLinks, bip21Amount, fundLinks } from './bip21';
 import { deriveKey } from './keys';
 import { CAP_SATS, FLOOR_SATS } from './limits';
 
@@ -92,5 +92,41 @@ describe('fundLinks', () => {
         ]) {
             expect(() => fundLinks(bad, 5000n), bad).toThrow();
         }
+    });
+});
+
+describe('batchTokenFundLinks', () => {
+    const ID = 'e56c4d69b81ebeceadfef40ca9617cb6772ee2e22e0ead00922d5c418e86053c';
+    const a = (n: number) => deriveKey(new Uint8Array(16).fill(n)).address;
+
+    it('one token to several gifts: the first with its quantity, then each address followed at once by its own', () => {
+        // The request a real Cashtab wallet sent on 24 November 2026: two addresses, 1 and 2 of the token.
+        const real = ['ecash:qrsuvctwx7jp8n2sm52p0trc7x9779phlsx82ut6uy', 'ecash:qq4g4taxf8ghm36450m05ejk04fyjm9z9q4dnau4px'];
+        expect(batchTokenFundLinks({ gifts: [{ address: real[0]!, qty: '1' }, { address: real[1]!, qty: '2' }], tokenId: ID }).bip21).toBe(
+            `${real[0]}?token_id=${ID}&token_decimalized_qty=1&addr=${real[1]}&token_decimalized_qty=2`,
+        );
+        const l = batchTokenFundLinks({ gifts: [1, 2, 3].map(n => ({ address: a(n), qty: '12.5' })), tokenId: ID });
+        expect(l.bip21).toBe(`${a(1)}?token_id=${ID}&token_decimalized_qty=12.5&addr=${a(2)}&token_decimalized_qty=12.5&addr=${a(3)}&token_decimalized_qty=12.5`);
+        expect(l.web).toBe(`https://cashtab.com/#/send?bip21=${l.bip21}`);
+        expect(l.app).toBe(`https://pay.e.cash/?bip21=${l.bip21}`);
+        expect(l.appBack).toBe(`${l.app}&b=1`);
+        // No XEC amount and no data of ours: a wallet sends tokens by a request of their own.
+        expect(l.bip21).not.toMatch(/[?&]amount=|op_return_raw/);
+        expect(l.bip21).toMatch(/^[a-z0-9:?=.&_]+$/);
+    });
+
+    it('nothing but a token id, addresses and plain numbers reaches the link', () => {
+        const two = [1, 2].map(n => ({ address: a(n), qty: '1' }));
+        const bad = (p: Parameters<typeof batchTokenFundLinks>[0]) => expect(() => batchTokenFundLinks(p)).toThrow();
+        bad({ gifts: two.slice(0, 1), tokenId: ID });
+        bad({ gifts: Array.from({ length: 10 }, (_, i) => ({ address: a(i + 1), qty: '1' })), tokenId: ID });
+        bad({ gifts: [two[0]!, two[0]!], tokenId: ID });
+        bad({ gifts: [two[0]!, { address: a(1).slice(6), qty: '1' }], tokenId: ID });
+        bad({ gifts: two, tokenId: ID.slice(1) });
+        bad({ gifts: two, tokenId: ID.toUpperCase() });
+        bad({ gifts: two, tokenId: ID + '&addr=' + a(3) });
+        for (const qty of ['', '0', '0.00', '1e3', '-1', '1,5', '1.', '.5', ' 1', '1&addr=' + a(3), '9'.repeat(31)]) bad({ gifts: [two[0]!, { address: a(2), qty }], tokenId: ID });
+        bad({ gifts: [two[0]!, { address: 'ecash:nope', qty: '1' }], tokenId: ID });
+        bad({ gifts: [two[0]!, { address: 'ecash:prfhcnyqnl5cgrnmlfmms675w93ld7mvvqd0y8lz07', qty: '1' }], tokenId: ID });
     });
 });

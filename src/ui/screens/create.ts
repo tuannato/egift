@@ -300,9 +300,9 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         let rowSats: bigint[] | null = null;
         const badAmounts = new Set<number>();
         if (multi) {
+            // A gift that is only a token is one gift's choice; several gifts may still carry a token each (sent to
+            // all of them at once after they are made), and the fee the giver covers then counts for it.
             draft.tokenOnly = false;
-            draft.withToken = false;
-            tokBox.checked = false;
             const parsed = people.rows().map(r => parseXec(r.amount.trim()));
             parsed.forEach((x, i) => {
                 if (x === null || x < FLOOR_SATS) badAmounts.add(i);
@@ -325,7 +325,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         const showFee = multi ? rowSats !== null : sats !== null && !draft.tokenOnly;
         feeNote.hidden = !showFee;
         feeRow.hidden = !showFee;
-        tokRow.hidden = !showFee || multi;
+        tokRow.hidden = !showFee;
         const FEE = fee();
         feeLabel.textContent = t('create.fee.toggle', { fee: formatXec(FEE, lang) });
         if (multi && rowSats !== null) {
@@ -924,6 +924,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 ...(text !== '' ? { wish: text } : {}),
                 ...(riddle !== undefined ? { riddle } : {}),
                 ...(covered > 0n ? { feeCovered: covered } : {}),
+                ...(draft.withToken ? { withToken: true } : {}),
                 at: Date.now(),
                 saved: false,
                 opened: false,
@@ -938,6 +939,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         working = false;
         draft.amount = '';
         draft.coverFee = coversFee();
+        draft.withToken = false;
         draft.wish = '';
         draft.riddleOn = false;
         draft.riddleHide = false;

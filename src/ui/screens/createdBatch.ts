@@ -1,5 +1,6 @@
-import { DEFAULT_WRAPPER, batchFundLinks, entitlement, formatXec, fundLinks, stampedFundLinks } from '../../core';
-import type { FundLinks, PackageState } from '../../core';
+import { DEFAULT_WRAPPER, batchFundLinks, batchTokenFundLinks, entitlement, formatXec, fundLinks, stampedFundLinks, takeFeeEstimate } from '../../core';
+import type { FundLinks, PackageState, TokenMeta } from '../../core';
+import { cutTokenText, shortTokenId, tokenIcon } from '../tokens';
 import { autoKeep, dressOf, rememberSent } from '../kept';
 import { offerOf, wrapperById } from '../../wrappers';
 import { appRoad, isInAppBrowser } from '../inapp';
@@ -14,7 +15,7 @@ import type { BatchGift } from '../session';
 import { copyText, linkBox, linkButtons } from '../linkBox';
 import { qrPanel } from './qr';
 import { plate } from '../plate';
-import { layout, stepRow } from '../layout';
+import { fold, layout, stepRow } from '../layout';
 import { amountBlock } from '../amount';
 import { setUserText } from '../text';
 
@@ -78,6 +79,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         fundHint.hidden = true;
         skip.hidden = true;
         skipAsk.hidden = true;
+        paintTok();
     };
     // The whole list in one piece: a file, or one copy. A copy of one row is not a saved batch (the clipboard holds
     // one thing; the next copy replaces it).
@@ -240,6 +242,120 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         fundBtns.push(demoBtn);
     }
 
+    // ---- One token for all the gifts (optional): its own request, since a wallet sends tokens and XEC apart ----
+    const tokId = h('input', { id: 'f-btok-id', class: 'input mono', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', 'aria-describedby': 'f-btok-msg' });
+    const tokQty = h('input', { id: 'f-btok-qty', class: 'input', type: 'text', inputmode: 'decimal', autocomplete: 'off', 'aria-describedby': 'f-btok-msg' });
+    const tokMsg = h('p', { id: 'f-btok-msg', class: 'field-msg', role: 'status', 'aria-live': 'polite' });
+    // What the token id names, read from the chain as soon as the id is whole. A stranger's text: `setUserText`.
+    const tokName = h('p', { class: 'token-found', role: 'status', 'aria-live': 'polite', hidden: true });
+    let tokMeta: TokenMeta | null | undefined;
+    let metaSeq = 0;
+    const tokIdValue = (): string | null => {
+        const id = tokId.value.trim().toLowerCase();
+        return /^[0-9a-f]{64}$/.test(id) ? id : null;
+    };
+    /** The request that sends this token to every gift, or null while the id or the quantity is not one. */
+    const tokLinks = (): FundLinks | null => {
+        const id = tokIdValue();
+        // Not for an id the chain does not know, nor for more decimals than the token has: Cashtab would refuse both.
+        if (id === null || tokMeta === null) return null;
+        const qty = tokQty.value.trim();
+        if (tokMeta !== undefined && (qty.split('.')[1] ?? '').length > tokMeta.decimals) return null;
+        try {
+            return batchTokenFundLinks({ gifts: batch.gifts.map(g => ({ address: g.key.address, qty })), tokenId: id });
+        } catch {
+            return null;
+        }
+    };
+    async function lookupToken(): Promise<void> {
+        const mine = ++metaSeq;
+        const id = tokIdValue();
+        tokMeta = undefined;
+        tokName.hidden = true;
+        tokName.replaceChildren();
+        if (id === null) return paintTok();
+        let meta: TokenMeta | null | undefined;
+        try {
+            meta = await ctx.chain.tokenMeta?.(id);
+        } catch {
+            meta = undefined;
+        }
+        if (disposed || mine !== metaSeq) return;
+        tokMeta = meta;
+        tokName.hidden = false;
+        if (meta === undefined) tokName.textContent = t('created.tok.unread');
+        else if (meta === null) tokName.textContent = t('created.tok.notfound');
+        else {
+            const ticker = h('span', { class: 'token-ticker' });
+            setUserText(ticker, cutTokenText(meta.ticker));
+            const name = h('span', { class: 'token-name' });
+            setUserText(name, cutTokenText(meta.name));
+            tokName.append(tokenIcon(id) ?? '', ticker, ' ', name, h('span', { class: 'note' }, ' · ' + t('pkg.tok.id', { id: shortTokenId(id) })));
+        }
+        paintTok();
+    }
+    /** The request as it would be sent now: what a second opening is held against. */
+    const tokSig = (): string => `${tokIdValue() ?? ''}|${tokQty.value.trim()}`;
+    const tokAsk = h('p', { class: 'strong', hidden: true }, t('batch.fund.again'));
+    const tokBtn = (text: string, url: (l: FundLinks) => string): HTMLButtonElement => {
+        const b = h('button', { type: 'button', class: 'btn btn-secondary', disabled: true }, text);
+        let armed = false;
+        b.addEventListener('click', () => {
+            const l = tokLinks();
+            if (!batch.saved || l === null) {
+                tokMsg.textContent = t('created.tok.bad');
+                return;
+            }
+            tokMsg.textContent = '';
+            // The same request twice sends the token twice: asked first. (Kept with the batch, so a change of
+            // language does not forget it.)
+            if (batch.tokenSent === tokSig() && !armed) {
+                armed = true;
+                tokAsk.hidden = false;
+                b.textContent = t('batch.fund.sure');
+                return;
+            }
+            armed = false;
+            b.textContent = text;
+            tokAsk.hidden = true;
+            batch.tokenSent = tokSig();
+            openOut(url(l));
+        });
+        return b;
+    };
+    const tokWeb = tokBtn(t('batch.tok.open', { n }), l => l.web);
+    const tokApp = tokBtn(t('created.fund.app'), l => appRoad(l));
+    const tokHint = h('p', { class: 'btn-reason' }, t('batch.tok.locked'));
+    function paintTok(): void {
+        // After the XEC: a gift needs it for the token to be taken home, and the single request for the XEC must
+        // not be mistaken for this one.
+        const ready = batch!.saved && fundedCount() === n && tokLinks() !== null;
+        tokWeb.disabled = !ready;
+        tokApp.disabled = !ready;
+        tokHint.hidden = ready;
+    }
+    tokId.addEventListener('input', () => void lookupToken());
+    tokQty.addEventListener('input', () => {
+        tokMsg.textContent = '';
+        paintTok();
+    });
+    // Open from the start when the giver said, on the create step, that the gifts would carry a token.
+    const tokStep = fold(
+        t('batch.tok.title'),
+        { id: 'batch.tok', open: batch.withToken === true },
+        h('p', null, t('batch.tok.body')),
+        h('p', { class: 'note' }, t('batch.tok.one')),
+        // Taking a token home costs more: said when the fee the giver covered does not reach it.
+        (batch.feeCovered ?? 0n) < takeFeeEstimate(true) ? h('p', { class: 'note' }, t('created.tok.feenote', { fee: formatXec(takeFeeEstimate(true), lang) })) : null,
+        h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-btok-id' }, t('batch.tok.id')), tokId, tokName),
+        h('div', { class: 'field' }, h('label', { class: 'label', for: 'f-btok-qty' }, t('batch.tok.qty')), tokQty),
+        tokWeb,
+        tokApp,
+        tokHint,
+        tokAsk,
+        tokMsg,
+    );
+
     // ---- The count, and the gift a wallet left out ----
     const statusText = h('span', null, t('batch.status.waiting'));
     const status = h('p', { class: 'status status--waiting', role: 'status', 'aria-live': 'polite' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), statusText);
@@ -353,11 +469,12 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
         rows.forEach((r, i) => {
             const s = states[i];
             const key = s === null || s === undefined ? 'batch.row.waiting' : s.kind === 'taken' ? 'batch.row.taken' : seenFunded[i] ? 'batch.row.funded' : 'batch.row.waiting';
-            r.state.textContent = t(key);
+            r.state.textContent = t(key) + (s !== null && s !== undefined && s.hasToken ? ' · ' + t('batch.row.token') : '');
             r.el.dataset.state = key.slice('batch.row.'.length);
         });
         const all = k === n;
         nextStep.hidden = !all;
+        paintTok();
         status.className = 'status ' + (all ? 'status--ok' : 'status--waiting');
         statusText.textContent = k === 0 ? t('batch.status.waiting') : t(all ? 'batch.status.all' : 'batch.status.some', { k, n });
         // Funded: the request is not to be sent again.
@@ -513,6 +630,7 @@ export function mountCreatedBatch(root: HTMLElement, ctx: Ctx): Dispose {
                         demoBtn,
                         topUpHost,
                     ),
+                    tokStep,
                     h('section', { class: 'batch-list', 'aria-label': t('batch.list.label') }, h('p', { class: 'label' }, t('batch.list.label')), ...rows.map(r => r.el)),
                     h('div', { class: 'startover' }, startOver),
                 ],

@@ -10,7 +10,7 @@ vi.mock('../core', async orig => {
     return { ...real, newSecret: vi.fn(real.newSecret) };
 });
 
-import { FLOOR_SATS, batchFundLinks, createDemoChain, decodeFragment, deriveKey, encodeLink, newSecret, riddleRoot, unlockKey } from '../core';
+import { FLOOR_SATS, batchFundLinks, batchTokenFundLinks, createDemoChain, decodeFragment, deriveKey, encodeLink, newSecret, riddleRoot, unlockKey } from '../core';
 import { t } from '../i18n';
 import { WRAPPERS, setOfferForDev } from '../wrappers';
 import { getBatch, getMade } from './session';
@@ -97,8 +97,8 @@ describe('several people on the create step', () => {
         // Two rows, each starting from the amount already typed; the big figure steps aside.
         expect(all<HTMLInputElement>('.people-amount').map(i => i.value)).toEqual(['50', '50']);
         expect($('#f-amount').closest<HTMLElement>('.field')!.hidden).toBe(true);
-        // What belongs to one gift only is not offered for several.
-        expect($('#f-withtoken').closest<HTMLElement>('label')!.hidden).toBe(true);
+        // Several gifts may each carry a token: the giver can say so, as for one.
+        expect($('#f-withtoken').closest<HTMLElement>('label')!.hidden).toBe(false);
         // A row under the floor: said, and nothing can be made.
         type(all<HTMLInputElement>('.people-amount')[1]!, '1');
         expect($<HTMLButtonElement>('button[type=submit]').disabled).toBe(true);
@@ -644,6 +644,75 @@ describe('several gifts on the created step', () => {
         expect(app!.root.textContent).toContain(t('batch.fund.again'));
         web.click();
         expect(opened.length).toBe(1);
+    });
+
+    it('one token for all the gifts: its own request, after the links are saved, asked about before it is sent twice', async () => {
+        stubClipboard();
+        const opened: string[] = [];
+        vi.spyOn(window, 'open').mockImplementation(((u: string) => void opened.push(u)) as unknown as typeof window.open);
+        const ID = 'ab'.repeat(32);
+        await made([{ amount: '20' }, { amount: '30' }, { amount: '40' }]);
+        const b = getBatch()!;
+        app!.chain.describe(ID, { name: 'Coupon', ticker: 'CPN', decimals: 2 });
+        const step = app!.root.querySelector('#f-btok-id')!.closest('details')!;
+        // Folded until asked for (the giver did not say the gifts would carry a token); no warning sits inside it.
+        expect(step.open).toBe(false);
+        expect(step.querySelector('.warning')).toBeNull();
+        const web = buttonByText(step, t('batch.tok.open', { n: 3 }));
+        type($<HTMLInputElement>('#f-btok-id'), ID);
+        type($<HTMLInputElement>('#f-btok-qty'), '5.25');
+        await until(() => step.textContent!.includes('CPN'));
+        // Not before the links are saved, and not before the gifts have their XEC.
+        expect(web.disabled).toBe(true);
+        buttonByText(app!.root, t('batch.save.copy')).click();
+        await flush();
+        expect(web.disabled).toBe(true);
+        for (const g of b.gifts) app!.chain.fund(g.key.address, g.sats);
+        await until(() => !web.disabled);
+        // More decimals than the token has: no request.
+        type($<HTMLInputElement>('#f-btok-qty'), '5.255');
+        expect(web.disabled).toBe(true);
+        type($<HTMLInputElement>('#f-btok-qty'), '5.25');
+        web.click();
+        expect(opened).toEqual([batchTokenFundLinks({ gifts: b.gifts.map(g => ({ address: g.key.address, qty: '5.25' })), tokenId: ID }).web]);
+        web.click();
+        expect(opened.length).toBe(1);
+        expect(step.textContent).toContain(t('batch.fund.again'));
+        web.click();
+        expect(opened.length).toBe(2);
+        // Typing and deleting a character does not forget that this very request was opened; the app road asks too.
+        type($<HTMLInputElement>('#f-btok-qty'), '5.2');
+        type($<HTMLInputElement>('#f-btok-qty'), '5.25');
+        buttonByText(step, t('created.fund.app')).click();
+        expect(opened.length).toBe(2);
+        // Another quantity is another request: opened without a question.
+        type($<HTMLInputElement>('#f-btok-qty'), '6');
+        web.click();
+        expect(opened.length).toBe(3);
+        // A gift that holds a token says so in its row.
+        app!.chain.fund(b.gifts[0]!.key.address, 546n, { token: true });
+        await until(() => all('.batch-row')[0]!.textContent!.includes(t('batch.row.token')));
+        expect(all('.batch-row')[1]!.textContent).not.toContain(t('batch.row.token'));
+    });
+
+    it('several gifts that will carry a token: the giver may cover the higher fee, and the token step stands open', async () => {
+        app = boot();
+        await flush();
+        people([{ amount: '20' }, { amount: '30' }]);
+        const tok = $<HTMLInputElement>('#f-withtoken');
+        expect(tok.closest<HTMLElement>('label')!.hidden).toBe(false);
+        tok.checked = true;
+        tok.dispatchEvent(new Event('change', { bubbles: true }));
+        const fee = $<HTMLInputElement>('#f-fee');
+        fee.checked = true;
+        fee.dispatchEvent(new Event('change', { bubbles: true }));
+        await confirmBatch();
+        const b = getBatch()!;
+        expect(b.withToken).toBe(true);
+        // The fee of taking a token home, added to each gift.
+        expect(b.feeCovered).toBe(428n);
+        expect(b.gifts.map(g => g.sats)).toEqual([2_428n, 3_428n]);
+        expect(app.root.querySelector('#f-btok-id')!.closest('details')!.open).toBe(true);
     });
 
     it('a request too long to scan is not offered as a QR', async () => {
