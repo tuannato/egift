@@ -10,7 +10,7 @@ vi.mock('../core', async orig => {
     return { ...real, newSecret: vi.fn(real.newSecret) };
 });
 
-import { FLOOR_SATS, batchFundLinks, decodeFragment, deriveKey, newSecret, unlockKey } from '../core';
+import { FLOOR_SATS, batchFundLinks, createDemoChain, decodeFragment, deriveKey, encodeLink, newSecret, unlockKey } from '../core';
 import { t } from '../i18n';
 import { WRAPPERS, setOfferForDev } from '../wrappers';
 import { getBatch, getMade } from './session';
@@ -260,6 +260,8 @@ describe('several people on the create step', () => {
         expect(link.riddle).toBe('Your word?');
         // The link names no address: there are several.
         expect(link.spot).toBeUndefined();
+        // And says that it is shared, so the page can tell whoever opens it.
+        expect(link.many).toBe(true);
         const answers = ['red kite', 'blue sea', 'Green Hill'];
         for (let i = 0; i < 3; i++) expect((await unlockKey(link, answers[i]!)).address).toBe(b.gifts[i]!.key.address);
         expect(new Set(b.gifts.map(g => g.key.address)).size).toBe(3);
@@ -268,6 +270,44 @@ describe('several people on the create step', () => {
         expect(b.gifts.map(g => g.key.address)).not.toContain((await unlockKey(link, 'red kit')).address);
         expect(app.root.textContent).toContain(t('batch.title.one', { n: 3 }));
         expect(app.root.textContent).toContain(t('batch.riddle.one'));
+    });
+});
+
+describe('opening one link shared by several', () => {
+    it('says the link is shared before anything is typed, and what a wrong answer or a part already taken means', async () => {
+        const chain = createDemoChain();
+        const secret = newSecret();
+        const link = { version: 1 as const, secret, wrapper: 'signal', riddle: 'Your word?', many: true as const };
+        const mine = await unlockKey(link, 'red kite');
+        const gone = await unlockKey(link, 'blue sea');
+        chain.fund(mine.address, 5_000n);
+        // Another part, funded and already taken home.
+        chain.fund(gone.address, 5_000n);
+        chain.steal(gone.address);
+        const url = encodeLink(link, location.origin);
+        history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
+        app = boot(chain);
+        await flush(12);
+        expect(app.root.textContent).toContain(t('pkg.riddle.lead.many'));
+        expect(app.root.textContent).not.toContain(t('pkg.riddle.lead'));
+        const answer = $<HTMLInputElement>('#rd-answer');
+        type(answer, 'green hill');
+        buttonByText(app.root, t('pkg.riddle.submit')).click();
+        await until(() => app!.root.textContent!.includes(t('pkg.riddle.wrong')));
+        expect(app.root.textContent).toContain(t('pkg.riddle.wrong.many'));
+        // The answer of a part that someone already took home.
+        type($<HTMLInputElement>('#rd-answer'), 'Blue Sea');
+        buttonByText(app.root, t('pkg.riddle.submit')).click();
+        await until(() => app!.root.textContent!.includes(t('pkg.riddle.taken.many')));
+        // The right answer opens that person's own part.
+        type($<HTMLInputElement>('#rd-answer'), 'red kite');
+        buttonByText(app.root, t('pkg.riddle.submit')).click();
+        await until(() => app!.root.querySelector('#rd-answer') === null);
+        // The same link opened again in this tab asks again: the answer was one person's, not the link's.
+        app.stop();
+        app = boot(chain);
+        await flush(12);
+        expect(app.root.querySelector('#rd-answer')).not.toBeNull();
     });
 });
 

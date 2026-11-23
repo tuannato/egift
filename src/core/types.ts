@@ -26,6 +26,11 @@ export interface PackageLink {
      */
     readonly riddle?: string;
     /**
+     * Only with a riddle, and never with a spot: this one link was given to several people, and each of their
+     * answers opens a gift of its own. It changes no key: it only lets the page say so to whoever opens the link.
+     */
+    readonly many?: true;
+    /**
      * Only with a riddle: the 20-byte public key hash of the gift's address, so that a page can ask the chain whether
      * the gift is still there before anyone has answered. It names where the gift is; it opens nothing. Untrusted:
      * nobody signs a link, so what it says is checked against the key the answer gives.

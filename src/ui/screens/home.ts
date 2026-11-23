@@ -33,7 +33,7 @@ type View = 'shelf' | 'how' | 'about' | 'workshop' | 'market' | 'kept' | 'sent';
  * capsule that is open.
  */
 /** How many remembered gifts the "sent" page asks the network about at once. */
-const SENT_READ_MAX = 6;
+const SENT_READ_MAX = 9;
 
 let worn: string | null = null;
 let view: View = 'shelf';

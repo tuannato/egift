@@ -240,6 +240,42 @@ describe('the spot of a riddle link', () => {
         expect(decodeFragment('#' + all.split('#')[1]!)!.spot).toEqual(spot);
     });
 
+    it('one link shared by several: a mark and nothing more, only on a riddle link that names no address', () => {
+        const url = encodeLink({ ...base, wish: 'hi', riddle: 'Your word?', many: true }, origin);
+        const f = url.slice(url.indexOf('#') + 1).split('.');
+        // Wish 4 + riddle 8 + shared 32; the mark adds no field.
+        expect(f[1]).toBe('44');
+        expect(f).toHaveLength(6);
+        const back = decodeFragment(url.slice(url.indexOf('#')))!;
+        expect(back.many).toBe(true);
+        expect(back.spot).toBeUndefined();
+        expect(encodeLink(back, origin)).toBe(url);
+        // The same link without the mark is another link, and reads as one that is not shared.
+        const plain = encodeLink({ ...base, wish: 'hi', riddle: 'Your word?' }, origin);
+        expect(decodeFragment(plain.slice(plain.indexOf('#')))!.many).toBeUndefined();
+        // Never without a riddle, never with a spot: written or read.
+        expect(() => encodeLink({ ...base, many: true }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', spot: new Uint8Array(20).fill(7), many: true }, origin)).toThrow();
+        expect(() => encodeLink({ ...base, riddle: 'q', many: false as unknown as true }, origin)).toThrow();
+        expect(decodeFragment('#1.32.AAAAAAAAAAAAAAAAAAAAAA.lixi')).toBeNull();
+        expect(decodeFragment('#1.36.AAAAAAAAAAAAAAAAAAAAAA.lixi.aGk')).toBeNull();
+        expect(decodeFragment('#1.40.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ')!.many).toBe(true);
+        expect(decodeFragment('#1.56.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ.' + 'A'.repeat(27))).toBeNull();
+        // Every flags value from 32 up: only 40..47 (a riddle, no spot) can be a link at all.
+        const tail = ['ab'.repeat(32) + '-5000', '1cd', 'aGk', 'cQ', 'A'.repeat(27)];
+        for (let f = 32; f < 64; f++) {
+            const fields = tail.filter((_, bit) => (f >> bit) & 1);
+            const got = decodeFragment(['#1', String(f), 'AAAAAAAAAAAAAAAAAAAAAA', 'lixi', ...fields].join('.'));
+            if (f >= 40 && f <= 47) {
+                expect(got?.many, String(f)).toBe(true);
+                expect(encodeLink(got!, origin).split('#')[1], String(f)).toBe(['1', String(f), 'AAAAAAAAAAAAAAAAAAAAAA', 'lixi', ...fields].join('.'));
+            } else expect(got, String(f)).toBeNull();
+        }
+        // Flags stop at 63.
+        expect(decodeFragment('#1.64.AAAAAAAAAAAAAAAAAAAAAA.lixi')).toBeNull();
+        expect(decodeFragment('#1.072.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ')).toBeNull();
+    });
+
     it('a riddle link written before there was a spot still reads the same, and has none', () => {
         const old = decodeFragment('#1.8.AAAAAAAAAAAAAAAAAAAAAA.lixi.cQ');
         expect(old).not.toBeNull();

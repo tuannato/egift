@@ -230,7 +230,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         if (outcome === 'taken') {
             // An address with a history and no money: this answer's gift is gone. It is not remembered as "the" answer:
             // someone who has the link but not the answer could have set this up, so another answer may still be tried.
-            say(h('p', { class: 'state-title' }, t('pkg.taken')), h('p', { class: 'state-next' }, t('pkg.riddle.taken.next')));
+            say(h('p', { class: 'state-title' }, t('pkg.taken')), h('p', { class: 'state-next' }, t(link.many === true ? 'pkg.riddle.taken.many' : 'pkg.riddle.taken.next')));
             answer.select?.();
             return;
         }
@@ -241,7 +241,7 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         cue.deny();
         answer.classList.add('input--bad');
         // Nothing at that address: no payment control, and the same warning an empty package carries.
-        say(h('p', { class: 'state-title' }, t('pkg.riddle.wrong')), h('p', { class: 'state-next' }, t(spot ? 'pkg.riddle.again' : 'pkg.riddle.wrong.next')));
+        say(h('p', { class: 'state-title' }, t('pkg.riddle.wrong')), h('p', { class: 'state-next' }, t(link.many === true ? 'pkg.riddle.wrong.many' : spot ? 'pkg.riddle.again' : 'pkg.riddle.wrong.next')));
         answer.select?.();
     }
     answer.addEventListener('input', () => answer.classList.remove('input--bad'));
@@ -264,7 +264,8 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         msg,
     );
     const title = h('h1', null, t('pkg.riddle.title'));
-    const lead = h('p', { class: 'lead' }, t('pkg.riddle.lead'));
+    // One link given to several people: said before anything is typed, so nobody compares answers and thinks theirs is wrong.
+    const lead = h('p', { class: 'lead' }, t(link.many === true ? 'pkg.riddle.lead.many' : 'pkg.riddle.lead'));
     /** The lock is shown as it is after its opening. */
     let standsOpen = false;
     // What stands in place of the question when the gift is not there to be opened: no field, no button, and the
@@ -479,7 +480,9 @@ const nameOf = (def: { readonly name: Readonly<Record<'vi' | 'en', string>> } | 
 export function mountPackage(root: HTMLElement, ctx: Ctx, link: PackageLink | null): Dispose {
     if (!link) return invalidPage(root, ctx);
     if (link.riddle !== undefined) {
-        const known = unlocked.get(secretId(link.secret));
+        // One link shared by several: the secret names no one gift, so an answer given here is not remembered for it.
+        // (The next person to open the same link in this tab must not land in the first person's gift.)
+        const known = link.many === true ? undefined : unlocked.get(secretId(link.secret));
         if (known) return entitledPackage(root, ctx, link, known);
         // The locked screen hands over to the gift's own screen in place, once the answer has opened it.
         let inner: Dispose = lockedPage(root, ctx, link, key => {

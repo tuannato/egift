@@ -6,8 +6,9 @@ import { RIDDLE_MAX_BYTES, WISH_MAX_BYTES } from './limits';
  *
  *   1.<flags>.<secret>.<wrapper>[.<item>][.<recipe>][.<wish>][.<riddle>][.<spot>]
  *
- * flags: a decimal number 0..31 with no leading zero; bit0 item, bit1 recipe,
- * bit2 wish, bit3 riddle, bit4 spot (only together with a riddle). Optional
+ * flags: a decimal number 0..63 with no leading zero; bit0 item, bit1 recipe,
+ * bit2 wish, bit3 riddle, bit4 spot (only together with a riddle), bit5 "shared by several" (only with a riddle,
+ * never with a spot, and with no field of its own). Optional
  * fields appear in that order, exactly when their bit is set. Every field has one canonical spelling, so a link decodes
  * to one value and back to the same string; anything else decodes to `null`.
  *
@@ -27,7 +28,7 @@ const WRAPPER_RE = /^[a-z0-9-]{1,24}$/;
 const RECIPE_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const TOKEN_ID_RE = /^[0-9a-f]{64}$/;
 const SATS_RE = /^[1-9][0-9]{0,15}$/;
-const FLAGS_RE = /^(?:[0-9]|[12][0-9]|3[01])$/;
+const FLAGS_RE = /^(?:[0-9]|[1-5][0-9]|6[0-3])$/;
 const PKH_BYTES = 20;
 const B64URL_RE = /^[A-Za-z0-9_-]*$/;
 
@@ -36,6 +37,8 @@ const FLAG_RECIPE = 2;
 const FLAG_WISH = 4;
 const FLAG_RIDDLE = 8;
 const FLAG_SPOT = 16;
+/** No field of its own: the link is shared by several people, each with an answer of their own. */
+const FLAG_MANY = 32;
 
 const B64URL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
@@ -158,6 +161,12 @@ export function encodeLink(link: PackageLink, origin: string): string {
         flags |= FLAG_SPOT;
         tail.push(b64urlEncode(link.spot));
     }
+    if (link.many !== undefined) {
+        if (link.many !== true) throw new Error('Invalid mark');
+        // Several gifts behind one link have several addresses: there is no one spot to name.
+        if (link.riddle === undefined || link.spot !== undefined) throw new Error('Only a riddle link without a spot is shared by several');
+        flags |= FLAG_MANY;
+    }
     const fragment = ['1', String(flags), b64urlEncode(link.secret), link.wrapper, ...tail].join('.');
     return `${origin.replace(/\/+$/, '')}/${link.wrapper}/#${fragment}`;
 }
@@ -181,6 +190,8 @@ function decodeStrict(hash: string): PackageLink | null {
     const flags = Number(parts[1]);
     // A spot belongs to a riddle: without one it would say nothing the secret does not.
     if (flags & FLAG_SPOT && !(flags & FLAG_RIDDLE)) return null;
+    // Shared by several: a riddle link, and one that names no single address.
+    if (flags & FLAG_MANY && (!(flags & FLAG_RIDDLE) || flags & FLAG_SPOT)) return null;
     const optionalCount = (flags & 1) + ((flags >> 1) & 1) + ((flags >> 2) & 1) + ((flags >> 3) & 1) + ((flags >> 4) & 1);
     if (parts.length !== 4 + optionalCount) return null;
 
@@ -240,5 +251,6 @@ function decodeStrict(hash: string): PackageLink | null {
     if (wish !== undefined) link.wish = wish;
     if (riddle !== undefined) link.riddle = riddle;
     if (spot !== undefined) link.spot = spot;
+    if (flags & FLAG_MANY) link.many = true;
     return link;
 }

@@ -901,7 +901,7 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
                 kind: one ? 'answers' : 'links',
                 gifts,
                 // One link for all carries no address: there are several.
-                ...(one ? { link: encodeLink({ ...common, secret: shared! }, location.origin) } : {}),
+                ...(one ? { link: encodeLink({ ...common, secret: shared!, many: true }, location.origin) } : {}),
                 wrapper,
                 ...(recipe !== undefined ? { recipe } : {}),
                 ...(text !== '' ? { wish: text } : {}),
