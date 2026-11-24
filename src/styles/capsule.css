@@ -432,17 +432,18 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
 :root[data-material="plate"] :is(.wordmark, .topbar-tools, .car-nav, .banner) {
     background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: inset 0 0 0 2px var(--seam);
 }
+/* The seams' corner pieces follow the cut corner; with any other corner there is no cut (`--c` unset) and none are drawn. */
 :root[data-material="plate"] .btn-primary:not(:disabled) {
     box-shadow: inset 0 0 0 2px var(--seam), inset 0 -5px 0 rgba(0, 0, 0, 0.2);
     background:
-        linear-gradient(135deg, var(--seam) 0 calc(var(--c) * 0.7071 + 2px), transparent 0) 0 0 / calc(var(--c) + 4px) calc(var(--c) + 4px) no-repeat,
-        linear-gradient(315deg, var(--seam) 0 calc(var(--c) * 0.7071 + 2px), transparent 0) 100% 100% / calc(var(--c) + 4px) calc(var(--c) + 4px) no-repeat,
+        linear-gradient(135deg, var(--seam) 0 calc(var(--c, 0px) * 0.7071 + 2px), transparent 0) 0 0 / calc(var(--c, 0px) + 4px) calc(var(--c, 0px) + 4px) no-repeat,
+        linear-gradient(315deg, var(--seam) 0 calc(var(--c, 0px) * 0.7071 + 2px), transparent 0) 100% 100% / calc(var(--c, 0px) + 4px) calc(var(--c, 0px) + 4px) no-repeat,
         var(--accent);
 }
 :root[data-material="plate"] :is(.wordmark, .topbar-tools, .car-nav, .banner) {
     background:
-        linear-gradient(135deg, var(--seam) 0 calc(var(--c) * 0.7071 + 2px), transparent 0) 0 0 / calc(var(--c) + 4px) calc(var(--c) + 4px) no-repeat,
-        linear-gradient(315deg, var(--seam) 0 calc(var(--c) * 0.7071 + 2px), transparent 0) 100% 100% / calc(var(--c) + 4px) calc(var(--c) + 4px) no-repeat,
+        linear-gradient(135deg, var(--seam) 0 calc(var(--c, 0px) * 0.7071 + 2px), transparent 0) 0 0 / calc(var(--c, 0px) + 4px) calc(var(--c, 0px) + 4px) no-repeat,
+        linear-gradient(315deg, var(--seam) 0 calc(var(--c, 0px) * 0.7071 + 2px), transparent 0) 100% 100% / calc(var(--c, 0px) + 4px) calc(var(--c, 0px) + 4px) no-repeat,
         var(--panel);
 }
 :root[data-material="plate"] .btn-secondary { box-shadow: inset 0 0 0 1.5px var(--seam); border-color: transparent; }

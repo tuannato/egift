@@ -60,4 +60,13 @@ describe('public/_headers', () => {
         const star = text.split(/\n(?=\S)/).find(b => b.startsWith('/*'))!;
         expect(star).not.toContain('Cache-Control');
     });
+
+    it('the corner size of a cut corner is never read where it may be unset: a rule that reads it unset loses its whole background', () => {
+        // \`--c\` is set only with a cut corner. Read without a default anywhere else, the background it sits in is
+        // dropped, and a button can lose its colour (it happened to the main button of every plate wrapper with soft corners).
+        const css = readFileSync(join(process.cwd(), 'src/styles/capsule.css'), 'utf8');
+        const bare = css.split('\n').filter(l => /var\(--c\)/.test(l) && !/--c:/.test(l));
+        expect(bare).toEqual([]);
+    });
 });
+
