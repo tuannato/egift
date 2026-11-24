@@ -380,7 +380,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
             return [
                 h('h1', { class: 'home-title' }, ...rich('home.title')),
                 h('p', { class: 'lead' }, t('home.lead')),
-                h('p', { class: 'guide home-hint' }, ribbon('bow'), h('span', null, t('home.hint', { n: WRAPPERS.length }))),
+                h('p', { class: 'guide home-hint' }, ribbon('bow'), h('span', null, t('home.hint'))),
                 h('button', { type: 'button', class: 'btn btn-primary home-go', onclick: go }, t('home.go')),
                 shelfFilter(),
                 cards(),

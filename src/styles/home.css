@@ -72,6 +72,8 @@
 /* A sliver wears its name down its length; an open door needs no tag: the counter says it. */
 .door[data-state="spine"] .door-tag { writing-mode: vertical-rl; padding: 12px 9px; max-width: none; max-height: 46%; }
 .door[data-state="spine"] .door-name { display: block; white-space: nowrap; text-overflow: ellipsis; }
+/* On a spine the label reads downwards: the heart follows the name along that line, and no longer stands beside it pushing it off centre. */
+.door[data-state="spine"] .door-tag { flex-direction: row; }
 .door[data-state="spine"] .door-price { display: none; }
 .door[data-state="open"] .door-tag { opacity: 0; }
 /* The last door: the wrappers that are not here yet. */

@@ -730,6 +730,9 @@ h2, .step-title, .state-title, .done-title { font: var(--d-weight) 17px / 1.25 v
     border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
 .hold-label { flex: none; }
+/* More than one thing in the package: the label takes a line of its own and the things stand in a row under it. */
+.hold[data-many] .hold-label { flex-basis: 100%; }
+.hold[data-many] { row-gap: 6px; }
 .hold-chip { font-size: 15px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 .hold-chip--none, .hold-chip--wait { color: var(--dim); font-weight: 500; }
 .hold-chip--ok .hold-mark { color: var(--ok); }

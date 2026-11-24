@@ -271,7 +271,8 @@ export const en: Record<keyof typeof vi, string> = {
 
     'home.title': 'eCash, wrapped into a link.',
     'home.lead': 'Pick a wrapper, put XEC inside, send the link. Whoever opens it takes the money home in seconds.',
-    'home.hint': "Tap a wrapper to try it on. The shelf holds {n}: swipe sideways to see more.",
+    'home.hint': "Tap a wrapper to try it on. Swipe for more.",
+    'created.withtoken.next': "You chose to add a token. Send it to the package, in step 2 above, before you send the link.",
     'home.shelf.label': 'The shelf of wrappers',
     'home.shelf.prev': "Earlier wrappers",
     'home.shelf.next': "More wrappers",

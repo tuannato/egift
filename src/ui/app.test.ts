@@ -691,6 +691,38 @@ describe('closing the tab on the funding step', () => {
         expect(getMade()!.saved).toBe(false);
     });
 
+    it('the last step, send the link, is not there until the gift is ready; then it has the link\'s buttons', async () => {
+        const clip = stubClipboard();
+        app = boot();
+        await createGift(app.root);
+        const step = app.root.querySelector('.step--send') as HTMLElement;
+        expect(step.hidden).toBe(true);
+        app.chain.fund(getMade()!.key.address, getMade()!.sats);
+        await flush();
+        expect(step.hidden).toBe(false);
+        expect(step.textContent).toContain(t('home.how.3.t'));
+        expect(step.textContent).toContain(t('created.funded.send'));
+        // An ordinary gift is not asked for a token.
+        expect([...step.querySelectorAll('p')].find(p => p.textContent === t('created.withtoken.next'))!.hidden).toBe(true);
+        buttonByText(step, t('link.copy')).click();
+        await flush();
+        expect(clip.written).toEqual([getMade()!.link]);
+    });
+
+    it('a gift that was to carry a token is reminded of it at the last step until the token is in', async () => {
+        app = boot();
+        await flush();
+        (app.root.querySelector('.opt-btn[data-opt="token"]') as HTMLButtonElement).click();
+        await createGift(app.root);
+        expect(getMade()!.withToken).toBe(true);
+        app.chain.fund(getMade()!.key.address, getMade()!.sats);
+        await flush();
+        const step = app.root.querySelector('.step--send') as HTMLElement;
+        expect(step.hidden).toBe(false);
+        const due = [...step.querySelectorAll('p')].find(p => p.textContent === t('created.withtoken.next'))!;
+        expect(due.hidden).toBe(false);
+    });
+
     it('stops-asking-once-the-person-starts-over', async () => {
         app = boot();
         await createGift(app.root);

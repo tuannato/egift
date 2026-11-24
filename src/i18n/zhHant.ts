@@ -271,7 +271,8 @@ export const zhHant: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash，包進一個連結。",
     'home.lead': "挑封套，放進 XEC，送出連結。誰打開它，幾秒內就能把錢領到錢包。",
-    'home.hint': "點一個包裝即可試穿。架上共有 {n} 款，左右滑動查看更多。",
+    'home.hint': "點一個包裝試穿，滑動查看更多。",
+    'created.withtoken.next': "你選擇了附帶代幣。請先在上面的第 2 步把代幣發到禮包，再傳送連結。",
     'home.shelf.label': "封套架",
     'home.shelf.prev': "前面的封套",
     'home.shelf.next': "後面的封套",

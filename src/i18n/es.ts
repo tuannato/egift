@@ -271,7 +271,8 @@ export const es: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash, envuelto en un enlace.",
     'home.lead': "Escoge un envoltorio, pon XEC dentro, envía el enlace. Quien lo abra se lleva el dinero a su billetera en segundos.",
-    'home.hint': "Toca un envoltorio para probarlo. En el estante hay {n}: desliza hacia los lados para ver más.",
+    'home.hint': "Toca un envoltorio para probarlo. Desliza para ver más.",
+    'created.withtoken.next': "Elegiste añadir un token. Envíalo al paquete en el paso 2, arriba, antes de enviar el enlace.",
     'home.shelf.label': "El estante de envoltorios",
     'home.shelf.prev': "Envoltorios anteriores",
     'home.shelf.next': "Más envoltorios",

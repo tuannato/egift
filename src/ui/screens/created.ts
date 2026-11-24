@@ -139,13 +139,30 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     const status = h('p', { class: 'status status--waiting', role: 'status', 'aria-live': 'polite' }, h('span', { class: 'status-dot', 'aria-hidden': 'true' }), statusText);
     // Built only once funded: until then there is nothing here to press.
     const afterFunded = h('div', { class: 'stack after-funded', hidden: true });
+    // Step 3, the last: send the link. Not there until the gift is ready; then it is where the giver is looking.
+    let firstPaint = true;
+    const sendStep = stepRow(3, t('home.how.3.t'), afterFunded);
+    sendStep.hidden = true;
+    sendStep.classList.add('step--send');
     // A token gift is not ready when its XEC is in: the token has to arrive too.
     const tokenOnly = made.tokenOnly === true;
     const tokenNext = h('p', { class: 'strong', hidden: true }, t('created.tokenonly.next'));
     let tokenIn = false;
     let taken = false;
+    // A gift the giver said would carry a token: reminded, not held back, until the token is seen in the package.
+    const withToken = made.withToken === true && !tokenOnly;
+    const tokenDue = h('p', { class: 'strong', hidden: true }, t('created.withtoken.next'));
+    let shownSend = false;
     const paintReady = (): void => {
         const ready = fundedOk && (!tokenOnly || tokenIn);
+        tokenDue.hidden = !(ready && withToken && !tokenIn);
+        sendStep.hidden = !ready;
+        // The step appears where the giver is when the money arrives: brought into view once.
+        if (ready && !shownSend) {
+            shownSend = true;
+            if (!firstPaint) sendStep.dispatchEvent(new CustomEvent('cap:show', { bubbles: true }));
+        }
+        firstPaint = false;
         // The title says the gift is ready only once all of it is in the package: until then it is a link to a
         // package that is not full. A gift that is gone says so. The way out is named for what comes next only when
         // nothing is left to do here.
@@ -204,7 +221,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
         void paintStamp(s);
         tokenBox.hidden = !(s !== null && s.kind === 'funded');
         void paintToken(s);
-        if (done && !afterFunded.firstChild) afterFunded.append(h('p', { class: 'strong' }, t('created.funded.send')), linkButtons({ link: made!.link, onSaved: unlock }));
+        if (done && !afterFunded.firstChild) afterFunded.append(tokenDue, h('p', { class: 'strong' }, t('created.funded.send')), linkButtons({ link: made!.link, onSaved: unlock, primary: true }));
     }
 
     // A token or an NFT beside the XEC. Offered only once the gift holds XEC (a token cannot pay its own
@@ -393,6 +410,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
     function paintHold(s: PackageState | null, held: readonly Held[] | null | 'unread'): void {
         lastState = s;
         clear(hold);
+        hold.removeAttribute('data-many');
         hold.append(h('span', { class: 'label hold-label' }, t('created.hold.label')));
         const chip = (final: boolean, ...kids: (Node | string)[]): HTMLElement =>
             h('span', { class: 'hold-chip' + (final ? ' hold-chip--ok' : ' hold-chip--wait') }, ...kids, h('span', { class: 'hold-mark' }, final ? ' ✓' : ' · ' + t('created.hold.wait')));
@@ -416,6 +434,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
             } else hold.append(chip(tk.final, `${formatAtoms(tk.atoms, meta.decimals, lang)} ${what}`));
         }
         if (held.length > 2) hold.append(h('span', { class: 'hold-chip' }, `+${held.length - 2}`));
+        hold.toggleAttribute('data-many', hold.querySelectorAll('.hold-chip').length > 1);
     }
     let tokSeq = 0;
     async function paintToken(s: PackageState | null): Promise<void> {
@@ -694,7 +713,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                     // The giver's own gift: a press on its reference copies where it is.
                     amountBlock({ text: amountText, label: t('gift.amount.label'), address: made.key.address, refLabel: t('gift.ref.label'), size: 'small', ref: copyRef(made.key.address, shortId(made.key.address)) }),
                     // The state of the package, near the top: once funded, what to do next is in view without scrolling.
-                    h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), tokenNext, afterFunded),
+                    h('div', { class: 'state-block' }, h('div', { class: 'status-wrap' }, h('p', { class: 'label' }, t('created.status.label')), status), tokenNext),
                     stepRow(1, t('created.step1.title'), h('p', null, t('created.step1.body')), linkBox({ link: made.link, onSaved: unlock, primary: !made.saved }), riddleNote),
                     stepRow(
                         2,
@@ -723,6 +742,7 @@ export function mountCreated(root: HTMLElement, ctx: Ctx): Dispose {
                         stampBox,
                         tokenBox,
                     ),
+                    sendStep,
                     rememberBox,
                     h('div', { class: 'startover' }, startOver),
                 ],

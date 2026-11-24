@@ -271,7 +271,8 @@ export const de: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash, verpackt in einen Link.",
     'home.lead': "Such eine Hülle aus, leg XEC hinein, verschick den Link. Wer ihn öffnet, holt das Geld in Sekunden ins Wallet.",
-    'home.hint': "Tippe eine Verpackung an, um sie anzuprobieren. Im Regal stehen {n}: wische seitwärts für mehr.",
+    'home.hint': "Tippe eine Verpackung an. Wische für mehr.",
+    'created.withtoken.next': "Du hast einen Token gewählt. Sende ihn in Schritt 2 oben an das Paket, bevor du den Link verschickst.",
     'home.shelf.label': "Das Regal mit den Hüllen",
     'home.shelf.prev': "Vorherige Hüllen",
     'home.shelf.next': "Weitere Hüllen",

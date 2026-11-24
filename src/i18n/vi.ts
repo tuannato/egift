@@ -269,7 +269,8 @@ export const vi = {
 
     'home.title': 'eCash, gói thành một đường link.',
     'home.lead': 'Chọn vỏ, bỏ XEC vào, gửi link đi. Người nhận mở ra và mang tiền về ví trong vài giây.',
-    'home.hint': "Chạm một vỏ để mặc thử. Kệ có {n} vỏ, vuốt ngang để xem thêm.",
+    'home.hint': "Chạm một vỏ để mặc thử. Vuốt để xem thêm.",
+    'created.withtoken.next': "Bạn đã chọn kèm token. Hãy gửi token vào gói ở bước 2 phía trên trước khi gửi link.",
     'home.shelf.label': 'Kệ vỏ quà',
     'home.shelf.prev': "Các vỏ trước",
     'home.shelf.next': "Các vỏ tiếp theo",

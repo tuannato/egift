@@ -271,7 +271,8 @@ export const ko: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash를 링크 하나에 담았어요.",
     'home.lead': "포장을 고르고, XEC를 넣고, 링크를 보내요. 링크를 연 사람은 몇 초 만에 돈을 지갑으로 가져가요.",
-    'home.hint': "포장을 누르면 입혀 볼 수 있어요. 선반에 {n}가지가 있습니다. 옆으로 밀어 더 보세요.",
+    'home.hint': "포장을 눌러 입혀 보세요. 밀어서 더 보기.",
+    'created.withtoken.next': "토큰을 함께 넣기로 하셨습니다. 링크를 보내기 전에 위 2단계에서 토큰을 패키지로 보내세요.",
     'home.shelf.label': "포장 진열대",
     'home.shelf.prev': "이전 포장",
     'home.shelf.next': "다음 포장",

@@ -271,7 +271,8 @@ export const fr: Record<keyof typeof vi, string> = {
 
     'home.title': "eCash, emballé dans un lien.",
     'home.lead': "Choisissez un emballage, mettez-y des XEC, envoyez le lien. La personne qui l'ouvre récupère l'argent dans son portefeuille en quelques secondes.",
-    'home.hint': "Touchez un emballage pour l’essayer. L’étagère en compte {n} : faites glisser sur le côté pour en voir plus.",
+    'home.hint': "Touchez un emballage pour l’essayer. Glissez pour en voir plus.",
+    'created.withtoken.next': "Vous avez choisi d’ajouter un token. Envoyez-le au paquet à l’étape 2 ci-dessus avant d’envoyer le lien.",
     'home.shelf.label': "L'étagère des emballages",
     'home.shelf.prev': "Emballages précédents",
     'home.shelf.next': "Emballages suivants",
