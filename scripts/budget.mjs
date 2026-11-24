@@ -5,6 +5,7 @@
  *
  *   - what the shop must fetch before it can draw (the entry script and what
  *     it preloads), gzipped
+ *   - the wrappers' scenes, fetched when the first one is needed, gzipped
  *   - the heavy piece (everything beyond the shop): the file that holds the
  *     page's own code, and that file with the signing core beside it, gzipped
  *   - the rules in `_headers` (the host reads at most 100)
@@ -17,12 +18,16 @@ import { join } from 'node:path';
 
 const KB = 1024;
 const LIMITS = {
-    entryGzip: 140 * KB, // the shop's own code with English; one more language adds about 9 kB
+    // The shop's own code with English (one more language adds about 9 kB). The wrappers' scenes are not part of it.
+    entryGzip: 140 * KB,
     // The heavy piece is what a gift's recipient waits for, in two files. The first holds the screens and the
     // libraries' own code: the part that grows with features. The second is the signing core, which only changes with
     // the library. They stood at 133 kB, and 1287 kB together, when the limits were set.
     heavyOwnGzip: 150 * KB,
     heavyGzip: 1310 * KB,
+    // Every wrapper's layers, opening and tune, fetched with the first scene that is touched or opened. About
+    // 1 kB per wrapper: the ceiling leaves room for about 120 of them.
+    wrappersGzip: 150 * KB,
     headerRules: 40,
     thumb: 90 * KB,
     card: 320 * KB,
@@ -44,6 +49,11 @@ const entry = eager.reduce((sum, f) => sum + gzipSync(readFileSync('dist' + f)).
 // The heavy piece is two files: the screens with the libraries' own code, and the signing core on its own.
 const named = re => readdirSync('dist/assets').filter(f => re.test(f));
 const heavyFiles = named(/^heavy-.*\.js$/);
+const wrapperFiles = named(/^wrappers-.*\.js$/);
+if (wrapperFiles.length !== 1) fail.push(`wrappers: expected one file, found ${wrapperFiles.length}`);
+// The wrappers' scenes are fetched when one is first needed: the shop must never fetch them before it draws.
+if (eager.some(f => /\/wrappers-/.test(f))) fail.push('the shop fetches every wrapper scene at once');
+const wrappersGz = wrapperFiles.reduce((s, f) => s + gzipSync(readFileSync(`dist/assets/${f}`)).length, 0);
 const signingFiles = named(/^signing-.*\.js$/);
 if (heavyFiles.length !== 1) fail.push(`heavy piece: expected one file, found ${heavyFiles.length}`);
 if (signingFiles.length !== 1) fail.push(`signing core: expected one file, found ${signingFiles.length}`);
@@ -59,6 +69,7 @@ const lines = [
     `shop code, gzipped: ${check('shop code (gzip)', entry, LIMITS.entryGzip)}`,
     `heavy piece, own code: ${check('heavy piece, own code (gzip)', heavyOwn, LIMITS.heavyOwnGzip)}`,
     `heavy piece, whole: ${check('heavy piece, whole (gzip)', heavyAll, LIMITS.heavyGzip)}`,
+    `wrapper scenes, gzipped: ${check('wrapper scenes (gzip)', wrappersGz, LIMITS.wrappersGzip)}`,
     `_headers rules: ${check('_headers rules', rules, LIMITS.headerRules, 'n')}`, `files: ${check('files in dist', files.length, LIMITS.files, 'n')}`,
 ];
 for (const id of readdirSync('dist/wrappers')) {

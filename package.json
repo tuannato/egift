@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vitest run && node scripts/colourways.mjs && node scripts/wrap-art.mjs && node scripts/art-version.mjs && tsc -p tsconfig.json --noEmit && vite build && node scripts/share-pages.mjs && node scripts/budget.mjs",
+    "build": "node scripts/shelf.mjs && vitest run && node scripts/colourways.mjs && node scripts/wrap-art.mjs && node scripts/art-version.mjs && tsc -p tsconfig.json --noEmit && vite build && node scripts/share-pages.mjs && node scripts/budget.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -26,10 +26,11 @@ const swap = (page, prop, value) => {
     if (!re.test(page)) throw new Error(`share-pages: index.html has no ${prop}`);
     return page.replace(re, `$1${value}$2`);
 };
-// A wrapper's page is where a gift link lands, and a gift needs the heavy piece: the page asks for its two files
+// A wrapper's page is where a gift link lands, and a gift needs the heavy piece and the wrappers' scenes: the page
+// asks for those files
 // while it is still being read, before the entry script has run. The shop's own page does not.
 const built = readdirSync('dist/assets');
-const ahead = [/^heavy-.*\.js$/, /^signing-.*\.js$/].map(re => {
+const ahead = [/^heavy-.*\.js$/, /^signing-.*\.js$/, /^wrappers-.*\.js$/].map(re => {
     const found = built.filter(f => re.test(f));
     if (found.length !== 1) throw new Error(`share-pages: expected one file for ${re}, found ${found.length}`);
     return `      <link rel="modulepreload" crossorigin href="/assets/${found[0]}">\n`;

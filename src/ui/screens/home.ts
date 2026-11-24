@@ -3,14 +3,13 @@ import { explorerRef } from '../explorer';
 import { rich } from '../ecash';
 import { downloadKeepsake, forgetSent, keptRef, keptTokenText, keptWhen, loadKept, loadSent, removeKept } from '../kept';
 import type { Sent } from '../kept';
-import { dressed } from '../../wrappers/looks';
 import { keepsakeLook } from '../keepsakeArt';
 import type { KeepsakeLook } from '../keepsakeArt';
-import { WRAPPERS, isHoliday, offerOf, wrapperById, inLang } from '../../wrappers';
+import { isHoliday, offerOf, inLang } from '../../wrappers/meta';
+import { SHELF as WRAPPERS, shelfById as wrapperById, fullWrapper, loadWrappers, type ShelfDef } from '../../wrappers/shelf';
 import { doorUrl, thumbUrl } from '../../wrappers/artUrl';
 import { formatXec } from '../../core/money';
 import type { PackageState } from '../../core';
-import type { WrapperDef } from '../../stage';
 import { h, svg } from '../dom';
 import type { Dispose } from '../dom';
 import type { Ctx } from '../ctx';
@@ -56,13 +55,18 @@ export function resetHome(): void {
 }
 
 interface Door {
-    readonly def: WrapperDef;
+    /** What the shelf knows of the wrapper. Its scene is fetched (`fullWrapper`) only when the door is worn. */
+    readonly def: ShelfDef;
     readonly el: HTMLElement;
     readonly art: HTMLElement;
     readonly btn: HTMLButtonElement;
     card: StageCard;
     /** The door's scene is mounted. A door far along the shelf has none: twenty-four scenes at once is more than a phone should run. */
     live: boolean;
+    /** The door is meant to carry its scene (it is worn): set at once, the scene follows when its definition is here. */
+    want: boolean;
+    /** Counts the asks for a scene, so that only the last one mounts it. */
+    asked: number;
 }
 
 /**
@@ -88,8 +92,11 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         if (v === 'how' || v === 'about' || v === 'workshop' || v === 'market') view = v;
     }
     let previewing = false;
+    /** The "watch it open" button on the counter, while it is in view: shown once the worn door's scene is mounted. */
+    let playBtn: HTMLButtonElement | null = null;
+    let disposed = false;
     /** The price on a door and on the counter: what the shelf says the wrapper costs to send with. */
-    const price = (def: WrapperDef): string => {
+    const price = (def: ShelfDef): string => {
         const offer = offerOf(def);
         return offer.kind === 'free' ? t('home.price.free') : `${formatXec(offer.sats, lang)} XEC`;
     };
@@ -109,7 +116,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     }
     let narrow: Narrow = { fav: false, holiday: false, price: 'all' };
     const narrowed = (f: Narrow = narrow): boolean => f.fav || f.holiday || f.price !== 'all';
-    const fits = (def: WrapperDef, f: Narrow, favs: ReadonlySet<string>): boolean =>
+    const fits = (def: ShelfDef, f: Narrow, favs: ReadonlySet<string>): boolean =>
         (!f.fav || favs.has(def.id)) && (!f.holiday || isHoliday(def)) && (f.price === 'all' || (offerOf(def).kind === 'free') === (f.price === 'free'));
     const countOf = (f: Narrow, favs: ReadonlySet<string> = new Set(loadFavs())): number => WRAPPERS.filter(def => fits(def, f, favs)).length;
 
@@ -120,11 +127,11 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     // A door is a narrow window onto the scene, so its picture is the middle of the still, cut out and sharper
     // (`doorUrl`). When few doors are on the shelf they grow wider than that cut: then the whole still is used.
     let roomy = false;
-    const dressStill = (img: HTMLElement, def: WrapperDef): void => {
+    const dressStill = (img: HTMLElement, def: ShelfDef): void => {
         img.className = roomy ? 'door-still' : 'door-still door-still--cut';
         img.setAttribute('src', roomy ? thumbUrl(def.id) : doorUrl(def.id));
     };
-    const still = (def: WrapperDef): StageCard => {
+    const still = (def: ShelfDef): StageCard => {
         const img = h('img', { alt: '', loading: 'lazy', decoding: 'async', draggable: 'false' });
         dressStill(img, def);
         return { el: h('div', { class: 'stage-card' }, img), handle: null, overlay: h('div', null), destroy() {} };
@@ -150,7 +157,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         // A door carries its own theme, so its tag is a small piece of that world whatever the page wears.
         applyTheme(def, el);
         el.style.setProperty('--door-bg', def.backdrop);
-        return { def, el, art, btn, card, live: false };
+        return { def, el, art, btn, card, live: false, want: false, asked: 0 };
     });
     // The last door is not a wrapper: it stands for the ones that are not here yet.
     const soon = h(
@@ -198,14 +205,30 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         if (typeof to.el.scrollIntoView === 'function') to.el.scrollIntoView({ behavior: calmScroll(), inline: 'center', block: 'nearest' });
     });
 
+    /**
+     * Give a door its live scene (again, when it already has one). The wrappers' scenes are fetched the first time
+     * one is needed; until then the door keeps its picture. Asked again before they arrive, it is mounted once.
+     */
     function remount(d: Door): void {
-        d.card.destroy();
-        d.card = stageCard(d.def);
-        d.live = true;
-        d.art.replaceChildren(d.card.el);
+        d.want = true;
+        const ask = ++d.asked;
+        void fullWrapper(d.def.id).then(full => {
+            if (disposed || !d.want || ask !== d.asked || full === undefined) return;
+            d.card.destroy();
+            d.card = stageCard(full);
+            d.live = true;
+            d.art.replaceChildren(d.card.el);
+            // The scene is what "watch it open" plays, and the wrapper's own tune is part of the page it dresses.
+            if (worn === d.def.id) {
+                applyTheme(full);
+                if (playBtn) playBtn.hidden = !d.card.handle;
+            }
+        });
     }
     /** Take a door's scene down: back to its picture. */
     function rest(d: Door): void {
+        d.want = false;
+        d.asked++;
         if (!d.live) return;
         d.card.destroy();
         d.card = still(d.def);
@@ -309,7 +332,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     }
 
     /** The heart of the wrapper that is worn. */
-    function favButton(def: WrapperDef): HTMLElement {
+    function favButton(def: ShelfDef): HTMLElement {
         const on = isFav(def.id);
         const b = h('button', { type: 'button', class: 'home-fav', 'aria-pressed': String(on), 'aria-label': t(on ? 'home.fav.remove' : 'home.fav.add') }, heart());
         b.addEventListener('click', () => {
@@ -400,6 +423,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         const playMark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, class: 'home-play-mark', 'aria-hidden': 'true', focusable: 'false' }, svg('path', { class: 'home-play-go', d: 'M8 5.5v13l11-6.5z' }), svg('path', { class: 'home-play-back', d: 'M7 7h10v10H7z' }));
         const play = h('button', { type: 'button', class: 'home-play', 'data-on': previewing ? 'yes' : 'no' }, playMark, playText);
         play.hidden = !door.card.handle;
+        playBtn = play;
         play.addEventListener('click', () => {
             if (previewing) {
                 // Back to the closed wrapper, idle loop and all: a fresh stage. Its tune ends with it.
@@ -554,13 +578,23 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         const list = all.slice(at * PAGE_ROWS, (at + 1) * PAGE_ROWS);
         const cards = list.map(k => {
             const plain = wrapperById(k.wrapper);
-            // The record wears what the gift wore.
-            const def = plain ? dressed(plain, k.dress) : undefined;
-            const name = nameOf(def);
+            const name = nameOf(plain);
             const card = h('li', { class: 'kept-card' });
-            // The wrapper's still picture, made ready before any press: the download itself must not wait.
+            // The wrapper's still picture, made ready before any press: the download itself must not wait. The record
+            // wears what the gift wore, so the full definition is fetched and dressed in the record's look first.
             let look: KeepsakeLook | null = null;
-            void keepsakeLook(def).then(l => (look = l));
+            const dressedDef = plain
+                ? Promise.all([loadWrappers(), import('../../wrappers/looks')]).then(([m, looks]) => {
+                      const full = m.wrapperById(k.wrapper);
+                      return full ? looks.dressed(full, k.dress) : undefined;
+                  })
+                : Promise.resolve(undefined);
+            void dressedDef.then(keepsakeLook).then(
+                l => (look = l),
+                () => {
+                    /* no picture: the download carries the words alone */
+                },
+            );
             if (k.wish) {
                 const wish = h('blockquote', { class: 'wish-text kept-wish' });
                 setUserText(wish, k.wish);
@@ -872,6 +906,7 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
     };
     document.addEventListener('visibilitychange', onSight);
     return () => {
+        disposed = true;
         document.removeEventListener('visibilitychange', onSight);
         score.stop();
         window.removeEventListener('resize', fitStills);

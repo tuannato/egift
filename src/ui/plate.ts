@@ -1,4 +1,4 @@
-import { inLang } from '../wrappers';
+import { inLang } from '../wrappers/meta';
 import type { WrapperDef } from '../stage';
 import { getLang } from '../i18n';
 import { setAmbient } from './ambient';

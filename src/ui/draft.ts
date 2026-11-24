@@ -1,5 +1,5 @@
 import { DEFAULT_WRAPPER } from '../core/limits';
-import { WRAPPERS } from '../wrappers';
+import { SHELF as WRAPPERS } from '../wrappers/shelf';
 import { coversFee } from './prefs';
 
 /**
