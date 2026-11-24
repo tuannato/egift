@@ -24,6 +24,7 @@ const SHIPPED = [
     'airmail', 'beacon', 'lotus', 'keys', 'domino', 'chest',
     'aurora', 'pop', 'flap', 'drone', 'stars', 'umbrella', 'starship', 'terminal',
     'hanukkiah', 'harvest', 'bauble', 'shutters', 'fir',
+    'midnight', 'balldrop', 'confetti',
 ] as const;
 
 describe('links are forever', () => {

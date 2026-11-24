@@ -60,6 +60,9 @@ import { fir } from './fir';
 
 /** The built-in wrappers, in the order the picker shows them. */
 import { lock } from './lock';
+import { midnight } from './midnight';
+import { balldrop } from './balldrop';
+import { confetti } from './confetti';
 
 /**
  * The wrapper of a locked gift, before its riddle is answered: whatever the
@@ -68,7 +71,7 @@ import { lock } from './lock';
  */
 export const LOCK_WRAPPER: WrapperDef = lock;
 
-export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit, curtain, medal, neon, sakura, compass, cylinder, airmail, beacon, lotus, keys, domino, chest, aurora, pop, flap, drone, stars, umbrella, starship, terminal, hanukkiah, harvest, bauble, shutters, fir];
+export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit, curtain, medal, neon, sakura, compass, cylinder, airmail, beacon, lotus, keys, domino, chest, aurora, pop, flap, drone, stars, umbrella, starship, terminal, hanukkiah, harvest, bauble, shutters, fir, midnight, balldrop, confetti];
 
 export function wrapperById(id: string): WrapperDef | undefined {
     return WRAPPERS.find(w => w.id === id);
@@ -132,6 +135,7 @@ export type Offer = { readonly kind: 'free' } | ({ readonly kind: 'paid' } & Wra
 const HOLIDAY: ReadonlySet<string> = new Set([
     'lixi', 'dopaper', 'fireworks', 'lantern', 'archmoon', 'rangoli', 'pumpkin', 'snowbox',
     'hanukkiah', 'harvest', 'bauble', 'shutters', 'fir',
+    'midnight', 'balldrop', 'confetti',
 ]);
 export function isHoliday(def: Pick<WrapperDef, 'id'>): boolean {
     return HOLIDAY.has(def.id);
