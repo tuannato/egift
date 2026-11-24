@@ -98,8 +98,20 @@
 .home-kicker { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0; }
 .home-price { padding: 4px 9px; border-radius: var(--r-chip); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--ink); letter-spacing: 0.12em; }
 .home-blurb { margin: 0; font-size: 14.5px; line-height: 1.45; color: var(--dim); }
-.home-row { display: flex; align-items: center; flex-wrap: wrap; column-gap: 16px; row-gap: 2px; margin-top: -4px; }
+.home-row { display: flex; align-items: center; flex-wrap: wrap; column-gap: 16px; row-gap: 6px; margin-top: -2px; }
 .home-row .btn { min-height: 34px; padding: 0; }
+/* Watch it open: a button with its own outline, in the wrapper's accent; quieter than the one that wraps a gift. */
+.home-play {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px 0 12px; margin: 0; border: 0; cursor: pointer;
+    border-radius: var(--r-ctl); background: none; color: var(--ink); font: 600 14px / 1 var(--text); letter-spacing: -0.005em;
+    box-shadow: inset 0 0 0 1.5px var(--accent); -webkit-tap-highlight-color: transparent;
+}
+.home-play:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-play-mark { flex: none; fill: var(--accent); }
+.home-play[data-on="no"] .home-play-back, .home-play[data-on="yes"] .home-play-go { display: none; }
+@media (hover: hover) {
+    .home-play:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+}
 .home-by { margin-left: auto; font: 500 10px / 1.3 var(--mono); letter-spacing: 0.08em; color: var(--mute); }
 /* One row that scrolls sideways: the counter stays low. */
 .home-tab { flex: none; white-space: nowrap; }

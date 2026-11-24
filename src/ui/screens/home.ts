@@ -394,7 +394,11 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
         setUserText(blurb, (def.blurb ? inLang(def.blurb, lang) : ''));
         const by = h('span', { class: 'home-by' });
         setUserText(by, t('home.by', { credit: def.credit ?? DEFAULT_CREDIT }));
-        const play = h('button', { type: 'button', class: 'btn btn-quiet home-play' }, previewing ? t('home.preview.reset') : t('home.preview.play'));
+        // "Watch it open": a button in its own right, smaller than the one that wraps a gift. Its mark is a play
+        // triangle, and a square while the opening is on show (a press then puts the wrapper back).
+        const playText = h('span', null, previewing ? t('home.preview.reset') : t('home.preview.play'));
+        const playMark = svg('svg', { viewBox: '0 0 24 24', width: 16, height: 16, class: 'home-play-mark', 'aria-hidden': 'true', focusable: 'false' }, svg('path', { class: 'home-play-go', d: 'M8 5.5v13l11-6.5z' }), svg('path', { class: 'home-play-back', d: 'M7 7h10v10H7z' }));
+        const play = h('button', { type: 'button', class: 'home-play', 'data-on': previewing ? 'yes' : 'no' }, playMark, playText);
         play.hidden = !door.card.handle;
         play.addEventListener('click', () => {
             if (previewing) {
@@ -407,7 +411,8 @@ export function mountHome(root: HTMLElement, ctx: Ctx): Dispose {
                 cue.open();
                 void door.card.handle?.open().catch(() => {});
             }
-            play.textContent = previewing ? t('home.preview.reset') : t('home.preview.play');
+            playText.textContent = previewing ? t('home.preview.reset') : t('home.preview.play');
+            play.dataset.on = previewing ? 'yes' : 'no';
         });
         return [
             // The number is the wrapper's place on the whole shelf: it is left out while the shelf is narrowed.
