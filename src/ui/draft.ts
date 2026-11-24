@@ -24,6 +24,8 @@ export const draft = {
     people: [] as { name: string; amount: string; answer: string }[],
     peopleOpen: false,
     oneLink: false,
+    /** The options open on the create step, in the order they were opened: their panels stand in that order. */
+    optOrder: [] as ('people' | 'token' | 'riddle')[],
 };
 
 /** The wrapper the shop handed over (or the last one picked on the create step). */

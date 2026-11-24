@@ -126,4 +126,20 @@ describe('the three options on the create step', () => {
         expect(getMade()!.withToken).toBe(true);
         expect(draft.withToken).toBe(false);
     });
+
+    it('a panel opened later stands under those opened before it, and a cancelled one leaves its place', async () => {
+        await toCreate();
+        const order = (): string[] => [...$('.opts').children].filter(el => el.classList.contains('opt-panel') && !(el as HTMLElement).hidden).map(el => (el as HTMLElement).dataset.opt!);
+        btn('riddle').click();
+        btn('people').click();
+        expect(order()).toEqual(['riddle', 'people']);
+        btn('token').click();
+        expect(order()).toEqual(['riddle', 'people', 'token']);
+        cancel('people');
+        expect(order()).toEqual(['riddle', 'token']);
+        btn('people').click();
+        expect(order()).toEqual(['riddle', 'token', 'people']);
+        // The buttons left are always under the panels.
+        expect($('.opts').lastElementChild).toBe($('.opt-btns'));
+    });
 });

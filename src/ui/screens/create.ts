@@ -310,6 +310,13 @@ export function mountCreate(root: HTMLElement, ctx: Ctx): Dispose {
         peoplePanel.hidden = !open.people;
         tokenPanel.hidden = !open.token;
         riddlePanel.hidden = !open.riddle;
+        // The panels stand in the order they were opened: one opened later comes under those opened before it.
+        // Only a panel out of place is moved, so a panel being typed in keeps its focus.
+        draft.optOrder = draft.optOrder.filter(id => open[id]);
+        for (const id of ['people', 'token', 'riddle'] as const) if (open[id] && !draft.optOrder.includes(id)) draft.optOrder.push(id);
+        const panels = { people: peoplePanel, token: tokenPanel, riddle: riddlePanel };
+        const want = [...draft.optOrder.map(id => panels[id]), ...(['people', 'token', 'riddle'] as const).filter(id => !open[id]).map(id => panels[id])];
+        if (want.some((el, i) => options.children[i] !== el)) for (const el of want) options.insertBefore(el, optButtons);
         peopleBtn.hidden = open.people;
         tokenBtn.hidden = open.token;
         riddleBtn.hidden = open.riddle;
