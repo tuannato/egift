@@ -370,6 +370,8 @@ export const vi = {
     'people.confirm.slot': "{n} dòng dùng chung đáp án này: mỗi lần trả lời đúng mở một phần.",
     'pkg.many.left': "Còn {k}/{n} phần quà chưa được mang về.",
     'pkg.many.none': "Mọi phần quà trong link này đã được mang về.",
+    'pkg.many.left.short': "Còn {k}/{n} phần quà",
+    'pkg.many.none.short': "Đã hết quà",
     'sent.group.title': "{n} quà tạo cùng lượt",
     'sent.group.left': "Còn {k}/{n} quà chưa ai mang về",
     'sent.group.reading': "Đang đọc trạng thái các quà…",

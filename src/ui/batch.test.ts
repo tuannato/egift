@@ -439,7 +439,8 @@ describe('a shared link that names its gifts', () => {
         const url = encodeLink({ version: 1, secret, wrapper: 'signal', riddle: 'Your word?', many: true, spots: s.map(k => k.pkh) }, location.origin);
         history.replaceState(null, '', '/' + url.slice(url.indexOf('#')));
         app = boot(chain);
-        await until(() => app!.root.textContent!.includes(t('pkg.many.left', { k: 2, n: 3 })));
+        await until(() => app!.root.textContent!.includes(t('pkg.many.left.short', { k: 2, n: 3 })));
+        expect(app!.root.querySelector('.many-left')!.getAttribute('aria-label')).toBe(t('pkg.many.left', { k: 2, n: 3 }));
         // One dot for each gift, filled while it is there.
         expect([...app!.root.querySelectorAll<HTMLElement>('.many-dot')].map(d => d.dataset.on)).toEqual(['yes', 'yes', 'no']);
         expect(app!.root.querySelector<HTMLElement>('.many-left')!.dataset.none).toBe('no');

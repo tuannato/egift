@@ -372,6 +372,8 @@ export const ko: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "{n}개 줄이 이 정답을 함께 써요. 정답을 맞힐 때마다 그중 하나가 열려요.",
     'pkg.many.left': "선물 {n}개 중 {k}개가 아직 남아 있어요.",
     'pkg.many.none': "이 링크의 선물은 모두 이미 가져갔어요.",
+    'pkg.many.left.short': "남은 선물 {k}/{n}",
+    'pkg.many.none.short': "선물이 모두 나갔습니다",
     'sent.group.title': "함께 만든 선물 {n}개",
     'sent.group.left': "{n}개 중 {k}개 아직 안 가져감",
     'sent.group.reading': "선물을 읽는 중…",

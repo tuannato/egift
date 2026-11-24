@@ -372,6 +372,8 @@ export const ja: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "{n} 行がこの答えを共有しています。正しく答えるたびに、そのうちの 1 つが開きます。",
     'pkg.many.left': "{n} 個中 {k} 個のギフトがまだ残っています。",
     'pkg.many.none': "このリンクのギフトはすべて取り出し済みです。",
+    'pkg.many.left.short': "残り {k}/{n} 個",
+    'pkg.many.none.short': "ギフトはもうありません",
     'sent.group.title': "まとめて作った {n} 個のギフト",
     'sent.group.left': "{n} 個中 {k} 個が未取り出し",
     'sent.group.reading': "ギフトを読み込み中…",

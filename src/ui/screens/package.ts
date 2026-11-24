@@ -168,7 +168,9 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
         }
         const n = link.spots.length;
         leftDots.replaceChildren(...Array.from({ length: n }, (_, i) => h('span', { class: 'many-dot', 'data-on': i < there ? 'yes' : 'no' })));
-        leftText.textContent = there === 0 ? t('pkg.many.none') : t('pkg.many.left', { k: there, n });
+        leftText.textContent = there === 0 ? t('pkg.many.none.short') : t('pkg.many.left.short', { k: there, n });
+        // The pill is short; the whole sentence is what a screen reader says.
+        left.setAttribute('aria-label', there === 0 ? t('pkg.many.none') : t('pkg.many.left', { k: there, n }));
         left.dataset.none = there === 0 ? 'yes' : 'no';
         left.hidden = false;
     }

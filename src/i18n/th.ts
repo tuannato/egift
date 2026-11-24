@@ -372,6 +372,8 @@ export const th: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "{n} แถวใช้คำตอบนี้ร่วมกัน ตอบถูกแต่ละครั้งจะเปิดหนึ่งแถว",
     'pkg.many.left': "ของขวัญยังอยู่ {k} จาก {n} ชิ้น",
     'pkg.many.none': "ของขวัญทุกชิ้นในลิงก์นี้มีคนนำไปแล้ว",
+    'pkg.many.left.short': "เหลือ {k}/{n} ชิ้น",
+    'pkg.many.none.short': "ของขวัญหมดแล้ว",
     'sent.group.title': "ของขวัญ {n} ชิ้นที่สร้างพร้อมกัน",
     'sent.group.left': "ยังไม่มีคนนำไป {k} จาก {n} ชิ้น",
     'sent.group.reading': "กำลังอ่านของขวัญ…",

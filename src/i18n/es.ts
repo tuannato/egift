@@ -372,6 +372,8 @@ export const es: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "{n} filas comparten esta respuesta: cada respuesta correcta abre una de ellas.",
     'pkg.many.left': "Siguen aquí: {k} de {n} regalos.",
     'pkg.many.none': "Todos los regalos de este enlace ya fueron retirados.",
+    'pkg.many.left.short': "Quedan {k}/{n} regalos",
+    'pkg.many.none.short': "No quedan regalos",
     'sent.group.title': "{n} regalos creados juntos",
     'sent.group.left': "Sin retirar: {k} de {n}",
     'sent.group.reading': "Leyendo los regalos…",

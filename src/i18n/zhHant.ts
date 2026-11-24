@@ -372,6 +372,8 @@ export const zhHant: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "有 {n} 行共用這個答案：每答對一次，就打開其中一份。",
     'pkg.many.left': "{n} 份禮物中還有 {k} 份在這裡。",
     'pkg.many.none': "這個連結裡的禮物都已被領走。",
+    'pkg.many.left.short': "還剩 {k}/{n} 份",
+    'pkg.many.none.short': "禮物已領完",
     'sent.group.title': "一起建立的 {n} 份禮物",
     'sent.group.left': "{n} 份中有 {k} 份還沒被領走",
     'sent.group.reading': "正在讀取禮物…",

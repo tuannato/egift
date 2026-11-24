@@ -372,6 +372,8 @@ export const id: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "{n} baris memakai jawaban ini bersama: tiap jawaban yang benar membuka salah satunya.",
     'pkg.many.left': "{k} dari {n} hadiah masih ada.",
     'pkg.many.none': "Semua hadiah di tautan ini sudah diambil.",
+    'pkg.many.left.short': "Sisa {k}/{n} hadiah",
+    'pkg.many.none.short': "Hadiah sudah habis",
     'sent.group.title': "{n} hadiah dibuat bersamaan",
     'sent.group.left': "{k} dari {n} belum diambil",
     'sent.group.reading': "Membaca hadiah…",

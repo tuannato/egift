@@ -372,6 +372,8 @@ export const ru: Record<keyof typeof vi, string> = {
     'people.confirm.slot': "Строк с этим ответом: {n}. Каждый верный ответ открывает одну из них.",
     'pkg.many.left': "Ещё на месте: {k} из {n}.",
     'pkg.many.none': "Все подарки по этой ссылке уже забрали.",
+    'pkg.many.left.short': "Осталось {k}/{n} подарков",
+    'pkg.many.none.short': "Подарков не осталось",
     'sent.group.title': "Подарки, созданные вместе: {n}",
     'sent.group.left': "Ещё не забрали: {k} из {n}",
     'sent.group.reading': "Читаем подарки…",
