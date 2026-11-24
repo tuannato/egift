@@ -1,155 +1,171 @@
 import type { IdleStep, NoteDef, Step, WrapperDef } from '../stage/format';
 
 /**
- * Confetti drop — for the New Year, or any big celebration. The view is
- * straight up at a party ceiling, in flat cut paper: charcoal coffers with a
- * warm lamp in each corner, crepe streamers crossing from wall to wall, two
- * strings of plain pennants, and across the middle a banded drop-bag, roped
- * at its upper corners and packed with paper, held shut by one cord with a
- * pull ring.
- * Opening: the ring is pulled and the cord shivers, then drops away; the bag
- * splits down its seam and each half swings down about its outer corner to
- * hang by the wall; sheets of paper come down toward the viewer in five planes, the
- * near ones larger and faster, and go by; three streamer rolls drop from
- * above and uncoil; in the gap the bag leaves, the ceiling rose stands in its
- * own light. Afterwards the streamers sway out of step and a few gold sheets,
- * still in the air, twinkle.
+ * Confetti drop — for the New Year, or any big celebration, on a LIGHT ground
+ * (unlike `midnight` and `balldrop`, which are gold on night). The view is
+ * straight up at an ivory ceiling, in bold cut paper: a wide, shallow plaster
+ * medallion drawn as a few flat sand forms, a quiet cornice, and slung across
+ * the middle a fine ink net holding a heap of large cut-paper pieces (fronds,
+ * leaves, half-moons, arches, a few discs and blocks) in mustard, terracotta,
+ * deep teal, sand and a little ink. One knot gathers the net at the middle, a
+ * short cord hangs from it.
+ * Opening: the cord is pulled and the knot lets go; each half of the net swings
+ * down about its hook at the outer top corner; the heap comes down toward the
+ * viewer in six planes, the near ones larger and faster, each turning a little,
+ * and leaves through the edges of the frame; small leaves sparkle; in the
+ * cleared middle a gold disc of light rises with soft rays. Open, the two
+ * halves hang at the sides and three large pieces rest in the corners.
  *
- * The stage moves, turns, scales and fades whole layers: a sheet "comes
- * nearer" by its layer growing about the middle of the canvas while it sinks,
- * and a roll "uncoils" by its ribbon growing from the top.
+ * The stage scales whole layers about a pivot inside their box, so a plane
+ * "comes nearer" by scaling about its own centre while it slides by
+ * (k - 1) x (its centre - the focus): the same as scaling about the focus.
  *
  * Canvas 360x450. The art is generated in canvas coordinates
  * (scripts/art/confetti.gen.mjs): each SVG's viewBox is its box. The boxes
- * and pivots below are copied by hand from what the generator prints.
+ * below are copied by hand from what the generator prints.
  */
 
-/** How far each half of the bag swings about its strapped upper outer corner, in degrees. */
-const SWING = 58;
-/** The moment the cord lets go and the bag splits. */
-const SPLIT = 460;
-/** The box every plane of confetti is drawn in, round the middle of the canvas. */
-const CBOX: readonly [number, number, number, number] = [105, 130, 150, 190];
-/** The planes that go by, far to near: when each starts, how long it takes, how large it gets, how far it sinks. */
-const FALLS: readonly (readonly [string, number, number, number, number])[] = [
-    ['fall-a', SPLIT + 150, 2300, 2.5, 250],
-    ['fall-b', SPLIT + 110, 1900, 3.1, 330],
-    ['fall-c', SPLIT + 70, 1550, 3.7, 420],
-    ['fall-d', SPLIT + 30, 1250, 4, 520],
+type Box = readonly [number, number, number, number];
+/** The focus, in canvas units: the knot, and where the light rises. */
+const FX = 180, FY = 218;
+/** The moment the knot lets go. */
+const LET_GO = 440;
+/** How far each half of the net swings about its hook, in degrees. */
+const SWING = 74;
+
+const BOX: Readonly<Record<string, Box>> = {
+    ceiling: [0, 0, 360, 450],
+    glow: [48, 86, 264, 264],
+    'rest-a': [-15, 292, 130, 200],
+    'rest-b': [282, -23, 127, 121],
+    'rest-c': [248, 351, 140, 118],
+    'rest-d': [222, 420, 56, 56],
+    'heap-a': [23, 97, 328, 264],
+    'heap-b': [18, 99, 146, 253],
+    'heap-c': [204, 119, 150, 251],
+    'heap-d': [103, 80, 190, 65],
+    'heap-e': [89, 278, 212, 79],
+    'heap-f': [104, 164, 149, 143],
+    'net-l': [3, 82, 180, 272],
+    'net-r': [177, 82, 180, 272],
+    knot: [163, 201, 34, 34],
+    cord: [172, 222, 16, 94],
+    bit: [174, 215, 12, 6],
+};
+
+/**
+ * The planes of the heap, far to near: when each starts, how long it takes, how large it grows, an extra
+ * drift on top of growing away from the focus, and how far it turns.
+ */
+const PLANES: readonly (readonly [string, number, number, number, number, number, number])[] = [
+    ['heap-a', 680, 1000, 2.8, 0, 40, 6],
+    ['heap-b', 660, 1200, 2.5, -120, 70, -14],
+    ['heap-c', 680, 1200, 2.5, 120, 70, 13],
+    ['heap-d', 640, 1100, 2.4, 0, -120, 9],
+    ['heap-e', 600, 1000, 2.8, 0, 190, -10],
+    ['heap-f', 580, 900, 3.4, 0, 130, 12],
 ];
-/** The rolls: when each drops, and how long it takes to run out. */
-const ROLLS: readonly (readonly [string, number, number])[] = [['roll-b', 900, 900], ['roll-a', 1080, 820], ['roll-c', 1280, 700]];
+
+/** A plane grown by `k` about the focus: the slide that goes with scaling about its own centre. */
+function nearer(id: string, k: number, dx: number, dy: number): { x: number; y: number } {
+    const [x, y, w, h] = BOX[id]!;
+    return { x: Math.round((k - 1) * (x + w / 2 - FX) + dx), y: Math.round((k - 1) * (y + h / 2 - FY) + dy) };
+}
 
 const open: Step[] = [
-    // 1. The ring is pulled: the cord tightens and the bag shivers on its ropes.
-    { kind: 'move', layer: 'ring', at: 0, dur: 380, ease: 'in', to: { y: 14 } },
-    { kind: 'shake', layer: 'ring', at: 120, dur: 340, amp: 2.2, times: 3 },
-    { kind: 'shake', layer: 'bag-l', at: 160, dur: 300, amp: 2.6, times: 2 },
-    { kind: 'shake', layer: 'bag-r', at: 160, dur: 300, amp: -2.6, times: 2 },
-    // 2. The cord lets go and drops out of the frame.
-    { kind: 'move', layer: 'ring', at: SPLIT, dur: 620, ease: 'in', to: { y: 420, turn: 38 } },
-    // 3. The bag splits: each half swings down about its outer corner, runs a little past and hangs.
-    { kind: 'move', layer: 'bag-l', at: SPLIT, dur: 1000, ease: 'back', to: { turn: SWING } },
-    { kind: 'move', layer: 'bag-r', at: SPLIT + 50, dur: 1000, ease: 'back', to: { turn: -SWING } },
-    // 4. The paper: a burst of small sheets, the far plane that spreads and stays, and four planes that go by.
-    { kind: 'scatter', layer: 'bit', at: SPLIT + 20, dur: 1900, count: 34, spread: 170, fall: 250 },
-    ...(['far', 'far-g'] as const).flatMap((layer): Step[] => [
-        { kind: 'move', layer, at: SPLIT + 40, dur: 120, to: { opacity: 1 } },
-        { kind: 'move', layer, at: SPLIT + 40, dur: 2700, ease: 'out', to: { sx: 2.36, sy: 2.36 } },
+    // 1. The cord is pulled: it draws down a little, the knot and the net shiver.
+    { kind: 'move', layer: 'cord', at: 0, dur: 320, ease: 'in', to: { y: 8 } },
+    { kind: 'shake', layer: 'knot', at: 120, dur: 300, amp: 1.6, times: 3 },
+    { kind: 'shake', layer: 'cord', at: 120, dur: 300, amp: 1.6, times: 3 },
+    { kind: 'shake', layer: 'net-l', at: 160, dur: 260, amp: 1, times: 2 },
+    { kind: 'shake', layer: 'net-r', at: 160, dur: 260, amp: -1, times: 2 },
+    // 2. The knot lets go and falls away with its cord.
+    { kind: 'move', layer: 'knot', at: LET_GO, dur: 640, ease: 'in', to: { y: 300, turn: 40 } },
+    { kind: 'move', layer: 'cord', at: LET_GO, dur: 640, ease: 'in', to: { y: 310, turn: -24 } },
+    // 3. Each half of the net swings down about its hook, runs a little past, and hangs.
+    { kind: 'move', layer: 'net-l', at: LET_GO, dur: 1100, ease: 'back', to: { turn: SWING } },
+    { kind: 'move', layer: 'net-r', at: LET_GO + 40, dur: 1100, ease: 'back', to: { turn: -SWING } },
+    // 4. The heap comes down toward the viewer, plane by plane, and leaves through the edges.
+    ...PLANES.flatMap(([layer, at, dur, k, dx, dy, turn]): Step[] => [
+        { kind: 'move', layer, at, dur, ease: 'in', to: { sx: k, sy: k, turn, ...nearer(layer, k, dx, dy) } },
+        { kind: 'move', layer, at: at + dur * 0.6, dur: dur * 0.3, to: { opacity: 0 } },
     ]),
-    ...FALLS.flatMap(([layer, at, dur, scale, sink]): Step[] => [
-        { kind: 'move', layer, at, dur: 100, to: { opacity: 1 } },
-        { kind: 'move', layer, at, dur, ease: 'linear', to: { sx: scale, sy: scale, y: sink } },
-        { kind: 'move', layer, at: at + dur * 0.7, dur: dur * 0.3, to: { opacity: 0 } },
-    ]),
-    // 5. The rose's light comes on in the gap.
-    { kind: 'move', layer: 'halo', at: SPLIT + 240, dur: 900, ease: 'out', to: { opacity: 1, sx: 1, sy: 1 } },
-    { kind: 'move', layer: 'rose', at: SPLIT + 300, dur: 620, ease: 'back', to: { sx: 1, sy: 1 } },
-    // 6. Three rolls drop from above and run out.
-    ...ROLLS.map(([layer, at, dur]): Step => ({ kind: 'move', layer, at, dur, ease: 'bounce', to: { sy: 1 } })),
+    { kind: 'scatter', layer: 'bit', at: 700, dur: 1800, count: 22, spread: 150, fall: 150 },
+    // 5. In the cleared middle the light rises.
+    { kind: 'move', layer: 'glow', at: 980, dur: 1100, ease: 'out', to: { opacity: 1, sx: 1, sy: 1, y: 0 } },
+    // 6. The pieces in the corners settle into view.
+    { kind: 'move', layer: 'rest-a', at: 1300, dur: 1200, ease: 'out', to: { x: 0, y: 0, turn: 0 } },
+    { kind: 'move', layer: 'rest-b', at: 1380, dur: 1200, ease: 'out', to: { x: 0, y: 0, turn: 0 } },
+    { kind: 'move', layer: 'rest-d', at: 1420, dur: 1200, ease: 'out', to: { y: 0 } },
+    { kind: 'move', layer: 'rest-c', at: 1460, dur: 1200, ease: 'out', to: { x: 0, y: 0, turn: 0 } },
 ];
 
 const idle: IdleStep[] = [
-    { layer: 'garland-a', field: 'turn', amp: 0.7, period: 6200 },
-    { layer: 'garland-b', field: 'turn', amp: 0.9, period: 5200, phase: 0.4 },
-    // The packed bag breathes on its ropes; the ring swings from the seam.
-    { layer: 'bag-l', field: 'sy', amp: 0.016, period: 4400 },
-    { layer: 'bag-r', field: 'sy', amp: 0.016, period: 4400, phase: 0.08 },
-    { layer: 'ring', field: 'turn', amp: 2.2, period: 3400 },
+    // The cord swings a little from the knot; the net breathes.
+    { layer: 'cord', field: 'turn', amp: 3, period: 3600 },
+    { layer: 'net-l', field: 'sy', amp: 0.008, period: 5200 },
+    { layer: 'net-r', field: 'sy', amp: 0.008, period: 5200, phase: 0.1 },
 ];
 
 const afterglow: IdleStep[] = [
-    { layer: 'garland-a', field: 'turn', amp: 0.7, period: 6200 },
-    { layer: 'garland-b', field: 'turn', amp: 0.9, period: 5200, phase: 0.4 },
-    // The hanging streamers and the emptied halves sway out of step.
-    { layer: 'roll-a', field: 'turn', amp: 2.4, period: 4200 },
-    { layer: 'roll-b', field: 'turn', amp: 1.8, period: 5100, phase: 0.35 },
-    { layer: 'roll-c', field: 'turn', amp: 2.8, period: 3600, phase: 0.7 },
-    { layer: 'bag-l', field: 'turn', amp: 1.6, period: 4800, phase: 0.2 },
-    { layer: 'bag-r', field: 'turn', amp: 1.6, period: 5600, phase: 0.6 },
-    // The sheets still in the air drift a hair; the gold ones twinkle.
-    { layer: 'far', field: 'y', amp: 3, period: 6400 },
-    { layer: 'far-g', field: 'y', amp: 4, period: 5200, phase: 0.3 },
-    { layer: 'far-g', field: 'opacity', amp: 0.32, period: 2600 },
-    { layer: 'halo', field: 'opacity', amp: 0.1, period: 5000 },
+    { layer: 'net-l', field: 'turn', amp: 1.4, period: 5400 },
+    { layer: 'net-r', field: 'turn', amp: 1.4, period: 6200, phase: 0.5 },
+    { layer: 'rest-a', field: 'turn', amp: 1.6, period: 4800, phase: 0.2 },
+    { layer: 'rest-b', field: 'turn', amp: 1.2, period: 5600, phase: 0.6 },
+    { layer: 'rest-c', field: 'turn', amp: 1.4, period: 5000, phase: 0.85 },
+    { layer: 'glow', field: 'opacity', amp: 0.1, period: 4600 },
+    { layer: 'glow', field: 'sx', amp: 0.025, period: 4600, phase: 0.25 },
+    { layer: 'glow', field: 'sy', amp: 0.025, period: 4600, phase: 0.25 },
 ];
 
 /** How hard the whole tune is played: levelled against the other wrappers' tunes. */
-const LEVEL = 1;
-const g = (gain: number): number => Math.round(gain * LEVEL * 100) / 100;
-/** Paper rustling as the cord tightens, the rip, then a short brass call that climbs the home chord and holds its top. */
+const LEVEL = 1.84;
+const g = (gain: number): number => Math.min(1, Math.round(gain * LEVEL * 100) / 100);
+/** A soft rustle of paper as the cord draws, then a short bright brass figure that climbs and lands on home. */
 const score: NoteDef[] = [
-    { at: 0, pitch: 84, dur: 90, gain: g(0.16), inst: 'noise' },
-    { at: 150, pitch: 88, dur: 80, gain: g(0.2), inst: 'noise' },
-    { at: 300, pitch: 86, dur: 90, gain: g(0.24), inst: 'noise' },
-    { at: SPLIT, pitch: 72, dur: 220, gain: g(0.5), inst: 'noise', bend: -7 },
-    { at: 560, pitch: 67, dur: 120, gain: g(0.5) },
-    { at: 700, pitch: 72, dur: 120, gain: g(0.52) },
-    { at: 840, pitch: 76, dur: 120, gain: g(0.54) },
-    { at: 980, pitch: 79, dur: 240, gain: g(0.58) },
-    { at: 1260, pitch: 76, dur: 110, gain: g(0.5) },
-    { at: 1380, pitch: 79, dur: 110, gain: g(0.54) },
-    { at: 1500, pitch: 48, dur: 1500, gain: g(0.3), inst: 'pad' },
-    { at: 1500, pitch: 76, dur: 1400, gain: g(0.36) },
-    { at: 1500, pitch: 79, dur: 1400, gain: g(0.4) },
-    { at: 1500, pitch: 84, dur: 1500, gain: g(0.56) },
+    { at: 0, pitch: 80, dur: 120, gain: g(0.12), inst: 'noise' },
+    { at: 180, pitch: 84, dur: 120, gain: g(0.14), inst: 'noise' },
+    { at: LET_GO, pitch: 78, dur: 360, gain: g(0.2), inst: 'noise', bend: -5 },
+    { at: 700, pitch: 67, dur: 120, gain: g(0.48) },
+    { at: 840, pitch: 72, dur: 120, gain: g(0.5) },
+    { at: 980, pitch: 76, dur: 140, gain: g(0.52) },
+    { at: 1140, pitch: 79, dur: 260, gain: g(0.56) },
+    { at: 1420, pitch: 76, dur: 120, gain: g(0.46) },
+    { at: 1560, pitch: 48, dur: 1500, gain: g(0.28), inst: 'pad' },
+    { at: 1560, pitch: 72, dur: 1500, gain: g(0.58) },
 ];
 
 export const confetti: WrapperDef = {
     id: 'confetti',
     name: { vi: 'Giấy màu thả trần', en: 'Confetti drop' },
-    ambient: ['#221E27', '#E8B84A', '#F0356B'],
+    ambient: ['#F4EEE1', '#D9A230', '#1E5A57'],
     blurb: {
-        vi: 'Nhìn thẳng lên trần tiệc. Kéo vòng, túi giấy tách đôi, giấy màu rơi về phía bạn và ba cuộn dây giấy bung xuống.',
-        en: 'Straight up at a party ceiling. Pull the ring: the bag splits, paper comes down toward you and three streamer rolls uncoil.',
+        vi: 'Giấy cắt màu trên trần sáng. Kéo dây, lưới bung đôi, những mảnh giấy lớn rơi về phía bạn và một vầng sáng vàng hiện ra.',
+        en: 'Cut paper on a light ceiling. Pull the cord: the net swings open, large paper shapes fall toward you and a gold light rises.',
     },
-    // The ceiling's charcoal as lacquer, ivory paper for the words, the lamps' gold for the one loud colour.
-    theme: { ground: '#141117', surface: '#221E27', ink: '#F6EEDD', accent: '#E8B84A', onAccent: '#141117', material: 'lacquer', corner: 'soft', face: 'poster', voice: 'chime' },
-    focus: [0.5, 0.5],
+    // Ivory paper as a light plate, ink for the words, the deep teal for the one loud colour.
+    theme: { ground: '#1D1B19', surface: '#F4EEE1', ink: '#1D1B19', accent: '#1E5A57', onAccent: '#F4EEE1', material: 'plate', corner: 'soft', face: 'grotesk', voice: 'chime' },
+    focus: [FX / 360, FY / 450],
     size: [360, 450],
-    backdrop: '#221E27',
+    backdrop: '#F4EEE1',
     layers: [
-        { id: 'ceiling', art: 'ceiling.svg', box: [-6, -6, 372, 462], depth: 0.03 },
-        { id: 'halo', art: 'halo.svg', box: [48, 93, 264, 264], start: { opacity: 0, sx: 0.6, sy: 0.6 }, depth: 0.03 },
-        { id: 'rose', art: 'rose.svg', box: [118, 163, 124, 124], start: { sx: 0.86, sy: 0.86 }, depth: 0.03 },
-        { id: 'net', art: 'net.svg', box: [-6, -6, 372, 462], depth: 0.1 },
-        { id: 'garland-a', art: 'garland-a.svg', box: [-22, 64, 404, 76], origin: [0.5, 0], depth: 0.16 },
-        { id: 'garland-b', art: 'garland-b.svg', box: [-22, 312, 404, 76], origin: [0.5, 0], depth: 0.16 },
-        // The sheets that stay in the air, under everything that hangs.
-        { id: 'far', art: 'far.svg', box: CBOX, start: { opacity: 0, sx: 0.3, sy: 0.3 }, depth: 0.2 },
-        { id: 'far-g', art: 'far-g.svg', box: CBOX, start: { opacity: 0, sx: 0.3, sy: 0.3 }, depth: 0.2 },
-        { id: 'bag-l', art: 'bag-l.svg', box: [26, 153, 163, 144], origin: [0.11, 0.229], depth: 0.26 },
-        { id: 'bag-r', art: 'bag-r.svg', box: [171, 153, 163, 144], origin: [0.89, 0.229], depth: 0.26 },
-        { id: 'ring', art: 'ring.svg', box: [159, 156, 42, 138], origin: [0.5, 0], depth: 0.26 },
-        { id: 'roll-a', art: 'roll-a.svg', box: [94, -8, 28, 320], origin: [0.5, 0], start: { sy: 0 }, depth: 0.34 },
-        { id: 'roll-b', art: 'roll-b.svg', box: [248, -8, 28, 370], origin: [0.5, 0], start: { sy: 0 }, depth: 0.4 },
-        { id: 'roll-c', art: 'roll-c.svg', box: [298, -8, 28, 256], origin: [0.5, 0], start: { sy: 0 }, depth: 0.3 },
-        // The planes that go by, far to near.
-        { id: 'fall-a', art: 'fall-a.svg', box: CBOX, start: { opacity: 0, sx: 0.3, sy: 0.3 }, depth: 0.45 },
-        { id: 'fall-b', art: 'fall-b.svg', box: CBOX, start: { opacity: 0, sx: 0.3, sy: 0.3 }, depth: 0.6 },
-        { id: 'fall-c', art: 'fall-c.svg', box: CBOX, start: { opacity: 0, sx: 0.3, sy: 0.3 }, depth: 0.8 },
-        { id: 'fall-d', art: 'fall-d.svg', box: CBOX, start: { opacity: 0, sx: 0.3, sy: 0.3 }, depth: 1 },
-        { id: 'bit', art: 'bit.svg', box: [175, 222, 10, 6] },
+        { id: 'ceiling', art: 'ceiling.svg', box: BOX.ceiling!, depth: 0.04 },
+        { id: 'glow', art: 'glow.svg', box: BOX.glow!, start: { opacity: 0, sx: 0.3, sy: 0.3, y: 24 }, depth: 0.1 },
+        { id: 'rest-a', art: 'rest-a.svg', box: BOX['rest-a']!, origin: [0.2, 0.9], start: { x: -26, y: 30, turn: -6 }, depth: 0.3 },
+        { id: 'rest-b', art: 'rest-b.svg', box: BOX['rest-b']!, origin: [0.6, 0.3], start: { x: 22, y: -24, turn: 10 }, depth: 0.3 },
+        { id: 'rest-c', art: 'rest-c.svg', box: BOX['rest-c']!, origin: [0.6, 0.8], start: { x: 24, y: 26, turn: 8 }, depth: 0.3 },
+        { id: 'rest-d', art: 'rest-d.svg', box: BOX['rest-d']!, start: { y: 22 }, depth: 0.3 },
+        { id: 'heap-a', art: 'heap-a.svg', box: BOX['heap-a']!, depth: 0.2 },
+        { id: 'heap-b', art: 'heap-b.svg', box: BOX['heap-b']!, depth: 0.3 },
+        { id: 'heap-c', art: 'heap-c.svg', box: BOX['heap-c']!, depth: 0.3 },
+        { id: 'heap-d', art: 'heap-d.svg', box: BOX['heap-d']!, depth: 0.35 },
+        { id: 'heap-e', art: 'heap-e.svg', box: BOX['heap-e']!, depth: 0.4 },
+        { id: 'heap-f', art: 'heap-f.svg', box: BOX['heap-f']!, depth: 0.45 },
+        { id: 'net-l', art: 'net-l.svg', box: BOX['net-l']!, origin: [0.022, 0.081], depth: 0.5 },
+        { id: 'net-r', art: 'net-r.svg', box: BOX['net-r']!, origin: [0.978, 0.081], depth: 0.5 },
+        { id: 'knot', art: 'knot.svg', box: BOX.knot!, depth: 0.55 },
+        { id: 'cord', art: 'cord.svg', box: BOX.cord!, origin: [0.5, 0], depth: 0.55 },
+        { id: 'bit', art: 'bit.svg', box: BOX.bit! },
     ],
     idle,
     afterglow,
