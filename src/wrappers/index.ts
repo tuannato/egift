@@ -52,6 +52,11 @@ import { stars } from './stars';
 import { umbrella } from './umbrella';
 import { starship } from './starship';
 import { terminal } from './terminal';
+import { hanukkiah } from './hanukkiah';
+import { harvest } from './harvest';
+import { bauble } from './bauble';
+import { shutters } from './shutters';
+import { fir } from './fir';
 
 /** The built-in wrappers, in the order the picker shows them. */
 import { lock } from './lock';
@@ -63,7 +68,7 @@ import { lock } from './lock';
  */
 export const LOCK_WRAPPER: WrapperDef = lock;
 
-export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit, curtain, medal, neon, sakura, compass, cylinder, airmail, beacon, lotus, keys, domino, chest, aurora, pop, flap, drone, stars, umbrella, starship, terminal];
+export const WRAPPERS: readonly WrapperDef[] = [lixi, mecha, signal, fold, cake, letter, inkwash, snowbox, fireworks, dopaper, lantern, bouquet, lace, cloudmoon, diploma, wreath, skyline, basket, latte, dawn, pumpkin, rangoli, paperbag, archmoon, vinyl, bottle, seeds, crane, cradle, orbit, curtain, medal, neon, sakura, compass, cylinder, airmail, beacon, lotus, keys, domino, chest, aurora, pop, flap, drone, stars, umbrella, starship, terminal, hanukkiah, harvest, bauble, shutters, fir];
 
 export function wrapperById(id: string): WrapperDef | undefined {
     return WRAPPERS.find(w => w.id === id);
@@ -124,7 +129,10 @@ export type Offer = { readonly kind: 'free' } | ({ readonly kind: 'paid' } & Wra
  * The wrappers made for a holiday (new year and Tet, mid-autumn, Eid, Diwali, Halloween, Christmas). The shelf can
  * be narrowed to them; nothing else reads this.
  */
-const HOLIDAY: ReadonlySet<string> = new Set(['lixi', 'dopaper', 'fireworks', 'lantern', 'archmoon', 'rangoli', 'pumpkin', 'snowbox']);
+const HOLIDAY: ReadonlySet<string> = new Set([
+    'lixi', 'dopaper', 'fireworks', 'lantern', 'archmoon', 'rangoli', 'pumpkin', 'snowbox',
+    'hanukkiah', 'harvest', 'bauble', 'shutters', 'fir',
+]);
 export function isHoliday(def: Pick<WrapperDef, 'id'>): boolean {
     return HOLIDAY.has(def.id);
 }
