@@ -141,8 +141,13 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
     // link from one that is not, without asking the network.
     const spotsHex: ReadonlySet<string> = new Set((link.many === true ? (link.spots ?? []) : []).map(s => [...s].map(b => b.toString(16).padStart(2, '0')).join('')));
     const hexOf = (pkh: Uint8Array): string => [...pkh].map(b => b.toString(16).padStart(2, '0')).join('');
-    /** "3 of 9 gifts are still here", when the link says where they are. */
-    const left = h('p', { class: 'strong many-left', role: 'status', 'aria-live': 'polite', hidden: true });
+    /**
+     * "3 of 9 gifts are still here", when the link says where they are: a pill with one dot for each gift (filled
+     * while it is there) beside the words. When none is left the pill says so in the colour of a warning.
+     */
+    const leftDots = h('span', { class: 'many-dots', 'aria-hidden': 'true' });
+    const leftText = h('span', { class: 'many-text' });
+    const left = h('p', { class: 'many-left', role: 'status', 'aria-live': 'polite', hidden: true }, leftDots, leftText);
     let counting = 0;
     async function countLeft(): Promise<void> {
         if (link.many !== true || link.spots === undefined) return;
@@ -161,7 +166,10 @@ function lockedPage(root: HTMLElement, ctx: Ctx, link: PackageLink, onUnlocked: 
             if (mine === counting) left.hidden = true;
             return;
         }
-        left.textContent = there === 0 ? t('pkg.many.none') : t('pkg.many.left', { k: there, n: link.spots.length });
+        const n = link.spots.length;
+        leftDots.replaceChildren(...Array.from({ length: n }, (_, i) => h('span', { class: 'many-dot', 'data-on': i < there ? 'yes' : 'no' })));
+        leftText.textContent = there === 0 ? t('pkg.many.none') : t('pkg.many.left', { k: there, n });
+        left.dataset.none = there === 0 ? 'yes' : 'no';
         left.hidden = false;
     }
     void countLeft();

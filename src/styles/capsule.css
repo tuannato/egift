@@ -1069,3 +1069,16 @@ button.wordmark { appearance: none; -webkit-appearance: none; border: 0; margin:
 .pager-prev::after { content: none; }
 .pager-prev::before { content: "←"; letter-spacing: 0; }
 .pager .btn:disabled { opacity: 0.35; }
+
+/* ---------- How many gifts are left behind a shared link: a pill of dots and words ---------- */
+.many-left {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; width: fit-content; max-width: 100%; margin: 4px 0 0; padding: 10px 16px 10px 14px;
+    border-radius: 22px; font-weight: 650; font-size: 15px; line-height: 1.3; color: var(--ink);
+    background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.many-dots { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+.many-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--dim); }
+.many-dot[data-on="yes"] { background: var(--accent); box-shadow: none; }
+.many-text { min-width: 0; }
+.many-left[data-none="yes"] { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); box-shadow: inset 0 0 0 1.5px var(--danger); }
+.many-left[data-none="yes"] .many-dot { box-shadow: inset 0 0 0 1.5px var(--danger); }
